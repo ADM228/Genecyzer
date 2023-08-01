@@ -24,11 +24,11 @@ std::u32string To_UTF32(const std::string &s)
     return conv.from_bytes(s);
 }
 
-sf::Texture loadCharacters(const unsigned char* array, uint32_t amount){
+sf::Texture loadCharacters(unsigned char* array, uint32_t amount){
     char buffer[16];
     uint8_t colorBuffer[8*8];
-    sf::Uint8 pixels[8*8*4*amount];
-    printf("Loading %d characters, which makes pixels %ld bytes long\n", amount, sizeof(pixels));
+    std::vector<sf::Uint8> pixels(8*8*4*amount);
+    printf("Loading %d characters, which makes pixels %zd bytes long\n", amount, sizeof(pixels));
     const uint8_t tableRG[] = {0, 255, 160, 0};
     const uint8_t tableB[] = {0, 255, 176, 0};
     sf::Texture output;
@@ -52,7 +52,7 @@ sf::Texture loadCharacters(const unsigned char* array, uint32_t amount){
         }
     }
     output.create(8,8*amount);
-    output.update(pixels, 8, 8*amount, 0, 0);
+    output.update(pixels.data(), 8, 8*amount, 0, 0);
     output.setSmooth(false);
     return output;
 }
