@@ -28,7 +28,7 @@ sf::Texture loadCharacters(unsigned char* array, uint32_t amount){
     char buffer[16];
     uint8_t colorBuffer[8*8];
     std::vector<sf::Uint8> pixels(8*8*4*amount);
-    printf("Loading %d characters, which makes pixels %zd bytes long\n", amount, sizeof(pixels));
+    printf("Loading %d characters, which makes pixels %zd bytes long\n", amount, pixels.size());
     const uint8_t tableRG[] = {0, 255, 160, 0};
     const uint8_t tableB[] = {0, 255, 176, 0};
     sf::Texture output;

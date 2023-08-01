@@ -10,6 +10,9 @@ FetchContent_Declare(incbin
 	GIT_TAG main)
 set(SFML_BUILD_NETWORK FALSE)
 
+option(SFML_BUILD_SHARED_LIBS "Build shared SFML libraries (normally static just in case)" FALSE)
+set(BUILD_SHARED_LIBS ${SFML_BUILD_SHARED_LIBS})
+
 FetchContent_MakeAvailable(SFML incbin)
 
 include(ExternalProject)
@@ -24,6 +27,7 @@ ExternalProject_Add(SNESFM
 	INSTALL_COMMAND "")
 
 add_executable(Genecyzer src/main.cpp)
+target_include_directories(Genecyzer AFTER PRIVATE "${CMAKE_SOURCE_DIR}/SNESFM/graphics")	#for the font
 target_link_libraries(Genecyzer PRIVATE sfml-graphics sfml-audio incbin)
 target_compile_features(Genecyzer PRIVATE cxx_std_17)
 if (WIN32 AND BUILD_SHARED_LIBS)

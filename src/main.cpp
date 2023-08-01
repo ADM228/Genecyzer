@@ -1,14 +1,18 @@
+#ifdef _MSC_VER 
+#pragma warning(disable: 4242) // try to disable warning 4242 present in stb_image.h, a dependency of SFML/Graphics.hpp
+#endif
 #include <SFML/Graphics.hpp>
+#ifdef _MSC_VER 
+#pragma warning(default: 4242) 
+#endif
 #include "chrLoad.cpp"
 #include "Tile.cpp"
 
-extern "C"
-{
 #define INCBIN_PREFIX bin_
 #define INCBIN_STYLE INCBIN_STYLE_SNAKE
 #include "incbin.h"
 INCBIN(font, "../SNESFM/graphics/tilesetUnicode.chr");
-}
+
 
 
 int main()
