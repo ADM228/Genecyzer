@@ -1,4 +1,4 @@
-#include "Font.hpp"
+#include "ChrFont.hpp"
 
 ChrFont::ChrFont(uint8_t* chrData, uint32_t size, std::vector<uint32_t> codepageTable){
     char buffer[16];

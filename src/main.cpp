@@ -6,8 +6,8 @@
 #pragma warning(default: 4242) 
 #endif
 #include "chrLoad.cpp"
-#include "Tile.cpp"
-#include "Font.cpp"
+#include "Tile.hpp"
+#include "ChrFont.hpp"
 
 #define INCBIN_PREFIX bin_
 #define INCBIN_STYLE INCBIN_STYLE_SNAKE

@@ -15,6 +15,8 @@ set(BUILD_SHARED_LIBS ${SFML_BUILD_SHARED_LIBS})
 
 FetchContent_MakeAvailable(SFML incbin)
 
+set_target_properties(incbin-tool PROPERTIES EXCLUDE_FROM_ALL True EXCLUDE_FROM_DEFAULT_BUILD True)
+
 include(ExternalProject)
 ExternalProject_Add(SNESFM
 	PREFIX ${CMAKE_BINARY_DIR}/SNESFM
@@ -27,8 +29,12 @@ ExternalProject_Add(SNESFM
 	INSTALL_COMMAND "")
 
 add_executable(Genecyzer src/main.cpp)
+add_library(Tile STATIC src/Tile.cpp)
+target_link_libraries(Tile PUBLIC sfml-graphics)
+add_library(ChrFont STATIC src/ChrFont.cpp)
+target_link_libraries(ChrFont PUBLIC Tile sfml-graphics)
 target_link_directories(Genecyzer PRIVATE "${CMAKE_SOURCE_DIR}/SNESFM/graphics")	#for the font
-target_link_libraries(Genecyzer PRIVATE sfml-graphics sfml-audio incbin)
+target_link_libraries(Genecyzer PRIVATE sfml-graphics sfml-audio incbin Tile ChrFont)
 target_compile_features(Genecyzer PRIVATE cxx_std_17)
 if (WIN32 AND BUILD_SHARED_LIBS)
     add_custom_command(TARGET Genecyzer POST_BUILD
@@ -36,3 +42,4 @@ if (WIN32 AND BUILD_SHARED_LIBS)
 endif()
 
 install(TARGETS Genecyzer)
+
