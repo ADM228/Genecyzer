@@ -8,21 +8,21 @@
 Tile::Tile(uint32_t x, uint32_t y){
     pos.x = x * 8;
     pos.y = y * 8;
-    texturePos = sf::Vector2f({0, 0});
+    texturePos = sf::Vector2f(0, 0);
     updateRenderVertex();
 }
 
 Tile::Tile(uint32_t x, uint32_t y, uint32_t tile){
     pos.x = x * 8;
     pos.y = y * 8;
-    texturePos = sf::Vector2f({0, static_cast<float>(tile << 3)});
+    texturePos = sf::Vector2f(0, static_cast<float>(tile << 3));
     updateRenderVertex();
 }
 
 Tile::Tile(uint32_t x, uint32_t y, uint32_t tile, bool hFlip, bool vFlip){
     pos.x = x * 8;
     pos.y = y * 8;
-    texturePos = sf::Vector2f({0, static_cast<float>(tile << 3)});
+    texturePos = sf::Vector2f(0, static_cast<float>(tile << 3));
     _hFlip = hFlip;
     _vFlip = vFlip;
     updateRenderVertex();
@@ -35,7 +35,7 @@ void Tile::setFlip(bool hFlip, bool vFlip){
 }
 
 void Tile::setTile(uint32_t tile){
-    texturePos = sf::Vector2f({0, static_cast<float>(tile << 3)});
+    texturePos = sf::Vector2f(0, static_cast<float>(tile << 3));
     updateRenderVertex();
 }
 
@@ -174,7 +174,7 @@ void TileMatrix::copyRect(uint16_t x, uint16_t y, uint16_t width, uint16_t heigh
 
 
 void TileMatrix::render(uint16_t x, uint16_t y, sf::RenderWindow *window, sf::Texture texture){
-    sf::Vector2f texturePos ({0, 0});
+    sf::Vector2f texturePos (0, 0);
     for (uint16_t i = 0; i < _height && i*8+y < window->getSize().y; i++){
         for (uint16_t j = 0; j < _width && j*8+x < window->getSize().x; j++){
             texturePos.y = (_tiles[i]._tiles[j]) << 3;
@@ -190,7 +190,7 @@ void TileMatrix::render(uint16_t x, uint16_t y, sf::RenderWindow *window, sf::Te
 }
 
 sf::Texture TileMatrix::renderToTexture(sf::Texture texture){
-    sf::Vector2f texturePos ({0, 0});
+    sf::Vector2f texturePos (0, 0);
     sf::RenderTexture target;
     target.create(_width*8, _height*8);
     for (uint16_t i = 0; i < _height; i++){
