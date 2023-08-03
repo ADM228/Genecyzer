@@ -11,7 +11,7 @@ class Tile {
         Tile(uint32_t x, uint32_t y, uint32_t tile, bool hFlip, bool vFlip);
         void setTile(uint32_t tile);
         void setFlip(bool hFlip, bool vFlip);
-        bool getFlip() {return new bool[2] {_hFlip, _vFlip}; };
+        bool getFlip() {return (new bool[2] {_hFlip, _vFlip}); };
         sf::VertexArray renderVertex;
     private:
         void updateRenderVertex();
