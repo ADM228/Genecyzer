@@ -7,6 +7,7 @@
 #endif
 #include "chrLoad.cpp"
 #include "Tile.cpp"
+#include "Font.cpp"
 
 #define INCBIN_PREFIX bin_
 #define INCBIN_STYLE INCBIN_STYLE_SNAKE
@@ -22,15 +23,8 @@ int main()
     sf::View TrackerView(sf::FloatRect(0.f,0.f,200.f,200.f));
 
     unsigned char * fontPointer = const_cast<unsigned char *>(bin_font_data);
-
-    sf::Texture font[0x64];
-    font[0x00] = loadCharacters(fontPointer+0x0000, 0x80);
-    font[0x01] = loadCharacters(fontPointer+0x0080, 0x80);
-    font[0x07] = loadCharacters(fontPointer+0x0100, 0x80);
-    font[0x08] = loadCharacters(fontPointer+0x0180, 0x80);
-    font[0x09] = loadCharacters(fontPointer+0x0200, 0x80);
-    font[0x60] = loadCharacters(fontPointer+0x0280, 0x80);
-    font[0x61] = loadCharacters(fontPointer+0x0300, 0x80);
+    std::vector<uint32_t> codepages = {0x0000, 0x0080, 0x0380, 0x0400, 0x0480, 0x3000, 0x3080};
+    ChrFont font(fontPointer, bin_font_size, codepages);
 
     sf::Sprite sprite0;
     sf::Sprite sprite7;
@@ -42,7 +36,7 @@ int main()
 
     window.setView(TrackerView);
 
-    sprite0.setTexture(font[0x00]);
+    sprite0.setTexture(font.texture);
     sprite0.setScale(sf::Vector2f((float)scale, (float)scale));
     sprite0.setTextureRect(sf::IntRect(0, 8*0x30, 8, 8));
 
@@ -82,7 +76,7 @@ int main()
         window.clear(sf::Color(255,255,0,0));
         window.setView(InstrumentView);
 
-        sf::Texture test = tiles.renderToTexture(font[0]);
+        sf::Texture test = tiles.renderToTexture(font.texture);
         sprite7.setTexture(test);
         sprite7.setPosition(sf::Vector2f(0, 0));
         window.draw(sprite7);

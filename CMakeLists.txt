@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.20)
 project(Genecyzer LANGUAGES CXX)
 
 include(FetchContent)
@@ -27,7 +27,7 @@ ExternalProject_Add(SNESFM
 	INSTALL_COMMAND "")
 
 add_executable(Genecyzer src/main.cpp)
-target_include_directories(Genecyzer AFTER PRIVATE "${CMAKE_SOURCE_DIR}/SNESFM/graphics")	#for the font
+target_link_directories(Genecyzer PRIVATE "${CMAKE_SOURCE_DIR}/SNESFM/graphics")	#for the font
 target_link_libraries(Genecyzer PRIVATE sfml-graphics sfml-audio incbin)
 target_compile_features(Genecyzer PRIVATE cxx_std_17)
 if (WIN32 AND BUILD_SHARED_LIBS)

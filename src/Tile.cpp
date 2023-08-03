@@ -15,14 +15,14 @@ Tile::Tile(uint32_t x, uint32_t y){
 Tile::Tile(uint32_t x, uint32_t y, uint32_t tile){
     pos.x = x * 8;
     pos.y = y * 8;
-    texturePos = sf::Vector2f{0, static_cast<float>((tile & 0x7F) << 3)};
+    texturePos = sf::Vector2f{0, static_cast<float>(tile << 3)};
     updateRenderVertex();
 }
 
 Tile::Tile(uint32_t x, uint32_t y, uint32_t tile, bool hFlip, bool vFlip){
     pos.x = x * 8;
     pos.y = y * 8;
-    texturePos = sf::Vector2f{0, static_cast<float>((tile & 0x7F) << 3)};
+    texturePos = sf::Vector2f{0, static_cast<float>(tile << 3)};
     _hFlip = hFlip;
     _vFlip = vFlip;
     updateRenderVertex();
@@ -35,7 +35,7 @@ void Tile::setFlip(bool hFlip, bool vFlip){
 }
 
 void Tile::setTile(uint32_t tile){
-    texturePos = sf::Vector2f{0, static_cast<float>((tile & 0x7F) << 3)};
+    texturePos = sf::Vector2f{0, static_cast<float>(tile << 3)};
     updateRenderVertex();
 }
 

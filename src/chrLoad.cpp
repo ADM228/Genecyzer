@@ -3,7 +3,9 @@
 #include <cstdio>
 #include <iomanip>
 #include <locale>
+#include <algorithm>
 
+#include "Tile.hpp"
 #include <SFML/Graphics.hpp>
 
 #ifndef __CHRLOAD_INCLUDED__
@@ -24,54 +26,18 @@ std::u32string To_UTF32(const std::string &s)
     return conv.from_bytes(s);
 }
 
-sf::Texture loadCharacters(unsigned char* array, uint32_t amount){
-    char buffer[16];
-    uint8_t colorBuffer[8*8];
-    std::vector<sf::Uint8> pixels(8*8*4*amount);
-    printf("Loading %d characters, which makes pixels %zd bytes long\n", amount, pixels.size());
-    const uint8_t tableRG[] = {0, 255, 160, 0};
-    const uint8_t tableB[] = {0, 255, 176, 0};
-    sf::Texture output;
+sf::Texture renderText(sf::Texture font, std::string string){
+    std::u32string text = To_UTF32(string);
+    uint8_t bank;
+    TileMatrix matrix(text.length(), 1);
 
-    for (uint32_t tile = 0; tile < amount; tile++) {
-        for(int i = 0; i < 8; i++){
-            colorBuffer[i*8] = (array[(tile<<4)|(i<<1)]>>7)&1 | (array[(tile<<4)|(i<<1)|1]>>6)&2;
-            colorBuffer[i*8+1] = (array[(tile<<4)|(i<<1)]>>6)&1 | (array[(tile<<4)|(i<<1)|1]>>5)&2;
-            colorBuffer[i*8+2] = (array[(tile<<4)|(i<<1)]>>5)&1 | (array[(tile<<4)|(i<<1)|1]>>4)&2;
-            colorBuffer[i*8+3] = (array[(tile<<4)|(i<<1)]>>4)&1 | (array[(tile<<4)|(i<<1)|1]>>3)&2;
-            colorBuffer[i*8+4] = (array[(tile<<4)|(i<<1)]>>3)&1 | (array[(tile<<4)|(i<<1)|1]>>2)&2;
-            colorBuffer[i*8+5] = (array[(tile<<4)|(i<<1)]>>2)&1 | (array[(tile<<4)|(i<<1)|1]>>1)&2;
-            colorBuffer[i*8+6] = (array[(tile<<4)|(i<<1)]>>1)&1 | array[(tile<<4)|(i<<1)|1]&2;
-            colorBuffer[i*8+7] = array[(tile<<4)|(i<<1)]&1 | (array[(tile<<4)|(i<<1)|1]<<1)&2;
-        }
-        for (int i = 0; i < sizeof(colorBuffer); i++){
-            pixels[tile*256+i*4] = tableRG[colorBuffer[i]];
-            pixels[tile*256+i*4+1] = tableRG[colorBuffer[i]];
-            pixels[tile*256+i*4+2] = tableB[colorBuffer[i]];
-            pixels[tile*256+i*4+3] = colorBuffer[i] == 0 ? 0 : 255;
-        }
+    for (uint32_t i = 0; i < text.length(); i++){
+        //bank = std::find(text[i]&0xFFFFFF80);
+        
+        
     }
-    output.create(8,8*amount);
-    output.update(pixels.data(), 8, 8*amount, 0, 0);
-    output.setSmooth(false);
-    return output;
+    return matrix.renderToTexture(font);
 }
-
-// sf::Texture renderText(sf::Texture font[], std::string string){
-//     sf::Texture output;
-//     std::u32string text = To_UTF32(string);
-//     uint8_t bank;
-
-//     output.create(text.length()*8, 8);
-
-//     for (uint32_t i = 0; i < text.length(); i++){
-//         bank = (text[i]&0xFF80)>>7;
-//         // if (font[bank].getSize().x != 8){
-//         //     output.
-//         // }
-//     }
-//     return output;
-// }
 
 sf::VertexArray createTile(sf::Vector2i position, uint32_t tile){
     sf::VertexArray output (sf::TriangleFan);
