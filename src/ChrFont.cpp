@@ -49,16 +49,77 @@ std::u32string To_UTF32(const std::string &s)
     return conv.from_bytes(s);
 }
 
-TileMatrix ChrFont::renderToTiles(std::string string){
-    std::u32string text = To_UTF32(string);
-    TileMatrix matrix(text.length(), 1);
-
-    for (uint32_t i = 0; i < text.length(); i++){
-        uint32_t bank = std::find(codepages.begin(), codepages.end(), text[i]&0xFFFFFF80)-codepages.begin();
-        if (bank < codepages.size()){
-            matrix.setTile(i, 0, (bank<<7)|(text[i]&0x7F));
-        } else {
-            matrix.setTile(i, 0, 0x20);
+TileMatrix ChrFont::renderToTiles(std::string string, int32_t maxChars){
+    std::u32string string32 = To_UTF32(string);
+    std::vector<uint32_t> charsPerLine;
+    std::vector<char32_t> text;
+    { // Refactor the text from Unicode to a simply-displayed mess
+        uint32_t charOnLine = 0;
+        uint32_t lastSpace = 0;
+        text.push_back(0x0A);   //HACK 
+        for (uint32_t i = 0; i < string32.length(); i++){
+            if ((string32[i] >= 0x0A && string32[i] <= 0x0D) || string32[i] == 0x85 || 
+            string32[i] == 0x2028 || string32[i] == 0x2029){
+                // Line terminators
+                lastSpace = text.size();
+                text.push_back(0x0A);
+                charsPerLine.push_back(charOnLine);
+                charOnLine = 0;
+                if (string32[i] == 0x0D && string32[i] == 0x0A) // CRLF
+                    i++;
+            } else if (string32[i] == 0x09 || string32[i] == 0x20 || string32[i] == 0x1680 || 
+            (string32[i] >= 0x2000 && string32[i] <= 0x200D && string32[i] != 0x2007) ||
+            string32[i] == 0x205F || string32[i] == 0x3000 || string32[i] == 0x180E){
+                // Spaces that can make a newline
+                lastSpace = text.size();
+                if (!(string32[i] >= 0x200B && string32[i] <= 0x200D)){ // If not zero width spaces
+                    charOnLine++;
+                    if (charOnLine == maxChars){
+                        text.push_back(0x0A);
+                        charsPerLine.push_back(charOnLine-1);
+                        charOnLine = 0;
+                    } else 
+                        text.push_back(0x20);
+                } else text.push_back(0x200B); // Else push ZWSP in case a newline is needed
+            } else if (string32[i] == 0xA0 || string32[i] == 0x2007 || string32[i] == 0x202F){
+                // Non breaking spaces
+                text.push_back(0x20);
+                charOnLine++;
+            } else {
+                // Normal alphabets with normal breaking rules
+                charOnLine++;
+                if (charOnLine > maxChars && text[lastSpace] == 0x0A){ // If word longer than maxChars
+                    lastSpace = text.size();
+                    charsPerLine.push_back(maxChars);
+                    text.push_back(0x0A);   // Nah legit fuck this, just chop the word
+                    text.push_back(string32[i]);
+                    charOnLine = 1;
+                } else if (charOnLine > maxChars){ // If the last space is a space
+                    text.push_back(string32[i]);
+                    text[lastSpace] = 0x0A;
+                    charsPerLine.push_back(charOnLine - (text.size() - lastSpace));
+                    charOnLine = text.size() - lastSpace - 1;
+                    
+                } else text.push_back(string32[i]);
+            }
+        }
+        charsPerLine.push_back(charOnLine);
+    }
+    uint32_t maxWidth = (maxChars == -1 ? 0 : maxChars);
+    TileMatrix matrix(std::max(*max_element(charsPerLine.begin(), charsPerLine.end()), maxWidth), charsPerLine.size(), 0x20);
+    uint32_t x = 0, y = 0;
+    for (uint32_t i = 1; i < text.size(); i++){
+        if (text[i] == 0x0A){    // Newline
+            y++;
+            x = 0;
+        } else if (text[i] == 0x200B){}    // ZWSP
+        else {
+            uint32_t bank = std::find(codepages.begin(), codepages.end(), text[i]&0xFFFFFF80)-codepages.begin();
+            if (bank < codepages.size()){
+                matrix.setTile(x++, y, (bank<<7)|(text[i]&0x7F));
+            } else {
+                matrix.setTile(x++, y, 0x20);
+            }
         }
     }
     return matrix;

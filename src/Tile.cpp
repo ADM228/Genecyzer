@@ -194,13 +194,14 @@ sf::Texture TileMatrix::renderToTexture(sf::Texture texture){
     sf::RenderTexture target;
     target.create(_width*8, _height*8);
     for (uint16_t i = 0; i < _height; i++){
+        uint16_t y = _height - i - 1;
         for (uint16_t j = 0; j < _width; j++){
             texturePos.y = (_tiles[i]._tiles[j]) << 3;
             sf::Vertex vertices[4] = {
-                sf::Vertex(sf::Vector2f(j*8, i*8+8), texturePos+sf::Vector2f(_tiles[i]._flip[j]&1?8:0,_tiles[i]._flip[j]&2?8:0)),
-                sf::Vertex(sf::Vector2f(j*8+8, i*8+8), texturePos+sf::Vector2f(_tiles[i]._flip[j]&1?0:8,_tiles[i]._flip[j]&2?8:0)),
-                sf::Vertex(sf::Vector2f(j*8+8, i*8), texturePos+sf::Vector2f(_tiles[i]._flip[j]&1?0:8,_tiles[i]._flip[j]&2?0:8)),
-                sf::Vertex(sf::Vector2f(j*8, i*8), texturePos+sf::Vector2f(_tiles[i]._flip[j]&1?8:0,_tiles[i]._flip[j]&2?0:8))
+                sf::Vertex(sf::Vector2f(j*8, y*8+8), texturePos+sf::Vector2f(_tiles[i]._flip[j]&1?8:0,_tiles[i]._flip[j]&2?8:0)),
+                sf::Vertex(sf::Vector2f(j*8+8, y*8+8), texturePos+sf::Vector2f(_tiles[i]._flip[j]&1?0:8,_tiles[i]._flip[j]&2?8:0)),
+                sf::Vertex(sf::Vector2f(j*8+8, y*8), texturePos+sf::Vector2f(_tiles[i]._flip[j]&1?0:8,_tiles[i]._flip[j]&2?0:8)),
+                sf::Vertex(sf::Vector2f(j*8, y*8), texturePos+sf::Vector2f(_tiles[i]._flip[j]&1?8:0,_tiles[i]._flip[j]&2?0:8))
             };
             target.draw(vertices, 4, sf::TriangleFan, sf::RenderStates(&texture));
         }

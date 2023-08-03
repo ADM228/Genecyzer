@@ -39,17 +39,16 @@ int main()
     sprite0.setTexture(font.texture);
     sprite0.setScale(sf::Vector2f((float)scale, (float)scale));
     sprite0.setTextureRect(sf::IntRect(0, 8*0x30, 8, 8));
-
-    sf::Texture text = font.renderToTexture("English Ελληνικά Русский にほんこ゛");
-
-    sprite7.setTexture(text);
-    sprite7.setScale(sf::Vector2f(1.f, 1.f));//((float)scale, (float)scale));
+    
+    //((float)scale, (float)scale));
     //sprite7.setTextureRect(sf::IntRect(0, 8*0x37, 8, 8));
 
 
     uint32_t tilesd[] = {0,1,2,2};
     TileMatrix tiles(4,4, 0x30);
     tiles.copyRect(0, 2, 4, 1, tilesd);
+    sf::Texture text;
+    std::string longassstring = "English Ελληνικά Русский にほんこ゛ antidisestablishmentarianism\nThe quick fox jumped over the lazy dog\nСъешь же ещё этих мягких французских булочек, да выпей чаю";
     while (window.isOpen())
     {
         sf::Event event;
@@ -62,6 +61,11 @@ int main()
                 //TrackerView.setViewport(sf::FloatRect(0.f, 0.f, 32.f/event.size.width, 32.f/event.size.height));
                 InstrumentView.reset(sf::FloatRect(instPage*scale*8*16, 0, event.size.width, 64));
                 InstrumentView.setViewport(sf::FloatRect(0, 0, scale, 64.f/event.size.height*scale));
+                TileMatrix textMatrix = font.renderToTiles(longassstring, static_cast<int>((event.size.width/scale)/8));
+                text.create(textMatrix.getWidth()*8, textMatrix.getHeight()*8);
+                text.update(textMatrix.renderToTexture(font.texture));
+                sprite7.setTextureRect(sf::IntRect(0, 0, text.getSize().x, text.getSize().y));
+                sprite7.setTexture(text);
             } else if (event.type == sf::Event::KeyPressed){
                 if (event.key.code == sf::Keyboard::Left){
                     instPage++;
@@ -73,7 +77,7 @@ int main()
         window.clear(sf::Color(255,255,0,0));
         window.setView(InstrumentView);
 
-        sprite7.setPosition(sf::Vector2f(0, 0));
+        sprite7.setScale(sf::Vector2f(1.f, 1.f));
         window.draw(sprite7);
         // tiles.render(0,0,&window, font[0]);
         // window.draw(tile.renderVertex, sf::RenderStates(&font[0]));
