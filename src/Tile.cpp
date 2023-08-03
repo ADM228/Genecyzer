@@ -101,6 +101,12 @@ TileMatrix::TileMatrix(uint16_t width, uint16_t height, uint32_t fillTile){
     _width = width;
 }
 
+void TileMatrix::setTile(uint16_t x, uint16_t y, uint32_t tile){
+    if (x >= _width) {throw std::invalid_argument("[TileMatrix::setTile(uint16_t x, uint16_t y, uint32_t tile)]: x is out of bounds");}
+    if (y >= _height) {throw std::invalid_argument("[TileMatrix::setTile(uint16_t x, uint16_t y, uint32_t tile)]: y is out of bounds");}
+    _tiles[y]._tiles[x] = tile;
+}
+
 void TileMatrix::fill(uint32_t tile){
     for (uint16_t i = 0; i < _height; i++) {_tiles[i]._tiles.assign(_width, tile);}
 }

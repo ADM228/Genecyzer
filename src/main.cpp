@@ -40,16 +40,13 @@ int main()
     sprite0.setScale(sf::Vector2f((float)scale, (float)scale));
     sprite0.setTextureRect(sf::IntRect(0, 8*0x30, 8, 8));
 
-    //sprite7.setTexture(font[0x00]);
+    sf::Texture text = font.renderToTexture("English Ελληνικά Русский にほんこ゛");
+
+    sprite7.setTexture(text);
     sprite7.setScale(sf::Vector2f(1.f, 1.f));//((float)scale, (float)scale));
     //sprite7.setTextureRect(sf::IntRect(0, 8*0x37, 8, 8));
 
-    // renderText(font, "Test SNESFM сука");
-    // sf::VertexArray tile = createTile(sf::Vector2i(0, 0), 1);
-    // Tile tile (0, 0, 1);
-    // Tile tile1 (1, 0, 2);
-    // Tile tile2 (0, 1, 3, true, false);
-    // Tile tile3 (1, 1, 0x46);
+
     uint32_t tilesd[] = {0,1,2,2};
     TileMatrix tiles(4,4, 0x30);
     tiles.copyRect(0, 2, 4, 1, tilesd);
@@ -76,8 +73,6 @@ int main()
         window.clear(sf::Color(255,255,0,0));
         window.setView(InstrumentView);
 
-        sf::Texture test = tiles.renderToTexture(font.texture);
-        sprite7.setTexture(test);
         sprite7.setPosition(sf::Vector2f(0, 0));
         window.draw(sprite7);
         // tiles.render(0,0,&window, font[0]);

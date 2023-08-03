@@ -49,6 +49,7 @@ class TileMatrix {
         TileMatrix(uint16_t width, uint16_t height, TileRow tiles[]);
         TileMatrix(uint16_t width, uint16_t height, uint32_t fillTile);
 
+        void setTile(uint16_t x, uint16_t y, uint32_t tile);
         void fill(uint32_t tile);
         void fillRow(uint16_t row, uint32_t tile);
         void fillCol(uint16_t col, uint32_t tile);
