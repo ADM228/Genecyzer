@@ -36,7 +36,7 @@ add_library(Tile STATIC src/Tile.cpp)
 target_link_libraries(Tile PUBLIC sfml-graphics)
 add_library(ChrFont STATIC src/ChrFont.cpp)
 target_link_libraries(ChrFont PUBLIC Tile sfml-graphics)
-target_link_directories(Genecyzer PRIVATE "${CMAKE_SOURCE_DIR}/SNESFM/graphics")	#for the font
+target_include_directories(Genecyzer PRIVATE "${CMAKE_SOURCE_DIR}/SNESFM/graphics")	#for the font
 target_link_libraries(Genecyzer PRIVATE sfml-graphics sfml-audio incbin Tile ChrFont)
 if (WIN32 AND BUILD_SHARED_LIBS)
     add_custom_command(TARGET Genecyzer POST_BUILD
