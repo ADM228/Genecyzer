@@ -27,17 +27,17 @@ ExternalProject_Add(SNESFM
 	BUILD_COMMAND $<$<STREQUAL:$<UPPER_CASE:${CMAKE_HOST_SYSTEM_NAME}>,LINUX>:make>
 	BUILD_IN_SOURCE True
 	INSTALL_COMMAND "")
-
-add_library(cpp_std INTERFACE)
-target_compile_features(cpp_std INTERFACE cxx_std_17)
+	
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
 	
 add_executable(Genecyzer src/main.cpp)
 add_library(Tile STATIC src/Tile.cpp)
-target_link_libraries(Tile PUBLIC sfml-graphics INTERFACE cpp_std)
+target_link_libraries(Tile PUBLIC sfml-graphics)
 add_library(ChrFont STATIC src/ChrFont.cpp)
-target_link_libraries(ChrFont PUBLIC Tile sfml-graphics INTERFACE cpp_std)
+target_link_libraries(ChrFont PUBLIC Tile sfml-graphics)
 target_link_directories(Genecyzer PRIVATE "${CMAKE_SOURCE_DIR}/SNESFM/graphics")	#for the font
-target_link_libraries(Genecyzer PRIVATE sfml-graphics sfml-audio incbin Tile ChrFont INTERFACE cpp_std)
+target_link_libraries(Genecyzer PRIVATE sfml-graphics sfml-audio incbin Tile ChrFont)
 if (WIN32 AND BUILD_SHARED_LIBS)
     add_custom_command(TARGET Genecyzer POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:CMakeSFMLProject> $<TARGET_FILE_DIR:CMakeSFMLProject> COMMAND_EXPAND_LISTS)
