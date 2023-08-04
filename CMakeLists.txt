@@ -44,7 +44,7 @@ if (MSVC)	# Replacement of functions in cmake-incbin wrapper (it does not allow 
 		COMMAND incbin-tool -o ${binIncludeFile} -I${CMAKE_SOURCE_DIR}/SNESFM/graphics/ -I${CMAKE_SOURCE_DIR}/src/ -p bin_ -Ssnakecase main.cpp
 		VERBATIM
 	)
-	target_sources(Genecyzer PRIVATE ${binIncludeFile})
+	target_include_directories(Genecyzer PRIVATE ${CMAKE_BINARY_DIR})
 else()
 	set_target_properties(incbin-tool PROPERTIES EXCLUDE_FROM_ALL True EXCLUDE_FROM_DEFAULT_BUILD True)
 	target_include_directories(Genecyzer PRIVATE "${CMAKE_SOURCE_DIR}/SNESFM/graphics")	#font location
