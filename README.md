@@ -1,6 +1,6 @@
 [![Build Status](https://github.com/ADM228/Genecyzer/actions/workflows/ci.yml/badge.svg)](https://github.com/ADM228/Genecyzer/actions/workflows/ci.yml)
 # Genecyzer
-## A tracker based on the [SNESFM](https://github.com/alexmush/SNES-FM) sound driver
+## A tracker based on the [SNESFM](https://github.com/ADM228/SNES-FM) sound driver
 Written in C++ with the [SFML framework](https://sfml-dev.org), it is (theoretically lmao) available on Windows, MacOS and Linux.  
 Features:
 - None  
