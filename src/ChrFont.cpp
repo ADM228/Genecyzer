@@ -58,21 +58,22 @@ TileMatrix ChrFont::renderToTiles(std::string string, int32_t maxChars){
         uint32_t lastSpace = 0;
         text.push_back(0x0A);   //HACK 
         for (uint32_t i = 0; i < string32.length(); i++){
-            if ((string32[i] >= 0x0A && string32[i] <= 0x0D) || string32[i] == 0x85 || 
-            string32[i] == 0x2028 || string32[i] == 0x2029){
+            uint32_t character = string32[i];
+            if ((character >= 0x0A && character <= 0x0D) || character == 0x85 || 
+            character == 0x2028 || character == 0x2029){
                 // Line terminators
                 lastSpace = text.size();
                 text.push_back(0x0A);
                 charsPerLine.push_back(charOnLine);
                 charOnLine = 0;
-                if (string32[i] == 0x0D && string32[i] == 0x0A) // CRLF
+                if (character == 0x0D && character == 0x0A) // CRLF
                     i++;
-            } else if (string32[i] == 0x09 || string32[i] == 0x20 || string32[i] == 0x1680 || 
-            (string32[i] >= 0x2000 && string32[i] <= 0x200D && string32[i] != 0x2007) ||
-            string32[i] == 0x205F || string32[i] == 0x3000 || string32[i] == 0x180E){
+            } else if (character == 0x09 || character == 0x20 || character == 0x1680 || 
+            (character >= 0x2000 && character <= 0x200D && character != 0x2007) ||
+             character == 0x205F || character == 0x3000 || character == 0x180E){
                 // Spaces that can make a newline
                 lastSpace = text.size();
-                if (!(string32[i] >= 0x200B && string32[i] <= 0x200D)){ // If not zero width spaces
+                if (!(character >= 0x200B && character <= 0x200D)){ // If not zero width spaces
                     charOnLine++;
                     if (charOnLine == maxChars){
                         text.push_back(0x0A);
@@ -81,10 +82,66 @@ TileMatrix ChrFont::renderToTiles(std::string string, int32_t maxChars){
                     } else 
                         text.push_back(0x20);
                 } else text.push_back(0x200B); // Else push ZWSP in case a newline is needed
-            } else if (string32[i] == 0xA0 || string32[i] == 0x2007 || string32[i] == 0x202F){
+            } else if (character == 0xA0 || character == 0x2007 || character == 0x202F){
                 // Non breaking spaces
                 text.push_back(0x20);
                 charOnLine++;
+            } else if (character >= 0x3040 && character <= 0x309F){
+                // Hiragana
+                if (character >= 0x304B && character <= 0x3062 && (character & 1) == 0 ||       // Most dakuten kana
+                character == 0x3065 || character == 0x3067 || character == 0x3069 ||            // づ, で, ど (offset by 1)
+                character == 0x3094 || character == 0x309E ||                                   // ゔ, ゞ
+                character >= 0x3070 && character <= 0x307D && ((character & 0x0F) % 3) != 2){   // ば, ぱ, び, ぴ, ぶ, ぷ ,べ, ぺ, ぼ, ぽ
+                    charOnLine += 2;
+                    lastSpace = text.size();
+                    if (charOnLine > maxChars){
+                        charsPerLine.push_back(charOnLine-1 > maxChars ? maxChars-1 : maxChars);
+                        text.push_back(0x0A);
+                        charOnLine = 2;
+                    } else
+                        text.push_back(0x200B);
+
+                    if (character == 0x3094){   
+                        // Special because ゔ doesn't come right after its non voiced counterpart
+                        text.push_back(0x3046); // う
+                        text.push_back(0x309B); // ゛
+                    } else if (character >= 0x3070 && character <= 0x307D && ((character & 0x0F) % 3) == 1) {
+                        // ぱ, ぴ, ぷ, ぺ, ぽ 
+                        text.push_back(character-2); // は, ひ, ふ, へ, ほ
+                        text.push_back(0x309C);      // ゜
+                    } else {
+                        text.push_back(character-1); // Non-voiced kana
+                        text.push_back(0x309B);      // ゛
+                    }
+                } else if (((character-1) & 0xFFFFFFFC) == 0x3098) {    // ゛, ゜ and their combining versions
+                    charOnLine++;
+                    if (charOnLine > maxChars && text[lastSpace] == 0x0A){ // If word longer than maxChars
+                        lastSpace = text.size();
+                        charsPerLine.push_back(maxChars);
+                        text.push_back(0x0A);   // Nah legit fuck this, just chop the word
+                        text.push_back(((character-1)|0x0002)+1);
+                        charOnLine = 1;
+                    } else if (charOnLine > maxChars){ // If the last space is a space
+                        text.push_back(((character-1)|0x0002)+1);
+                        text[lastSpace] = 0x0A;
+                        charsPerLine.push_back(charOnLine - (text.size() - lastSpace));
+                        charOnLine = text.size() - lastSpace - 1;
+                        
+                    } else text.push_back(((character-1)|0x0002)+1);
+                } else {
+                    charOnLine++;
+                    lastSpace = text.size();
+                    if (charOnLine > maxChars){ // If the last space is a space
+                        lastSpace = text.size();
+                        charsPerLine.push_back(maxChars);
+                        text.push_back(0x0A);   // Nah legit fuck this, just chop the word
+                        text.push_back(character);
+                        charOnLine = 1;
+                    } else {
+                        text.push_back(0x200B);
+                        text.push_back(character);
+                    }
+                }
             } else {
                 // Normal alphabets with normal breaking rules
                 charOnLine++;
@@ -92,15 +149,15 @@ TileMatrix ChrFont::renderToTiles(std::string string, int32_t maxChars){
                     lastSpace = text.size();
                     charsPerLine.push_back(maxChars);
                     text.push_back(0x0A);   // Nah legit fuck this, just chop the word
-                    text.push_back(string32[i]);
+                    text.push_back(character);
                     charOnLine = 1;
                 } else if (charOnLine > maxChars){ // If the last space is a space
-                    text.push_back(string32[i]);
+                    text.push_back(character);
                     text[lastSpace] = 0x0A;
                     charsPerLine.push_back(charOnLine - (text.size() - lastSpace));
                     charOnLine = text.size() - lastSpace - 1;
                     
-                } else text.push_back(string32[i]);
+                } else text.push_back(character);
             }
         }
         charsPerLine.push_back(charOnLine);
@@ -118,7 +175,7 @@ TileMatrix ChrFont::renderToTiles(std::string string, int32_t maxChars){
             if (bank < codepages.size()){
                 matrix.setTile(x++, y, (bank<<7)|(text[i]&0x7F));
             } else {
-                matrix.setTile(x++, y, 0x20);
+                matrix.setTile(x++, y, 0x7F);
             }
         }
     }

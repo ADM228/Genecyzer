@@ -5,15 +5,7 @@
 
 #include "Tile.hpp"
 #include "ChrFont.hpp"
-
-#define INCBIN_PREFIX bin_
-#define INCBIN_STYLE INCBIN_STYLE_SNAKE
-#define INCBIN_SILENCE_BITCODE_WARNING 1    // You cannot imagine how little of a fuck i give
-#include "incbin.h"
-INCBIN(font, "tilesetUnicode.chr");
-#ifdef _MSC_VER
-	#include "binIncludes.h"
-#endif
+#include "binIncludes.cpp"
 
 
 int main()
@@ -48,8 +40,9 @@ int main()
     TileMatrix tiles(4,4, 0x30);
     tiles.copyRect(0, 2, 4, 1, tilesd);
     sf::Texture text;
-    std::string allTextTest = "English Ελληνικά Русский にほんこ゛ antidisestablishmentarianism\nThe quick brown fox jumped over the lazy dog\nСъешь же ещё этих мягких французских булочек, да выпей чаю";
+    std::string allTextTest = "English Ελληνικά Русский にほんごご antidisestablishmentarianism\nThe quick brown fox jumped over the lazy dog\nСъешь же ещё этих мягких французских булочек, да выпей чаю";
 	std::string greekTextTest = "   Θωθ   \nΟ Θωθ ή και Θωτ ή και Τωθ υπήρξε ένας από τους πλέον δημοφιλείς θεούς της αιγυπτιακής θρησκείας. Ήταν θεότητα της Σελήνης και της Σοφίας. Οι αρχαίοι Έλληνες τον προσδιόρισαν ως τον Ερμή τον Τρισμέγιστο. \n   Ιδιότητες   \nΣτις αρχέγονες περιόδους του αιγυπτιακού πολιτισμού ήταν θεός της Σελήνης και από το σεληνιακό συσχετισμό του λέγεται ότι αντλεί την πολυμορφία του, καθώς εκφράζεται με πολλά και διαφορετικά πρόσωπα. Όπως η Σελήνη αντλεί το φως της από τον Ήλιο, έτσι και ο Θωθ αντλούσε ένα μεγάλο μέρος της εξουσίας του από τον ηλιακό θεό Ρα, όντας γραφέας και σύμβουλός του. Στην πραγματικότητα, τόσο σημαντικές ήταν οι φάσεις της Σελήνης για τους ρυθμούς της αιγυπτιακής ζωής, ώστε ο Θωθ θεωρήθηκε αρχή της κοσμικής τάξης, καθώς και των θρησκευτικών και κοινωνικών ιδρυμάτων. Ήταν παρών σχεδόν σε κάθε όψη λατρείας στους ναούς, στην απονομή δικαιοσύνης και στις μαγικές τέχνες, με τις οποίες σχετιζόταν ιδιαιτέρως.\n\nΕπίσης είναι ο θεϊκός γραφέας, εκείνος που επινόησε τη γραφή και κύριος της σοφίας. Το ιερατείο απέδιδε σ' εκείνον πολλές από τις ιερές γραφές, ανάμεσα στις οποίες συγκαταλέγεται η Βίβλος των Αναπνοών και ένα τμήμα της Βίβλου των Νεκρών. Πιστευόταν άλλωστε ότι είχε μεταδώσει την τέχνη της ιερογλυφικής γραφής στους Αιγυπτίους από τα πανάρχαια χρόνια.[1], ενώ ήταν και προστάτης των γραφέων. Του αποδίδονταν τιμές ως Κύριου της Γνώσης όλων των Επιστημών, θεωρούμενος η προσωποποίηση της Κατανόησης και της Λογικής. Υπήρξε, επίσης, μεσολαβητής για να επέλθει ειρήνη ανάμεσα στον Ώρο και τον Σηθ. Ιδιαίτερο πεδίο δράσης του ήταν η εσωτερική σοφία και γι' αυτό αποκαλείτο «ο Μυστηριώδης» ή «ο Άγνωστος». Οι μαγικές του δυνάμεις τον συνέδεσαν, επίσης, με την ιατρική και, όταν το σώμα υπέκυπτε τελικώς στο θάνατο, εκείνος ήταν πάλι που οδηγούσε το νεκρό στο βασίλειο των θεών και ακολουθούσε η κρίση της ψυχής του.";
+    std::string jpTextTest = "スーパーファミコン（SUPER Famicom）は、任天堂より日本・中華民国（台湾）・香港などで発売された家庭用ゲーム機。略記・略称はSFC、スーファミなど[注 1]。日本発売は1990年（平成2年）11月21日、生産終了は2003年（平成15年）9月30日。\n\nファミリーコンピュータの後継機として開発された。同世代機の中では後発であったが、ファミリーコンピュータに引き続き、最多出荷台数を記録した。\n\n北米・欧州・オーストラリア・ブラジルなどでは“Super Nintendo Entertainment System”（スーパーニンテンドーエンターテインメントシステム、略称：Super NES、またはSNES）の名称で発売された。 ";
     while (window.isOpen())
     {
         sf::Event event;
@@ -63,7 +56,7 @@ int main()
 				scale = std::max(static_cast<int>(std::ceil(event.size.height/(4*8*8))), 1);
                 InstrumentView.reset(sf::FloatRect(instPage*scale*8*16, 0, event.size.width, 64));
                 InstrumentView.setViewport(sf::FloatRect(0, 0, scale, 64.f/event.size.height*scale));
-                TileMatrix textMatrix = font.renderToTiles(greekTextTest, std::ceil((event.size.width/scale)/8));
+                TileMatrix textMatrix = font.renderToTiles(jpTextTest, std::ceil((event.size.width/scale)/8));
                 text.create(textMatrix.getWidth()*8+8, textMatrix.getHeight()*8);
 				text.update((new TileMatrix(1, textMatrix.getHeight(), 0x20))->renderToTexture(font.texture), textMatrix.getWidth()*8, 0);
                 text.update(textMatrix.renderToTexture(font.texture));
