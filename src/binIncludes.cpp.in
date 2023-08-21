@@ -1,8 +1,8 @@
-#define INCBIN_PREFIX bin_
-#define INCBIN_STYLE INCBIN_STYLE_SNAKE
+#define INCBIN_PREFIX @INCBIN_PREFIX@
+#define INCBIN_STYLE @INCBIN_STYLE@
 #define INCBIN_SILENCE_BITCODE_WARNING 1    // You cannot imagine how little of a fuck i give
 #include "incbin.h"
-INCBIN(font, "tilesetUnicode.chr");
+INCBIN(font, "${FONTFILE}");
 #ifdef _MSC_VER
-	#include "binIncludes.h"
+	#include "${MSVCINCLUDEFILE}"
 #endif

@@ -86,6 +86,9 @@ TileMatrix ChrFont::renderToTiles(std::string string, int32_t maxChars){
                 // Non breaking spaces
                 text.push_back(0x20);
                 charOnLine++;
+			} else if (character == 0x2060 || character == 0xFEFF){
+				// Zero width non breaking spaces
+				text.push_back(0x2060);
             } else if (character >= 0x3040 && character <= 0x309F){
                 // Hiragana
                 if (character >= 0x304B && character <= 0x3062 && (character & 1) == 0 ||       // Most dakuten kana
@@ -93,13 +96,15 @@ TileMatrix ChrFont::renderToTiles(std::string string, int32_t maxChars){
                 character == 0x3094 || character == 0x309E ||                                   // ゔ, ゞ
                 character >= 0x3070 && character <= 0x307D && ((character & 0x0F) % 3) != 2){   // ば, ぱ, び, ぴ, ぶ, ぷ ,べ, ぺ, ぼ, ぽ
                     charOnLine += 2;
-                    lastSpace = text.size();
-                    if (charOnLine > maxChars){
-                        charsPerLine.push_back(charOnLine-1 > maxChars ? maxChars-1 : maxChars);
-                        text.push_back(0x0A);
-                        charOnLine = 2;
-                    } else
-                        text.push_back(0x200B);
+					if (text[text.size()-1] != 0x2060){
+		                lastSpace = text.size();
+		                if (charOnLine > maxChars){
+		                    charsPerLine.push_back(charOnLine-1 > maxChars ? maxChars-1 : maxChars);
+		                    text.push_back(0x0A);
+		                    charOnLine = 2;
+		                } else
+		                    text.push_back(0x200B);
+					}	// TODO: an else for when kanji is converted
 
                     if (character == 0x3094){   
                         // Special because ゔ doesn't come right after its non voiced counterpart
@@ -169,7 +174,7 @@ TileMatrix ChrFont::renderToTiles(std::string string, int32_t maxChars){
         if (text[i] == 0x0A){    // Newline
             y++;
             x = 0;
-        } else if (text[i] == 0x200B){}    // ZWSP
+        } else if (text[i] == 0x200B || text[i] == 0x2060){}    // ZWSP, ZWNBSP
         else {
             uint32_t bank = std::find(codepages.begin(), codepages.end(), text[i]&0xFFFFFF80)-codepages.begin();
             if (bank < codepages.size()){

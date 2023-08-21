@@ -37,22 +37,34 @@ target_link_libraries(Tile PUBLIC sfml-graphics)
 add_library(ChrFont STATIC src/ChrFont.cpp)
 target_link_libraries(ChrFont PUBLIC Tile sfml-graphics)
 
-add_library(Font STATIC src/binIncludes.cpp "${CMAKE_SOURCE_DIR}/SNESFM/graphics/tilesetUnicode.chr")
+set(FONTFILE "tilesetUnicode.chr")
+set(FONTDIR "${CMAKE_SOURCE_DIR}/SNESFM/graphics/")
+
+set(MSVCINCLUDEFILE ${CMAKE_BINARY_DIR}/MSVCIncludes.h)
+
+set(INCBIN_PREFIX bin_)
+set(INCBIN_STYLE INCBIN_STYLE_SNAKE)
+set(INCBIN_TOOL_STYLE snakecase)
+
+configure_file("${CMAKE_SOURCE_DIR}/src/binIncludes.cpp.in" "${CMAKE_BINARY_DIR}/binIncludes.cpp")
+target_include_directories(Genecyzer PRIVATE ${CMAKE_BINARY_DIR})
+
+add_library(Font STATIC "${CMAKE_BINARY_DIR}/binIncludes.cpp")
+add_custom_command(OUTPUT "${FONTDIR}" "${FONTDIR}${FONTFILE}" DEPENDS SNESFM COMMAND "")
+target_sources(Font PUBLIC "${FONTDIR}${FONTFILE}")
 target_link_libraries(Font PUBLIC incbin)
 
 if (MSVC)	# Replacement of functions in cmake-incbin wrapper (it does not allow include directories, so fuck it)
-	set(binIncludeFile ${CMAKE_BINARY_DIR}/binIncludes.h)
 	add_custom_command(
-		OUTPUT ${binIncludeFile}
-		COMMAND incbin-tool -o ${binIncludeFile} -I${CMAKE_SOURCE_DIR}/SNESFM/graphics/ -I${CMAKE_SOURCE_DIR}/src/ -p bin_ -Ssnakecase main.cpp
-		DEPENDS "${CMAKE_SOURCE_DIR}/SNESFM/graphics/tilesetUnicode.chr"
+		OUTPUT ${MSVCINCLUDEFILE}
+		COMMAND incbin-tool -o ${MSVCINCLUDEFILE} -I${FONTDIR} -I${CMAKE_SOURCE_DIR}/src/ -p ${INCBIN_PREFIX} -S${INCBIN_TOOL_STYLE} main.cpp
+		DEPENDS "${FONTDIR}${FONTFILE}"
 		VERBATIM
 	)
-	target_sources(Font PUBLIC ${binIncludeFile})
-	target_include_directories(Genecyzer PRIVATE ${CMAKE_BINARY_DIR})
+	target_sources(Font PUBLIC ${MSVCINCLUDEFILE})
 else()
+	target_include_directories(Font PUBLIC "${FONTDIR}")
 	set_target_properties(incbin-tool PROPERTIES EXCLUDE_FROM_ALL True EXCLUDE_FROM_DEFAULT_BUILD True)
-	target_include_directories(Font PUBLIC "${CMAKE_SOURCE_DIR}/SNESFM/graphics")	#font location
 endif()
 
 target_link_libraries(Genecyzer PRIVATE sfml-graphics sfml-audio Tile ChrFont Font)
