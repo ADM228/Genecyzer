@@ -40,25 +40,28 @@ target_link_libraries(ChrFont PUBLIC Tile sfml-graphics)
 set(FONTFILE "tilesetUnicode.chr")
 set(FONTDIR "${CMAKE_SOURCE_DIR}/SNESFM/graphics/")
 
+set(BININCLUDEFILE ${CMAKE_BINARY_DIR}/binIncludes.cpp)
 set(MSVCINCLUDEFILE ${CMAKE_BINARY_DIR}/MSVCIncludes.h)
 
 set(INCBIN_PREFIX bin_)
 set(INCBIN_STYLE INCBIN_STYLE_SNAKE)
 set(INCBIN_TOOL_STYLE snakecase)
 
-configure_file("${CMAKE_SOURCE_DIR}/src/binIncludes.cpp.in" "${CMAKE_BINARY_DIR}/binIncludes.cpp")
+configure_file("${CMAKE_SOURCE_DIR}/src/binIncludes.cpp.in" "${BININCLUDEFILE}")
 target_include_directories(Genecyzer PRIVATE ${CMAKE_BINARY_DIR})
 
-add_library(Font STATIC "${CMAKE_BINARY_DIR}/binIncludes.cpp")
+add_library(Font STATIC "${BININCLUDEFILE}")
 add_custom_command(OUTPUT "${FONTDIR}" "${FONTDIR}${FONTFILE}" DEPENDS SNESFM COMMAND "")
 target_sources(Font PUBLIC "${FONTDIR}${FONTFILE}")
 target_link_libraries(Font PUBLIC incbin)
 
 if (MSVC)	# Replacement of functions in cmake-incbin wrapper (it does not allow include directories, so fuck it)
+	get_filename_component(BININCLUDEFILE_NAME ${BININCLUDEFILE} NAME)
+	get_filename_component(BININCLUDEFILE_DIR ${BININCLUDEFILE} DIRECTORY)
 	add_custom_command(
 		OUTPUT ${MSVCINCLUDEFILE}
-		COMMAND incbin-tool -o ${MSVCINCLUDEFILE} -I${FONTDIR} -I${CMAKE_SOURCE_DIR}/src/ -p ${INCBIN_PREFIX} -S${INCBIN_TOOL_STYLE} "${CMAKE_BINARY_DIR}/binIncludes.cpp"
-		DEPENDS "${FONTDIR}${FONTFILE}" "${CMAKE_BINARY_DIR}/binIncludes.cpp"
+		COMMAND incbin-tool -o ${MSVCINCLUDEFILE} -I${FONTDIR} -I${BININCLUDEFILE_DIR} -p ${INCBIN_PREFIX} -S${INCBIN_TOOL_STYLE} "${BININCLUDEFILE_NAME}"
+		DEPENDS "${FONTDIR}${FONTFILE}" "${BININCLUDEFILE}"
 		VERBATIM
 	)
 	target_sources(Font PUBLIC ${MSVCINCLUDEFILE})
