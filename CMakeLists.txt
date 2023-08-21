@@ -57,8 +57,8 @@ target_link_libraries(Font PUBLIC incbin)
 if (MSVC)	# Replacement of functions in cmake-incbin wrapper (it does not allow include directories, so fuck it)
 	add_custom_command(
 		OUTPUT ${MSVCINCLUDEFILE}
-		COMMAND incbin-tool -o ${MSVCINCLUDEFILE} -I${FONTDIR} -I${CMAKE_SOURCE_DIR}/src/ -p ${INCBIN_PREFIX} -S${INCBIN_TOOL_STYLE} main.cpp
-		DEPENDS "${FONTDIR}${FONTFILE}"
+		COMMAND incbin-tool -o ${MSVCINCLUDEFILE} -I${FONTDIR} -I${CMAKE_SOURCE_DIR}/src/ -p ${INCBIN_PREFIX} -S${INCBIN_TOOL_STYLE} "${CMAKE_BINARY_DIR}/binIncludes.cpp"
+		DEPENDS "${FONTDIR}${FONTFILE}" "${CMAKE_BINARY_DIR}/binIncludes.cpp"
 		VERBATIM
 	)
 	target_sources(Font PUBLIC ${MSVCINCLUDEFILE})
