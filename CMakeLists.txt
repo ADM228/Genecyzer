@@ -34,8 +34,10 @@ add_executable(Genecyzer src/main.cpp)
 add_library(Tile STATIC src/Tile.cpp)
 target_link_libraries(Tile PUBLIC sfml-graphics)
 
+add_library(StrConvert STATIC src/StrConvert.cpp)
+
 add_library(ChrFont STATIC src/ChrFont.cpp)
-target_link_libraries(ChrFont PUBLIC Tile sfml-graphics)
+target_link_libraries(ChrFont PUBLIC Tile sfml-graphics PRIVATE StrConvert)
 
 set(FONTFILE "tilesetUnicode.chr")
 set(FONTDIR "${CMAKE_SOURCE_DIR}/SNESFM/graphics/")
@@ -70,7 +72,7 @@ else()
 	set_target_properties(incbin-tool PROPERTIES EXCLUDE_FROM_ALL True EXCLUDE_FROM_DEFAULT_BUILD True)
 endif()
 
-target_link_libraries(Genecyzer PRIVATE sfml-graphics sfml-audio Tile ChrFont Font)
+target_link_libraries(Genecyzer PRIVATE sfml-graphics sfml-audio Tile ChrFont Font StrConvert)
 
 if (WIN32 AND BUILD_SHARED_LIBS)
     add_custom_command(TARGET Genecyzer POST_BUILD

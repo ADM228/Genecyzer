@@ -2,9 +2,6 @@
 #include <iostream>
 #include <stdexcept>
 
-#ifndef __TILE_CPP_INCLUDED__
-#define __TILE_CPP_INCLUDED__
-
 Tile::Tile(uint32_t x, uint32_t y){
     pos.x = x * 8;
     pos.y = y * 8;
@@ -158,10 +155,10 @@ void TileMatrix::copyCol(uint16_t col, uint32_t src[]){
 }
 
 void TileMatrix::copyRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint32_t src[]){
-    if (x >= _width) {throw std::invalid_argument("[TileMatrix::copyRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint32_t src[])]: x is out of bounds");}
-    if (y >= _height) {throw std::invalid_argument("[TileMatrix::copyRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint32_t src[])]: y is out of bounds");}
-    if (width+x > _width) {throw std::invalid_argument("[TileMatrix::copyRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint32_t src[])]: width+x is out of bounds");}
-    if (height+y > _height) {throw std::invalid_argument("[TileMatrix::copyRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint32_t src[])]: height+y is out of bounds");}
+    if (x >= _width) {throw std::invalid_argument("[TileMatrix::copyRect()]: x is out of bounds");}
+    if (y >= _height) {throw std::invalid_argument("[TileMatrix::copyRect()]: y is out of bounds");}
+    if (width+x > _width) {throw std::invalid_argument("[TileMatrix::copyRect()]: width+x is out of bounds");}
+    if (height+y > _height) {throw std::invalid_argument("[TileMatrix::copyRect()]: height+y is out of bounds");}
     uint32_t ptr = 0;
     for (uint16_t i = y; i < height+y; i++){
         for (uint16_t j = x; j < width+x; j++){
@@ -170,6 +167,26 @@ void TileMatrix::copyRect(uint16_t x, uint16_t y, uint16_t width, uint16_t heigh
     }
 }
 
+void TileMatrix::copyRect(uint16_t out_x, uint16_t out_y, uint16_t width, uint16_t height, TileMatrix *src, uint16_t in_x, uint16_t in_y){
+
+    #pragma region errorHandling
+    if (in_x >= src->getWidth()) {throw std::invalid_argument("[TileMatrix::copyRect()]: x is out of bounds (source)");}
+    if (in_y >= src->getHeight()) {throw std::invalid_argument("[TileMatrix::copyRect()]: y is out of bounds (source)");}
+    if (width+in_x > src->getWidth()) {throw std::invalid_argument("[TileMatrix::copyRect()]: width+x is out of bounds (source)");}
+    if (height+in_y > src->getHeight()) {throw std::invalid_argument("[TileMatrix::copyRect()]: height+y is out of bounds (source)");}
+
+    if (out_x >= _width) {throw std::invalid_argument("[TileMatrix::copyRect()]: x is out of bounds (destination)");}
+    if (out_y >= _height) {throw std::invalid_argument("[TileMatrix::copyRect()]: y is out of bounds (destination)");}
+    if (width+out_x > _width) {throw std::invalid_argument("[TileMatrix::copyRect()]: width+x is out of bounds (destination)");}
+    if (height+out_y > _height) {throw std::invalid_argument("[TileMatrix::copyRect()]: height+y is out of bounds (destination)");}
+    #pragma endregion
+
+    for (uint16_t i = 0; i < height; i++){
+        for (uint16_t j = 0; j < width; j++){
+            _tiles[out_y+i]._tiles[out_x+j] = src->_tiles[in_y+i]._tiles[in_x+j];
+        }
+    }
+}
 
 
 
@@ -208,5 +225,3 @@ sf::Texture TileMatrix::renderToTexture(sf::Texture texture){
     }
     return target.getTexture();
 }
-
-#endif

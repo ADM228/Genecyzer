@@ -1,8 +1,8 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
 
-#ifndef __TILE_HPP_INCLUDED__
-#define __TILE_HPP_INCLUDED__
+#ifndef __TILE_INCLUDED__
+#define __TILE_INCLUDED__
 
 class Tile {
     public:
@@ -49,25 +49,65 @@ class TileMatrix {
         TileMatrix(uint16_t width, uint16_t height, TileRow tiles[]);
         TileMatrix(uint16_t width, uint16_t height, uint32_t fillTile);
 
+        #pragma region tileSetting
+
+        // Places the tile at coordinates, throws an error if the coordinates are out of bounds
         void setTile(uint16_t x, uint16_t y, uint32_t tile);
+
+        // Fills the entire tile matrix with the tile
         void fill(uint32_t tile);
+
+        // Fills the row (all tiles at Y coordinate) with the tile, throws an error if the Y coordinate is out of bounds
         void fillRow(uint16_t row, uint32_t tile);
+
+        // Fills the column (all tiles at X coordinate) with the tile, throws an error if the X coordinate is out of bounds
         void fillCol(uint16_t col, uint32_t tile);
+
+        // Fills a rectangle with the tile, throws an error if the coordinates are out of bounds
         void fillRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint32_t tile);
 
+        #pragma endregion
+        #pragma region flipSetting
+
+        // Sets the flipping parameters of a tile
         void setFlip(uint16_t x, uint16_t y, bool hFlip, bool vFlip);
+
+        // Sets the flipping parameters of a rectangle
         void setFlipRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, bool hFlip, bool vFlip);
 
+        #pragma endregion
+        #pragma region copying
+
+        // Copies row from input array into the specified row (tiles with the Y coordinate), throws an error if the Y coordinate is out of bounds
         void copyRow(uint16_t row, uint32_t src[]);
+
+        // Copies column from input array into the specified row (tiles with the X coordinate), throws an error if the X coordinate is out of bounds
         void copyCol(uint16_t col, uint32_t src[]);
+
+        // Copies a rectangle from input one-dimensional array, from left to right, from top to bottom; throws an error if the coordinates are out of bounds
         void copyRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint32_t src[]);
+
+        // Copies a rectangle from another TileMatrix, throws an error if the coordinates are out of bounds
+        void copyRect(uint16_t out_x, uint16_t out_y, uint16_t width, uint16_t height, TileMatrix *src, uint16_t in_x, uint16_t in_y);
+
+        // Unimplemented
         void copyRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, TileRow src[]);
 
+        #pragma endregion
+        #pragma region rendering
+
+        // Render TileMatrix to a sf::RenderWindow
         void render(uint16_t x, uint16_t y, sf::RenderWindow *window, sf::Texture texture);
+        // Render TileMatrix to a sf::Texture
         sf::Texture renderToTexture(sf::Texture texture);
+
+        #pragma endregion
+        #pragma region getttingParams
 
         uint16_t getWidth (){ return _width; };
         uint16_t getHeight (){ return _height; };
+
+        #pragma endregion
 
     private:
 
@@ -76,4 +116,4 @@ class TileMatrix {
 
 };
 
-#endif
+#endif  // __TILE_INCLUDED__

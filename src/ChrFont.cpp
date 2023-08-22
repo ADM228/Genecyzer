@@ -1,4 +1,5 @@
 #include "ChrFont.hpp"
+#include "StrConvert.hpp"
 
 ChrFont::ChrFont(uint8_t* chrData, uint32_t size, std::vector<uint32_t> codepageTable){
     char buffer[16];
@@ -33,32 +34,15 @@ ChrFont::ChrFont(uint8_t* chrData, uint32_t size, std::vector<uint32_t> codepage
     codepages = codepageTable;
 }
 
-
-// utility wrapper to adapt locale-bound facets for wstring/wbuffer convert
-template<class Facet>
-struct deletable_facet : Facet
-{
-    template<class... Args>
-    deletable_facet(Args&&... args) : Facet(std::forward<Args>(args)...) {}
-    ~deletable_facet() {}
-};
-
-std::u32string To_UTF32(const std::string &s)
-{
-    std::wstring_convert<deletable_facet<std::codecvt<char32_t, char, std::mbstate_t>>, char32_t> conv;
-    return conv.from_bytes(s);
-}
-
-TileMatrix ChrFont::renderToTiles(std::string string, int32_t maxChars){
-    std::u32string string32 = To_UTF32(string);
+TileMatrix ChrFont::renderToTiles(std::u32string string, int32_t maxChars){
     std::vector<uint32_t> charsPerLine;
     std::vector<char32_t> text;
     { // Refactor the text from Unicode to a simply-displayed mess
         uint32_t charOnLine = 0;
         uint32_t lastSpace = 0;
         text.push_back(0x0A);   //HACK 
-        for (uint32_t i = 0; i < string32.length(); i++){
-            uint32_t character = string32[i];
+        for (uint32_t i = 0; i < string.length(); i++){
+            uint32_t character = string[i];
             if ((character >= 0x0A && character <= 0x0D) || character == 0x85 || 
             character == 0x2028 || character == 0x2029){
                 // Line terminators
@@ -185,4 +169,16 @@ TileMatrix ChrFont::renderToTiles(std::string string, int32_t maxChars){
         }
     }
     return matrix;
+}
+
+TileMatrix ChrFont::renderToTiles(std::string string, int32_t maxChars){
+    return renderToTiles(To_UTF32(string), maxChars);
+}
+
+sf::Texture ChrFont::renderToTexture(std::u32string string, int32_t maxChars){
+    return renderToTiles(string, maxChars).renderToTexture(texture);
+}
+
+sf::Texture ChrFont::renderToTexture(std::string string, int32_t maxChars){
+    return renderToTiles(To_UTF32(string), maxChars).renderToTexture(texture);
 }
