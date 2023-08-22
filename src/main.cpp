@@ -80,14 +80,14 @@ int main()
                 for (int i = 0; i < width; i+=16){
                     for (int j = 0; j < 8; j++){
                         std::string output;
-                        if ((i>>2)+j < instruments.size()){
+                        if ((i>>1)+j < instruments.size()){
                             char numchar[5];
-                            std::snprintf(numchar, 5, "%02X:", (i>>2)+j);
+                            std::snprintf(numchar, 5, "%02X:", (i>>1)+j);
                             std::string num(numchar);
-                            output = num + instruments[(i>>2)+j].getName() + " ";
+                            output = num + instruments[(i>>1)+j].getName() + " ";
                         } else { 
                             char numchar[17];
-                            std::snprintf(numchar, 17, "%02X:             ", (i>>2)+j);
+                            std::snprintf(numchar, 17, "%02X:             ", (i>>1)+j);
                             std::string num(numchar);
                             output = num;                        
                         }

@@ -9,7 +9,7 @@
 
 class Macro {
     public:
-        Macro(uint8_t, uint8_t);
+        Macro(uint8_t = 1, uint8_t = 0);
         uint8_t speed;
         uint8_t loopingType;
         std::vector<uint8_t> data;
@@ -30,7 +30,7 @@ class Instrument {
 #pragma endregion
 #pragma region macroImplementation
 
-Macro::Macro(uint8_t speed = 1, uint8_t loopingType = 0){
+Macro::Macro(uint8_t speed, uint8_t loopingType){
     this->speed = speed;
     this->loopingType = loopingType;
     this->data.resize(0);

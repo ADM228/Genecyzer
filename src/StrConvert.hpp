@@ -1,5 +1,5 @@
-#ifndef __STRCONVERT_INCLUDED_
-#define __STRCOVNERT_INCLUDED_
+#ifndef __STRCONVERT_INCLUDED__
+#define __STRCONVERT_INCLUDED__
 
 #include <string>
 
