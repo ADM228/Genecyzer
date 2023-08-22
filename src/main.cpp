@@ -11,6 +11,13 @@
 
 #include "binIncludes.cpp"
 
+sf::Sprite sprite7;
+int instPage = 0;
+uint8_t scale = 1;
+uint8_t mode = 0;
+
+void updateInstPage(sf::RenderWindow *, sf::View *);
+
 int main()
 {
     sf::RenderWindow window(sf::VideoMode(200, 200), "Genecyzer");
@@ -22,10 +29,7 @@ int main()
     ChrFont font(fontPointer, bin_font_size, codepages);
 
     sf::Sprite sprite0;
-    sf::Sprite sprite7;
-    int instPage = 0;
-    uint8_t scale = 1;
-    uint8_t mode = 0;
+
 
     
 
@@ -34,9 +38,6 @@ int main()
     sprite0.setTexture(font.texture);
     sprite0.setScale(sf::Vector2f((float)scale, (float)scale));
     sprite0.setTextureRect(sf::IntRect(0, 8*0x30, 8, 8));
-    
-    //((float)scale, (float)scale));
-    //sprite7.setTextureRect(sf::IntRect(0, 8*0x37, 8, 8));
 
     sf::Texture text;
     uint32_t tilesd[] = {0,1,2,2};
@@ -68,16 +69,16 @@ int main()
                 //TrackerView.reset(sf::FloatRect(0, 0, 32, 32));
                 //TrackerView.setViewport(sf::FloatRect(0.f, 0.f, 32.f/event.size.width, 32.f/event.size.height));
 				scale = std::max(static_cast<int>(std::ceil(event.size.height/(4*8*8))), 1);
-                InstrumentView.reset(sf::FloatRect(instPage*scale*8*16, 0, event.size.width, 64));
+                updateInstPage(&window, &InstrumentView);
                 InstrumentView.setViewport(sf::FloatRect(0, 0, scale, 64.f/event.size.height*scale));
 
                 //TileMatrix textMatrix = font.renderToTiles(currentTestText, std::ceil((event.size.width/scale)/8));
 
                 int width = std::ceil((event.size.width/scale)/8);
 
-                TileMatrix textMatrix = TileMatrix(width, 8, 0x20);
+                TileMatrix textMatrix = TileMatrix(512, 8, 0x20);
 
-                for (int i = 0; i < width; i+=16){
+                for (int i = 0; i < 512; i+=16){
                     for (int j = 0; j < 8; j++){
                         std::string output;
                         if ((i>>1)+j < instruments.size()){
@@ -92,7 +93,7 @@ int main()
                             output = num;                        
                         }
                         TileMatrix string = font.renderToTiles(output, 15);
-                        textMatrix.copyRect(i, j, std::min(15, width-i), 1, &string, 0, 0);
+                        textMatrix.copyRect(i, j, std::min(15, 512-i), 1, &string, 0, 0);
                     }
                 }
 
@@ -104,9 +105,14 @@ int main()
                 sprite7.setTexture(text);
 
             } else if (event.type == sf::Event::KeyPressed){
-                if (event.key.code == sf::Keyboard::Left){
-                    instPage++;
-                    InstrumentView.reset(sf::FloatRect(instPage*scale*8*16, 0, 64, 64));
+                if (event.key.code == sf::Keyboard::Right){
+                    if (instPage != -1)
+                        instPage++;
+                    updateInstPage(&window, &InstrumentView);
+                } else if (event.key.code == sf::Keyboard::Left){
+                    if (instPage != 0)
+                        instPage--;
+                    updateInstPage(&window, &InstrumentView);
                 }
             }
         }
@@ -129,4 +135,19 @@ int main()
     }
 
     return 0;
+}
+
+void updateInstPage (sf::RenderWindow *window, sf::View *view) {
+    if (instPage >= 0 && (32-instPage)*16*8*scale < window->getSize().x)
+        instPage = -1;
+    else if (instPage < 0 && (32+1+instPage)*16*8*scale < window->getSize().x)
+        instPage = 0;
+
+    printf("%d\n", instPage); fflush(stdout);
+
+    if (instPage >= 0)
+        view->reset(sf::FloatRect(instPage*8*16, 0, window->getSize().x, 64));
+    else
+        view->reset(sf::FloatRect((32+1+instPage)*8*16-(window->getSize().x/scale), 0, window->getSize().x, 64));
+
 }
