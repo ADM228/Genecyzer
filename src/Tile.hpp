@@ -21,6 +21,16 @@ class Tile {
         bool _vFlip = false;
 };
 
+constexpr uint8_t HFLIP = 0x01;
+constexpr uint8_t VFLIP = 0x02;
+constexpr uint8_t FLIPMASK = 0x03;
+
+constexpr uint8_t REDMASK = 0x10;
+constexpr uint8_t GRNMASK = 0x20;
+constexpr uint8_t BLUMASK = 0x40;
+constexpr uint8_t PALMASK = 0x70;
+constexpr uint8_t INVMASK = 0x80;
+
 class TileRow {
     public:
         TileRow() {};
@@ -32,14 +42,18 @@ class TileRow {
         void fill(uint32_t tile) {_tiles.assign(_tiles.size(), tile);};
         void fillSome(uint16_t offset, uint16_t length, uint32_t tile) {_tiles.assign(length, tile);};
 
-        void setFlip(uint16_t offset, bool hFlip, bool vFlip) {_flip[offset] = vFlip << 1 | hFlip;};
-        void fillFlip(uint16_t offset, uint16_t length, bool hFlip, bool vFlip) {_flip.assign (length, vFlip << 1 | hFlip);};
+        void setFlip(uint16_t offset, bool hFlip, bool vFlip);
+        void fillFlip(uint16_t offset, uint16_t length, bool hFlip, bool vFlip);
+
+        void setPalette(uint16_t offset, uint8_t palette);
+        void fillPalette(uint8_t palette);
+        void fillPalette(uint16_t offset, uint16_t length, uint8_t palette);
 
         void copy(uint32_t src[]);
         void copy(uint16_t offset, uint16_t length, uint32_t src[]);
 
         std::vector <uint32_t> _tiles;
-        std::vector <uint8_t> _flip;
+        std::vector <uint8_t> _flip_palette;
 
 };
 
@@ -74,6 +88,24 @@ class TileMatrix {
 
         // Sets the flipping parameters of a rectangle
         void setFlipRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, bool hFlip, bool vFlip);
+
+        #pragma endregion
+        #pragma region paletteSetting
+
+        // Sets the palette of the tile at coordinates, throws an error if the coordinates are out of bounds
+        void setPalette(uint16_t x, uint16_t y, uint8_t palette);
+
+        // Sets the palette of the entire tile matrix
+        void fillPalette(uint8_t palette);
+
+        // Sets the palette of the row (all tiles at Y coordinate), throws an error if the Y coordinate is out of bounds
+        void fillPaletteRow(uint16_t row, uint8_t palette);
+
+        // Sets the palette of the row (all tiles at X coordinate), throws an error if the X coordinate is out of bounds
+        void fillPaletteCol(uint16_t col, uint8_t palette);
+
+        // Sets the palette of a rectangle, throws an error if the coordinates are out of bounds
+        void fillPaletteRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint8_t palette);
 
         #pragma endregion
         #pragma region copying
