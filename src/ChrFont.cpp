@@ -80,7 +80,7 @@ TileMatrix ChrFont::renderToTiles(std::u32string string, int32_t maxChars){
                 character == 0x3094 || character == 0x309E ||                                   // ゔ, ゞ
                 character >= 0x3070 && character <= 0x307D && ((character & 0x0F) % 3) != 2){   // ば, ぱ, び, ぴ, ぶ, ぷ ,べ, ぺ, ぼ, ぽ
                     charOnLine += 2;
-					if (text[text.size()-1] != 0x2060){
+					if (text.back() != 0x2060){
 		                lastSpace = text.size();
 		                if (charOnLine > maxChars){
 		                    charsPerLine.push_back(charOnLine-1 > maxChars ? maxChars-1 : maxChars);

@@ -63,6 +63,8 @@ class TileMatrix {
         TileMatrix(uint16_t width, uint16_t height, TileRow tiles[]);
         TileMatrix(uint16_t width, uint16_t height, uint32_t fillTile);
 
+        void resize(uint16_t width, uint16_t height, uint32_t fillTile = 0x20);
+
         #pragma region tileSetting
 
         // Places the tile at coordinates, throws an error if the coordinates are out of bounds

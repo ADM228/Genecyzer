@@ -19,11 +19,17 @@ constexpr uint32_t INSTRUMENT_NAME_LENGTH = 12;
 class Instrument {
     public:
         Instrument();
+
         void setName(std::string);
         void setName(std::u32string);
         std::string getName();
-    protected:
+
+        void setPalette(uint8_t palette);
+        uint8_t getPalette();
+
+    private:
         uint32_t name[INSTRUMENT_NAME_LENGTH];
+        uint8_t palette;
 
 };
 
@@ -43,6 +49,7 @@ Instrument::Instrument(){
     for (int i = 0; i < INSTRUMENT_NAME_LENGTH; i++){
         this->name[i] = 0x20;   // Space
     }
+    this->palette = 7;
 }
 
 void Instrument::setName(std::string name){
@@ -57,6 +64,7 @@ void Instrument::setName(std::u32string name){
         this->name[i] = name[i];
     }
 }
+
 std::string Instrument::getName(){
     std::u32string UTF32_name;
     for (int i = 0; i < INSTRUMENT_NAME_LENGTH; i++){
@@ -64,6 +72,14 @@ std::string Instrument::getName(){
     }
     std::string output = To_UTF8(UTF32_name);
     return output;
+}
+
+void Instrument::setPalette(uint8_t palette){
+    this->palette = palette;
+}
+
+uint8_t Instrument::getPalette(){
+    return this->palette;
 }
 
 #pragma endregion

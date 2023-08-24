@@ -121,6 +121,20 @@ TileMatrix::TileMatrix(uint16_t width, uint16_t height, uint32_t fillTile){
     _width = width;
 }
 
+void TileMatrix::resize(uint16_t width, uint16_t height, uint32_t fillTile){
+    if (width != this->_width){
+        for (uint16_t i = 0; i < this->_height; i++){
+            _tiles[i]._tiles.resize(width, fillTile);
+            _tiles[i]._flip_palette.resize(width, PALMASK);
+        }
+        this->_width = width;
+    }
+    if (height != this->_height){
+        _tiles.resize(height, TileRow(this->_width, fillTile));
+        this->_height = height;
+    }
+}
+
 #pragma region tileSetting
 
 void TileMatrix::setTile(uint16_t x, uint16_t y, uint32_t tile){
