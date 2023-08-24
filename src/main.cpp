@@ -11,7 +11,6 @@
 
 #include "binIncludes.cpp"
 
-int instPage = 0;
 uint8_t instSelected = 0;
 uint8_t scale = 1;
 uint8_t mode = 0;
@@ -46,7 +45,7 @@ int main()
 
     unsigned char * fontPointer = const_cast<unsigned char *>(bin_font_data);
     std::vector<uint32_t> codepages = {0x0000, 0x0080, 0x0380, 0x0400, 0x0480, 0x3000, 0x3080};
-    ChrFont font(fontPointer, bin_font_size, codepages);
+    ChrFont font(fontPointer, bin_font_size, codepages, 1);
 
     sf::Sprite sprite0;
 
@@ -68,13 +67,14 @@ int main()
 
     forceUpdateAll = 1;
 
-    #define t allTextTest
+    #define t greekTextTest
 
     std::u32string currentTestText = To_UTF32(t);
 
     for (int i = 0; i < currentTestText.length() && instruments.size() < 256; i+= 12){
         instruments.push_back(Instrument());
         instruments.back().setName(currentTestText.substr(i, std::min(static_cast<int>(currentTestText.size()-i), 12)));
+        instruments.back().setPalette((i / 12)&0x07);
     }
 
     while (window.isOpen())
@@ -94,11 +94,8 @@ int main()
             else if (event.type == sf::Event::Resized){
                 //TrackerView.reset(sf::FloatRect(0, 0, 32, 32));
                 //TrackerView.setViewport(sf::FloatRect(0.f, 0.f, 32.f/event.size.width, 32.f/event.size.height));
-				uint8_t newScale = std::max(static_cast<int>(std::ceil(event.size.height/(4*8*8))), 1);
-                if (scale != newScale){
-                    updateSections |= UPDATE_SCALE;
-                    scale = newScale;
-                }
+				scale = std::max(static_cast<int>(std::ceil(event.size.height/(4*8*8))), 1);
+                updateSections |= UPDATE_SCALE;
 
                 //TileMatrix textMatrix = font.renderToTiles(currentTestText, std::ceil((event.size.width/scale)/8));
 
@@ -107,9 +104,6 @@ int main()
 
             } else if (event.type == sf::Event::KeyPressed){
                 if (event.key.code == sf::Keyboard::Right){
-                    if (instPage != -1)
-                        instPage++;
-
                     if (instSelected < 256-8)
                         instrumentsToUpdate.push_back(instSelected + 8);
                     else
@@ -123,13 +117,34 @@ int main()
                         instrumentsToUpdate.pop_back();
                         
                 } else if (event.key.code == sf::Keyboard::Left){
-                    if (instPage != 0)
-                        instPage--;
-                    
                     if (instSelected >= 8)
                         instrumentsToUpdate.push_back(instSelected - 8);
                     else
                         instrumentsToUpdate.push_back(0);
+                    
+                    if (instrumentsToUpdate.back() != instSelected){
+                        instrumentsToUpdate.push_back(instSelected);
+                        instSelected = instrumentsToUpdate[instrumentsToUpdate.size()-2] & 0xFF;
+                        updateSections |= UPDATE_INST_POS;
+                    } else
+                        instrumentsToUpdate.pop_back();
+                } else if (event.key.code == sf::Keyboard::Up){
+                    if (instSelected > 0)
+                        instrumentsToUpdate.push_back(instSelected - 1);
+                    else
+                        instrumentsToUpdate.push_back(0);
+                    
+                    if (instrumentsToUpdate.back() != instSelected){
+                        instrumentsToUpdate.push_back(instSelected);
+                        instSelected = instrumentsToUpdate[instrumentsToUpdate.size()-2] & 0xFF;
+                        updateSections |= UPDATE_INST_POS;
+                    } else
+                        instrumentsToUpdate.pop_back();
+                } else if (event.key.code == sf::Keyboard::Down){
+                    if (instSelected < 255)
+                        instrumentsToUpdate.push_back(instSelected + 1);
+                    else
+                        instrumentsToUpdate.push_back(255);
                     
                     if (instrumentsToUpdate.back() != instSelected){
                         instrumentsToUpdate.push_back(instSelected);
@@ -210,10 +225,11 @@ void renderInstList (sf::RenderWindow *window, sf::View *view, ChrFont *font, sf
                     output = num;
                     palette = 7;                   
                 }
-                if (instNumber == instSelected) palette = 4;
                 TileMatrix string = font->renderToTiles(output, 15);
-                instrumentMatrix.copyRect(i, j, 15, 1, &string, 0, 0);
-                instrumentMatrix.fillPaletteRect(i, j, 15, 1, palette);
+                string.resize(16, 1);
+                string.fillInvert(instNumber == instSelected);
+                string.fillPaletteRect(0, 0, 16, 1, palette);
+                instrumentMatrix.copyRect(i, j, 16, 1, &string, 0, 0);
                 instNumber++;
             }
         }
@@ -228,7 +244,6 @@ void renderInstList (sf::RenderWindow *window, sf::View *view, ChrFont *font, sf
         while (instrumentsToUpdate.size() > 0){
             uint8_t instNumber = instrumentsToUpdate.back();
             instrumentsToUpdate.pop_back();
-            printf("%d %d \n", instNumber, instrumentsToUpdate.size());
             uint8_t palette;
             std::string output;
             if (instNumber < instruments.size()){
@@ -245,24 +260,25 @@ void renderInstList (sf::RenderWindow *window, sf::View *view, ChrFont *font, sf
                 output = num;
                 palette = 7;                   
             }
-            if (instNumber == instSelected) palette = 4;
             TileMatrix string = font->renderToTiles(output, 15);
             string.resize(16, 1);
-            string.fillPaletteRect(0, 0, 15, 1, palette);
+            string.fillInvert(instNumber == instSelected);
+            string.fillPaletteRect(0, 0, 16, 1, palette);
             instrumentTexture->update(string.renderToTexture(font->texture), (instNumber&0xF8)<<(1+3), (instNumber&0x07)<<3);
         }
     }
 }
 
 void updateInstPage (sf::RenderWindow *window, sf::View *view) {
-    if (instPage >= 0 && (32-instPage)*16*8*scale < window->getSize().x)
-        instPage = -1;
-    else if (instPage < 0 && (32+1+instPage)*16*8*scale < window->getSize().x)
-        instPage = 0;
-
-    if (instPage >= 0)
-        view->reset(sf::FloatRect(instPage*8*16, 0, window->getSize().x, 64));
+    if (((instSelected&0xF8)+8/2)*16*scale*2 < window->getSize().x && window->getSize().x >= 8*16*scale)
+        // = (IS>>3)*8*16*scale < winWidth/2 - 8*16*scale/2
+        // Align left
+        view->reset(sf::FloatRect(0, 0, window->getSize().x, 64));
+    else if ((32*8-(instSelected&0xF8)-8/2)*16*scale*2 < window->getSize().x && window->getSize().x >= 8*16*scale)
+        // = (32-IS>>3)*8*16*scale < winWidth/2 + 8*16*scale/2
+        // Align right
+        view->reset(sf::FloatRect(32*8*16-(window->getSize().x/scale), 0, window->getSize().x, 64));
     else
-        view->reset(sf::FloatRect((32+1+instPage)*8*16-(window->getSize().x/scale), 0, window->getSize().x, 64));
+        view->reset(sf::FloatRect(((instSelected>>3)+1)*8*16-(window->getSize().x/(scale*2))-8*8, 0, window->getSize().x, 64));
     view->setViewport(sf::FloatRect(0, 0, scale, 64.f/window->getSize().y*scale));
 }

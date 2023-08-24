@@ -90,6 +90,20 @@ void TileRow::fillPalette(uint16_t offset, uint16_t length, uint8_t palette){
         _flip_palette[i] = (_flip_palette[i] & ~PALMASK) | ((palette << 4) & PALMASK);
 }
 
+void TileRow::setInvert(uint16_t offset, bool invert){
+    _flip_palette[offset] = (_flip_palette[offset] & ~INVMASK) | invert << 7;
+}
+
+void TileRow::fillInvert(bool invert){
+    for (uint16_t i = 0; i < _flip_palette.size(); i++)
+        _flip_palette[i] = (_flip_palette[i] & ~INVMASK) | invert << 7;
+}
+
+void TileRow::fillInvert(uint16_t offset, uint16_t length, bool invert){
+    for (uint16_t i = offset; i < offset+length; i++)
+        _flip_palette[i] = (_flip_palette[i] & ~INVMASK) | invert << 7;
+}
+
 void TileRow::copy (uint32_t src[]){
     for (uint16_t i = 0; i < _tiles.size(); i++){_tiles[i] = src[i];}
 }
@@ -187,6 +201,39 @@ void TileMatrix::setFlipRect(uint16_t x, uint16_t y, uint16_t width, uint16_t he
 }
 
 #pragma endregion
+#pragma region invSetting
+
+void TileMatrix::setInvert(uint16_t x, uint16_t y, bool invert){
+    if (x >= _width) {throw std::invalid_argument("[TileMatrix::setInvert]: x is out of bounds");}
+    if (y >= _height) {throw std::invalid_argument("[TileMatrix::setInvert]: y is out of bounds");}
+    _tiles[y].setInvert(x, invert);
+}
+
+void TileMatrix::fillInvert(bool invert){
+    for (uint16_t i = 0; i < _height; i++) {_tiles[i].fillInvert(invert);}
+}
+
+void TileMatrix::fillInvertRow(uint16_t row, bool invert){
+    if (row >= _height) {throw std::invalid_argument("[TileMatrix::fillInvertRow]: row is out of bounds");}
+    _tiles[row].fillInvert(invert);
+}
+
+void TileMatrix::fillInvertCol(uint16_t col, bool invert){
+    if (col >= _width) {throw std::invalid_argument("[TileMatrix::fillInvertCol]: col is out of bounds");}
+    for (uint16_t i = 0; i < _height; i++) {_tiles[i].setInvert(col, invert);}
+}
+
+void TileMatrix::fillInvertRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, bool invert){
+    if (x >= _width) {throw std::invalid_argument("[TileMatrix::fillInvertRect]: x is out of bounds");}
+    if (y >= _height) {throw std::invalid_argument("[TileMatrix::fillInvertRect]: y is out of bounds");}
+    if (width+x > _width) {throw std::invalid_argument("[TileMatrix::fillInvertRect]: width+x is out of bounds");}
+    if (height+y > _height) {throw std::invalid_argument("[TileMatrix::fillInvertRect]: height+y is out of bounds");}
+    for (uint16_t i = y; i < _height; i++) {
+        _tiles[i].fillInvert(x, width, invert);
+    }
+}
+
+#pragma endregion
 #pragma region paletteSetting
 
 void TileMatrix::setPalette(uint16_t x, uint16_t y, uint8_t palette){
@@ -262,6 +309,7 @@ void TileMatrix::copyRect(uint16_t out_x, uint16_t out_y, uint16_t width, uint16
     for (uint16_t i = 0; i < height; i++){
         for (uint16_t j = 0; j < width; j++){
             _tiles[out_y+i]._tiles[out_x+j] = src->_tiles[in_y+i]._tiles[in_x+j];
+            _tiles[out_y+i]._flip_palette[out_x+j] = src->_tiles[in_y+i]._flip_palette[in_x+j];
         }
     }
 }
@@ -275,8 +323,8 @@ void TileMatrix::render(uint16_t x, uint16_t y, sf::RenderWindow *window, sf::Te
     sf::Color color;
     for (uint16_t i = 0; i < _height && i*8+y < window->getSize().y; i++){
         for (uint16_t j = 0; j < _width && j*8+x < window->getSize().x; j++){
-            texturePos.y = (_tiles[i]._tiles[j]) << 3;
             flip_palette = _tiles[i]._flip_palette[j];
+            texturePos = {flip_palette&INVMASK?8:0, (_tiles[i]._tiles[j]) << 3};
             color = sf::Color(
                 flip_palette&REDMASK?255:0,
                 flip_palette&GRNMASK?255:0,
@@ -301,8 +349,8 @@ sf::Texture TileMatrix::renderToTexture(sf::Texture texture){
     for (uint16_t i = 0; i < _height; i++){
         uint16_t y = _height - i - 1;
         for (uint16_t j = 0; j < _width; j++){
-            texturePos.y = (_tiles[i]._tiles[j]) << 3;
             flip_palette = _tiles[i]._flip_palette[j];
+            texturePos = {flip_palette&INVMASK?8:0, (_tiles[i]._tiles[j]) << 3};
             color = sf::Color(
                 flip_palette&REDMASK?255:0,
                 flip_palette&GRNMASK?255:0,

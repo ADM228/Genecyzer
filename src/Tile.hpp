@@ -39,8 +39,8 @@ class TileRow {
         TileRow(uint16_t length, uint32_t fillTile);
 
         void setTile(uint16_t offset, uint32_t tile) {_tiles[offset] = tile;};
-        void fill(uint32_t tile) {_tiles.assign(_tiles.size(), tile);};
-        void fillSome(uint16_t offset, uint16_t length, uint32_t tile) {_tiles.assign(length, tile);};
+        void fillTile(uint32_t tile) {_tiles.assign(_tiles.size(), tile);};
+        void fillTile(uint16_t offset, uint16_t length, uint32_t tile) {_tiles.assign(length, tile);};
 
         void setFlip(uint16_t offset, bool hFlip, bool vFlip);
         void fillFlip(uint16_t offset, uint16_t length, bool hFlip, bool vFlip);
@@ -48,6 +48,10 @@ class TileRow {
         void setPalette(uint16_t offset, uint8_t palette);
         void fillPalette(uint8_t palette);
         void fillPalette(uint16_t offset, uint16_t length, uint8_t palette);
+
+        void setInvert(uint16_t offset, bool invert);
+        void fillInvert(bool invert);
+        void fillInvert(uint16_t offset, uint16_t length, bool invert);
 
         void copy(uint32_t src[]);
         void copy(uint16_t offset, uint16_t length, uint32_t src[]);
@@ -108,6 +112,24 @@ class TileMatrix {
 
         // Sets the palette of a rectangle, throws an error if the coordinates are out of bounds
         void fillPaletteRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint8_t palette);
+
+        #pragma endregion
+        #pragma region invSetting
+
+        // Sets the inversion of the tile at coordinates, throws an error if the coordinates are out of bounds
+        void setInvert(uint16_t x, uint16_t y, bool invert);
+
+        // Sets the inversion of the entire tile matrix
+        void fillInvert(bool invert);
+
+        // Sets the inversion of the row (all tiles at Y coordinate), throws an error if the Y coordinate is out of bounds
+        void fillInvertRow(uint16_t row, bool invert);
+
+        // Sets the inversion of the row (all tiles at X coordinate), throws an error if the X coordinate is out of bounds
+        void fillInvertCol(uint16_t col, bool invert);
+
+        // Sets the inversion of a rectangle, throws an error if the coordinates are out of bounds
+        void fillInvertRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, bool invert);
 
         #pragma endregion
         #pragma region copying
