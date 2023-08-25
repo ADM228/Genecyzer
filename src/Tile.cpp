@@ -1,6 +1,13 @@
 #include "Tile.hpp"
 #include <iostream>
-#include <stdexcept>
+
+#ifdef BREAK_ON_EXCEPTIONS
+#include <stdexcept>    
+#define inv_arg(x) throw std::invalid_argument(x)
+#else
+uint32_t exception_count = 0;
+#define inv_arg(x) fprintf(stderr, "[Tile.cpp #%08X]: ", exception_count++); fprintf(stderr, x); fprintf(stderr, "\n")
+#endif
 
 Tile::Tile(uint32_t x, uint32_t y){
     pos.x = x * 8;
@@ -109,8 +116,8 @@ void TileRow::copy (uint32_t src[]){
 }
 
 void TileRow::copy (uint16_t offset, uint16_t length, uint32_t src[]){
-    if (offset >= _tiles.size()) {throw std::invalid_argument("[TileRow::copy]: offset is out of bounds");}
-    if (offset+length > _tiles.size()) {throw std::invalid_argument("[TileRow::copy]: offset+length is out of bounds");}
+    if (offset >= _tiles.size()) {inv_arg("[TileRow::copy]: offset is out of bounds");}
+    if (offset+length > _tiles.size()) {inv_arg("[TileRow::copy]: offset+length is out of bounds");}
     for (uint16_t i = offset; i < offset+length; i++){_tiles[i] = src[i];}
 }
 
@@ -152,8 +159,8 @@ void TileMatrix::resize(uint16_t width, uint16_t height, uint32_t fillTile){
 #pragma region tileSetting
 
 void TileMatrix::setTile(uint16_t x, uint16_t y, uint32_t tile){
-    if (x >= _width) {throw std::invalid_argument("[TileMatrix::setTile]: x is out of bounds");}
-    if (y >= _height) {throw std::invalid_argument("[TileMatrix::setTile]: y is out of bounds");}
+    if (x >= _width) {inv_arg("[TileMatrix::setTile]: x is out of bounds");}
+    if (y >= _height) {inv_arg("[TileMatrix::setTile]: y is out of bounds");}
     _tiles[y]._tiles[x] = tile;
 }
 
@@ -162,20 +169,20 @@ void TileMatrix::fill(uint32_t tile){
 }
 
 void TileMatrix::fillRow(uint16_t row, uint32_t tile){
-    if (row >= _height) {throw std::invalid_argument("[TileMatrix::fillRow]: row is out of bounds");}
+    if (row >= _height) {inv_arg("[TileMatrix::fillRow]: row is out of bounds");}
     _tiles[row]._tiles.assign(_width, tile);
 }
 
 void TileMatrix::fillCol(uint16_t col, uint32_t tile){
-    if (col >= _width) {throw std::invalid_argument("[TileMatrix::fillCol]: col is out of bounds");}
+    if (col >= _width) {inv_arg("[TileMatrix::fillCol]: col is out of bounds");}
     for (uint16_t i = 0; i < _height; i++) {_tiles[i]._tiles[col] = tile;}
 }
 
 void TileMatrix::fillRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint32_t tile){
-    if (x >= _width) {throw std::invalid_argument("[TileMatrix::fillRect]: x is out of bounds");}
-    if (y >= _height) {throw std::invalid_argument("[TileMatrix::fillRect]: y is out of bounds");}
-    if (width+x > _width) {throw std::invalid_argument("[TileMatrix::fillRect]: width+x is out of bounds");}
-    if (height+y > _height) {throw std::invalid_argument("[TileMatrix::fillRect]: height+y is out of bounds");}
+    if (x >= _width) {inv_arg("[TileMatrix::fillRect]: x is out of bounds");}
+    if (y >= _height) {inv_arg("[TileMatrix::fillRect]: y is out of bounds");}
+    if (width+x > _width) {inv_arg("[TileMatrix::fillRect]: width+x is out of bounds");}
+    if (height+y > _height) {inv_arg("[TileMatrix::fillRect]: height+y is out of bounds");}
     for (uint16_t i = y; i < _height; i++) {
         for (uint16_t j = x; j < width; j++) {_tiles[i]._tiles[j] = tile;}
     }
@@ -185,16 +192,16 @@ void TileMatrix::fillRect(uint16_t x, uint16_t y, uint16_t width, uint16_t heigh
 #pragma region flipSetting
 
 void TileMatrix::setFlip(uint16_t x, uint16_t y, bool hFlip, bool vFlip){
-    if (x >= _width) {throw std::invalid_argument("[TileMatrix::setFlip]: x is out of bounds");}
-    if (y >= _height) {throw std::invalid_argument("[TileMatrix::setFlip]: y is out of bounds");}
+    if (x >= _width) {inv_arg("[TileMatrix::setFlip]: x is out of bounds");}
+    if (y >= _height) {inv_arg("[TileMatrix::setFlip]: y is out of bounds");}
     _tiles[y]._flip_palette[x] = (_tiles[y]._flip_palette[x] & ~FLIPMASK) | vFlip<<1|hFlip;
 }
 
 void TileMatrix::setFlipRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, bool hFlip, bool vFlip){
-    if (x >= _width) {throw std::invalid_argument("[TileMatrix::setFlipRect]: x is out of bounds");}
-    if (y >= _height) {throw std::invalid_argument("[TileMatrix::setFlipRect]: y is out of bounds");}
-    if (width+x > _width) {throw std::invalid_argument("[TileMatrix::setFlipRect]: width+x is out of bounds");}
-    if (height+y > _height) {throw std::invalid_argument("[TileMatrix::setFlipRect]: height+y is out of bounds");}
+    if (x >= _width) {inv_arg("[TileMatrix::setFlipRect]: x is out of bounds");}
+    if (y >= _height) {inv_arg("[TileMatrix::setFlipRect]: y is out of bounds");}
+    if (width+x > _width) {inv_arg("[TileMatrix::setFlipRect]: width+x is out of bounds");}
+    if (height+y > _height) {inv_arg("[TileMatrix::setFlipRect]: height+y is out of bounds");}
     for (uint16_t i = y; i < _height; i++) {
         for (uint16_t j = x; j < width; j++) {_tiles[i]._flip_palette[j] = (_tiles[i]._flip_palette[j] & ~FLIPMASK) | vFlip<<1|hFlip;}
     }
@@ -204,8 +211,8 @@ void TileMatrix::setFlipRect(uint16_t x, uint16_t y, uint16_t width, uint16_t he
 #pragma region invSetting
 
 void TileMatrix::setInvert(uint16_t x, uint16_t y, bool invert){
-    if (x >= _width) {throw std::invalid_argument("[TileMatrix::setInvert]: x is out of bounds");}
-    if (y >= _height) {throw std::invalid_argument("[TileMatrix::setInvert]: y is out of bounds");}
+    if (x >= _width) {inv_arg("[TileMatrix::setInvert]: x is out of bounds");}
+    if (y >= _height) {inv_arg("[TileMatrix::setInvert]: y is out of bounds");}
     _tiles[y].setInvert(x, invert);
 }
 
@@ -214,20 +221,20 @@ void TileMatrix::fillInvert(bool invert){
 }
 
 void TileMatrix::fillInvertRow(uint16_t row, bool invert){
-    if (row >= _height) {throw std::invalid_argument("[TileMatrix::fillInvertRow]: row is out of bounds");}
+    if (row >= _height) {inv_arg("[TileMatrix::fillInvertRow]: row is out of bounds");}
     _tiles[row].fillInvert(invert);
 }
 
 void TileMatrix::fillInvertCol(uint16_t col, bool invert){
-    if (col >= _width) {throw std::invalid_argument("[TileMatrix::fillInvertCol]: col is out of bounds");}
+    if (col >= _width) {inv_arg("[TileMatrix::fillInvertCol]: col is out of bounds");}
     for (uint16_t i = 0; i < _height; i++) {_tiles[i].setInvert(col, invert);}
 }
 
 void TileMatrix::fillInvertRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, bool invert){
-    if (x >= _width) {throw std::invalid_argument("[TileMatrix::fillInvertRect]: x is out of bounds");}
-    if (y >= _height) {throw std::invalid_argument("[TileMatrix::fillInvertRect]: y is out of bounds");}
-    if (width+x > _width) {throw std::invalid_argument("[TileMatrix::fillInvertRect]: width+x is out of bounds");}
-    if (height+y > _height) {throw std::invalid_argument("[TileMatrix::fillInvertRect]: height+y is out of bounds");}
+    if (x >= _width) {inv_arg("[TileMatrix::fillInvertRect]: x is out of bounds");}
+    if (y >= _height) {inv_arg("[TileMatrix::fillInvertRect]: y is out of bounds");}
+    if (width+x > _width) {inv_arg("[TileMatrix::fillInvertRect]: width+x is out of bounds");}
+    if (height+y > _height) {inv_arg("[TileMatrix::fillInvertRect]: height+y is out of bounds");}
     for (uint16_t i = y; i < _height; i++) {
         _tiles[i].fillInvert(x, width, invert);
     }
@@ -237,8 +244,8 @@ void TileMatrix::fillInvertRect(uint16_t x, uint16_t y, uint16_t width, uint16_t
 #pragma region paletteSetting
 
 void TileMatrix::setPalette(uint16_t x, uint16_t y, uint8_t palette){
-    if (x >= _width) {throw std::invalid_argument("[TileMatrix::setPalette]: x is out of bounds");}
-    if (y >= _height) {throw std::invalid_argument("[TileMatrix::setPalette]: y is out of bounds");}
+    if (x >= _width) {inv_arg("[TileMatrix::setPalette]: x is out of bounds");}
+    if (y >= _height) {inv_arg("[TileMatrix::setPalette]: y is out of bounds");}
     _tiles[y].setPalette(x, palette);
 }
 
@@ -247,20 +254,20 @@ void TileMatrix::fillPalette(uint8_t palette){
 }
 
 void TileMatrix::fillPaletteRow(uint16_t row, uint8_t palette){
-    if (row >= _height) {throw std::invalid_argument("[TileMatrix::fillPaletteRow]: row is out of bounds");}
+    if (row >= _height) {inv_arg("[TileMatrix::fillPaletteRow]: row is out of bounds");}
     _tiles[row].fillPalette(palette);
 }
 
 void TileMatrix::fillPaletteCol(uint16_t col, uint8_t palette){
-    if (col >= _width) {throw std::invalid_argument("[TileMatrix::fillPaletteCol]: col is out of bounds");}
+    if (col >= _width) {inv_arg("[TileMatrix::fillPaletteCol]: col is out of bounds");}
     for (uint16_t i = 0; i < _height; i++) {_tiles[i].setPalette(col, palette);}
 }
 
 void TileMatrix::fillPaletteRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint8_t palette){
-    if (x >= _width) {throw std::invalid_argument("[TileMatrix::fillPaletteRect]: x is out of bounds");}
-    if (y >= _height) {throw std::invalid_argument("[TileMatrix::fillPaletteRect]: y is out of bounds");}
-    if (width+x > _width) {throw std::invalid_argument("[TileMatrix::fillPaletteRect]: width+x is out of bounds");}
-    if (height+y > _height) {throw std::invalid_argument("[TileMatrix::fillPaletteRect]: height+y is out of bounds");}
+    if (x >= _width) {inv_arg("[TileMatrix::fillPaletteRect]: x is out of bounds");}
+    if (y >= _height) {inv_arg("[TileMatrix::fillPaletteRect]: y is out of bounds");}
+    if (width+x > _width) {inv_arg("[TileMatrix::fillPaletteRect]: width+x is out of bounds");}
+    if (height+y > _height) {inv_arg("[TileMatrix::fillPaletteRect]: height+y is out of bounds");}
     for (uint16_t i = y; i < _height; i++) {
         _tiles[i].fillPalette(x, width, palette);
     }
@@ -270,20 +277,20 @@ void TileMatrix::fillPaletteRect(uint16_t x, uint16_t y, uint16_t width, uint16_
 #pragma region copying
 
 void TileMatrix::copyRow(uint16_t row, uint32_t src[]){
-    if (row >= _height) {throw std::invalid_argument("[TileMatrix::copyRow]: row is out of bounds");}
+    if (row >= _height) {inv_arg("[TileMatrix::copyRow]: row is out of bounds");}
     for (uint16_t i = 0; i < _width; i++){_tiles[row]._tiles[i] = src[i];}
 }
 
 void TileMatrix::copyCol(uint16_t col, uint32_t src[]){
-    if (col >= _width) {throw std::invalid_argument("[TileMatrix::copyCol]: col is out of bounds");}
+    if (col >= _width) {inv_arg("[TileMatrix::copyCol]: col is out of bounds");}
     for (uint16_t i = 0; i < _height; i++){_tiles[i]._tiles[col] = src[i];}
 }
 
 void TileMatrix::copyRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint32_t src[]){
-    if (x >= _width) {throw std::invalid_argument("[TileMatrix::copyRect]: x is out of bounds");}
-    if (y >= _height) {throw std::invalid_argument("[TileMatrix::copyRect]: y is out of bounds");}
-    if (width+x > _width) {throw std::invalid_argument("[TileMatrix::copyRect]: width+x is out of bounds");}
-    if (height+y > _height) {throw std::invalid_argument("[TileMatrix::copyRect]: height+y is out of bounds");}
+    if (x >= _width) {inv_arg("[TileMatrix::copyRect]: x is out of bounds");}
+    if (y >= _height) {inv_arg("[TileMatrix::copyRect]: y is out of bounds");}
+    if (width+x > _width) {inv_arg("[TileMatrix::copyRect]: width+x is out of bounds");}
+    if (height+y > _height) {inv_arg("[TileMatrix::copyRect]: height+y is out of bounds");}
     uint32_t ptr = 0;
     for (uint16_t i = y; i < height+y; i++){
         for (uint16_t j = x; j < width+x; j++){
@@ -295,15 +302,15 @@ void TileMatrix::copyRect(uint16_t x, uint16_t y, uint16_t width, uint16_t heigh
 void TileMatrix::copyRect(uint16_t out_x, uint16_t out_y, uint16_t width, uint16_t height, TileMatrix *src, uint16_t in_x, uint16_t in_y){
 
     #pragma region errorHandling
-    if (in_x >= src->getWidth()) {throw std::invalid_argument("[TileMatrix::copyRect]: x is out of bounds (source)");}
-    if (in_y >= src->getHeight()) {throw std::invalid_argument("[TileMatrix::copyRect]: y is out of bounds (source)");}
-    if (width+in_x > src->getWidth()) {throw std::invalid_argument("[TileMatrix::copyRect]: width+x is out of bounds (source)");}
-    if (height+in_y > src->getHeight()) {throw std::invalid_argument("[TileMatrix::copyRect]: height+y is out of bounds (source)");}
+    if (in_x >= src->getWidth()) {inv_arg("[TileMatrix::copyRect]: x is out of bounds (source)");}
+    if (in_y >= src->getHeight()) {inv_arg("[TileMatrix::copyRect]: y is out of bounds (source)");}
+    if (width+in_x > src->getWidth()) {inv_arg("[TileMatrix::copyRect]: width+x is out of bounds (source)");}
+    if (height+in_y > src->getHeight()) {inv_arg("[TileMatrix::copyRect]: height+y is out of bounds (source)");}
 
-    if (out_x >= _width) {throw std::invalid_argument("[TileMatrix::copyRect]: x is out of bounds (destination)");}
-    if (out_y >= _height) {throw std::invalid_argument("[TileMatrix::copyRect]: y is out of bounds (destination)");}
-    if (width+out_x > _width) {throw std::invalid_argument("[TileMatrix::copyRect]: width+x is out of bounds (destination)");}
-    if (height+out_y > _height) {throw std::invalid_argument("[TileMatrix::copyRect]: height+y is out of bounds (destination)");}
+    if (out_x >= _width) {inv_arg("[TileMatrix::copyRect]: x is out of bounds (destination)");}
+    if (out_y >= _height) {inv_arg("[TileMatrix::copyRect]: y is out of bounds (destination)");}
+    if (width+out_x > _width) {inv_arg("[TileMatrix::copyRect]: width+x is out of bounds (destination)");}
+    if (height+out_y > _height) {inv_arg("[TileMatrix::copyRect]: height+y is out of bounds (destination)");}
     #pragma endregion
 
     for (uint16_t i = 0; i < height; i++){

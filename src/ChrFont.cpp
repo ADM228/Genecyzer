@@ -114,7 +114,7 @@ TileMatrix ChrFont::renderToTiles(std::u32string string, int32_t maxChars, bool 
                 character == 0x3094 || character == 0x309E ||                                   // ゔ, ゞ
                 character >= 0x3070 && character <= 0x307D && ((character & 0x0F) % 3) != 2){   // ば, ぱ, び, ぴ, ぶ, ぷ ,べ, ぺ, ぼ, ぽ
                     charOnLine += 2;
-					if (text.back() != 0x2060){
+					if (text.back() != 0x2060 || text.back() != 0x20){
 		                lastSpace = text.size();
 		                if (charOnLine > maxChars){
 		                    charsPerLine.push_back(charOnLine-1 > maxChars ? maxChars-1 : maxChars);
@@ -153,17 +153,27 @@ TileMatrix ChrFont::renderToTiles(std::u32string string, int32_t maxChars, bool 
                     } else text.push_back(((character-1)|0x0002)+1);
                 } else {
                     charOnLine++;
-                    lastSpace = text.size();
-                    if (charOnLine > maxChars){ // If the last space is a space
+                    if (text.back() != 0x20){
                         lastSpace = text.size();
-                        charsPerLine.push_back(maxChars);
-                        text.push_back(0x0A);   // Nah legit fuck this, just chop the word
-                        text.push_back(character);
-                        charOnLine = 1;
+                        if (charOnLine > maxChars){ // If the last space is a space
+                            lastSpace = text.size();
+                            charsPerLine.push_back(maxChars);
+                            text.push_back(0x0A);   // Nah legit fuck this, just chop the word
+                            charOnLine = 1;
+                        } else {
+                            text.push_back(0x200B);
+                        }
                     } else {
-                        text.push_back(0x200B);
-                        text.push_back(character);
+                        if (charOnLine > maxChars){ // If the last space is a space
+                            lastSpace = text.size();
+                            charsPerLine.push_back(maxChars);
+                            text.pop_back();
+                            text.push_back(0x0A);   // Nah legit fuck this, just chop the word
+                            charOnLine = 1;
+                        }
                     }
+                    text.push_back(character);
+
                 }
             } else {
                 // Normal alphabets with normal breaking rules
