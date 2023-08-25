@@ -331,7 +331,7 @@ void TileMatrix::render(uint16_t x, uint16_t y, sf::RenderWindow *window, sf::Te
     for (uint16_t i = 0; i < _height && i*8+y < window->getSize().y; i++){
         for (uint16_t j = 0; j < _width && j*8+x < window->getSize().x; j++){
             flip_palette = _tiles[i]._flip_palette[j];
-            texturePos = {flip_palette&INVMASK?8:0, (_tiles[i]._tiles[j]) << 3};
+            texturePos = {static_cast<float>(flip_palette&INVMASK?8:0), static_cast<float>((_tiles[i]._tiles[j]) << 3)};
             color = sf::Color(
                 flip_palette&REDMASK?255:0,
                 flip_palette&GRNMASK?255:0,
@@ -357,7 +357,7 @@ sf::Texture TileMatrix::renderToTexture(sf::Texture texture){
         uint16_t y = _height - i - 1;
         for (uint16_t j = 0; j < _width; j++){
             flip_palette = _tiles[i]._flip_palette[j];
-            texturePos = {flip_palette&INVMASK?8:0, (_tiles[i]._tiles[j]) << 3};
+            texturePos = {static_cast<float>(flip_palette&INVMASK?8:0), static_cast<float>((_tiles[i]._tiles[j]) << 3)};
             color = sf::Color(
                 flip_palette&REDMASK?255:0,
                 flip_palette&GRNMASK?255:0,
