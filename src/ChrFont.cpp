@@ -1,5 +1,33 @@
-#include "ChrFont.hpp"
-#include "StrConvert.hpp"
+#pragma region header
+
+#include <SFML/Graphics.hpp>
+#include "Tile.cpp"
+#include <vector>
+
+#ifndef __CHRFONT_INCLUDED__
+#define __CHRFONT_INCLUDED__
+
+class ChrFont {
+    public:
+        ChrFont(uint8_t* chrData, uint32_t size, std::vector<uint32_t> codepageTable, bool inverted = 0);
+
+        TileRow renderToTileRow(std::string string);
+
+        TileMatrix renderToTiles(std::u32string string, int32_t maxChars = -1, bool inverted = 0);
+        TileMatrix renderToTiles(std::string string, int32_t maxChars = -1, bool inverted = 0);
+
+        sf::Texture renderToTexture(std::u32string string, int32_t maxChars = -1, bool inverted = 0);
+        sf::Texture renderToTexture(std::string string, int32_t maxChars = -1, bool inverted = 0);
+
+        uint8_t* chrDataPtr;
+        uint32_t chrDataSize;
+        sf::Texture texture;
+        std::vector<uint32_t> codepages;
+};
+
+#pragma endregion
+
+#include "StrConvert.cpp"
 
 ChrFont::ChrFont(uint8_t* chrData, uint32_t size, std::vector<uint32_t> codepageTable, bool inverted){
     this->chrDataPtr = chrData;
@@ -84,7 +112,7 @@ TileMatrix ChrFont::renderToTiles(std::u32string string, int32_t maxChars, bool 
                 text.push_back(0x0A);
                 charsPerLine.push_back(charOnLine);
                 charOnLine = 0;
-                if (character == 0x0D && character == 0x0A) // CRLF
+                if (character == 0x0D && string[i+1] == 0x0A) // CRLF
                     i++;
             } else if (character == 0x09 || character == 0x20 || character == 0x1680 || 
             (character >= 0x2000 && character <= 0x200D && character != 0x2007) ||
@@ -107,36 +135,9 @@ TileMatrix ChrFont::renderToTiles(std::u32string string, int32_t maxChars, bool 
 			} else if (character == 0x2060 || character == 0xFEFF){
 				// Zero width non breaking spaces
 				text.push_back(0x2060);
-            } else if (character >= 0x3040 && character <= 0x309F){
+            } else if (character >= 0x3040 && character <= 0x30FF){
                 // Hiragana
-                if (character >= 0x304B && character <= 0x3062 && (character & 1) == 0 ||       // Most dakuten kana
-                character == 0x3065 || character == 0x3067 || character == 0x3069 ||            // づ, で, ど (offset by 1)
-                character == 0x3094 || character == 0x309E ||                                   // ゔ, ゞ
-                character >= 0x3070 && character <= 0x307D && ((character & 0x0F) % 3) != 2){   // ば, ぱ, び, ぴ, ぶ, ぷ ,べ, ぺ, ぼ, ぽ
-                    charOnLine += 2;
-					if (text.back() != 0x2060 || text.back() != 0x20){
-		                lastSpace = text.size();
-		                if (charOnLine > maxChars){
-		                    charsPerLine.push_back(charOnLine-1 > maxChars ? maxChars-1 : maxChars);
-		                    text.push_back(0x0A);
-		                    charOnLine = 2;
-		                } else
-		                    text.push_back(0x200B);
-					}	// TODO: an else for when kanji is converted
-
-                    if (character == 0x3094){   
-                        // Special because ゔ doesn't come right after its non voiced counterpart
-                        text.push_back(0x3046); // う
-                        text.push_back(0x309B); // ゛
-                    } else if (character >= 0x3070 && character <= 0x307D && ((character & 0x0F) % 3) == 1) {
-                        // ぱ, ぴ, ぷ, ぺ, ぽ 
-                        text.push_back(character-2); // は, ひ, ふ, へ, ほ
-                        text.push_back(0x309C);      // ゜
-                    } else {
-                        text.push_back(character-1); // Non-voiced kana
-                        text.push_back(0x309B);      // ゛
-                    }
-                } else if (((character-1) & 0xFFFFFFFC) == 0x3098) {    // ゛, ゜ and their combining versions
+                if (((character-1) & 0xFFFFFFFC) == 0x3098) {    // ゛, ゜ and their combining versions
                     charOnLine++;
                     if (charOnLine > maxChars && text[lastSpace] == 0x0A){ // If word longer than maxChars
                         lastSpace = text.size();
@@ -227,3 +228,5 @@ sf::Texture ChrFont::renderToTexture(std::u32string string, int32_t maxChars, bo
 sf::Texture ChrFont::renderToTexture(std::string string, int32_t maxChars, bool inverted){
     return renderToTiles(To_UTF32(string), maxChars, inverted).renderToTexture(texture);
 }
+
+#endif  // __CHRFONT_INCLUDED__

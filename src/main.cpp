@@ -3,11 +3,11 @@
 
 #include <SFML/Graphics.hpp>
 
-
-#include "Tile.hpp"
-#include "ChrFont.hpp"
-#include "Instrument.hpp"
-#include "StrConvert.hpp"
+#include "Tile.cpp"
+#include "ChrFont.cpp"
+#include "Instrument.cpp"
+#include "StrConvert.cpp"
+#include "TextRenderer.cpp"
 
 #include "binIncludes.cpp"
 
@@ -69,8 +69,8 @@ int main()
 
     forceUpdateAll = 1;
 
-    #define t allTextTest
-    std::u32string currentTestText = To_UTF32(t);
+    #define t jpTextTest
+    std::u32string currentTestText = TextRenderer::preprocess(To_UTF32(t));
 
     for (int i = 0; i < currentTestText.length() && instruments.size() < 256; i+= 12){
         instruments.push_back(Instrument());

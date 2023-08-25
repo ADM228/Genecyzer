@@ -3,7 +3,7 @@
 
 #include <string>
 #include <vector>
-#include "StrConvert.hpp"
+#include "StrConvert.cpp"
 
 #pragma region classDefinitions
 
