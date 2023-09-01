@@ -8,8 +8,8 @@
 class TextRenderer {
     public:
         static std::u32string preprocess(std::u32string string);
-        static std::u32string render(std::u32string string, std::vector<uint32_t> *charsOnLine, int maxChars = -1, bool preprocess = 1);
-        static TileMatrix render (std::u32string text, int maxChars = -1, bool preprocess = 1);
+        static std::u32string render(std::u32string string, std::vector<uint32_t> *charsOnLine, int maxChars = -1, bool preprocess = 1, bool inverted = 0);
+        static TileMatrix render (std::u32string text, ChrFont *font, int maxChars = -1, bool preprocess = 1, bool inverted = 0);
     private:
         TextRenderer() {};
         constexpr static uint16_t halfKatakanaTable[] {
@@ -98,5 +98,145 @@ std::u32string TextRenderer::preprocess(std::u32string string){
     std::u32string out_string(output_text.data());
     return out_string;
 }
+
+TileMatrix TextRenderer::render(std::u32string Atext, ChrFont *font, int maxChars, bool preprocess, bool inverted){
+    std::u32string text;
+    if (preprocess) {
+        text = TextRenderer::preprocess(Atext);
+    } else {
+        text = Atext;
+    }
+    std::vector<uint32_t> charsPerLine;
+    std::vector<char32_t> outText;
+    { // Refactor the text from Unicode to a simply-displayed mess
+        uint32_t charOnLine = 0;
+        uint32_t lastSpace = 0;
+        outText.push_back(0x0A);   //HACK 
+        for (uint32_t i = 0; i < text.length(); i++){
+            uint32_t character = text[i];
+            if ((character >= 0x0A && character <= 0x0D) || character == 0x85 || 
+            character == 0x2028 || character == 0x2029){
+                // Line terminators
+                lastSpace = outText.size();
+                outText.push_back(0x0A);
+                charsPerLine.push_back(charOnLine);
+                charOnLine = 0;
+                if (character == 0x0D && text[i+1] == 0x0A) // CRLF
+                    i++;
+            } else if (character == 0x09 || character == 0x20 || character == 0x1680 || 
+            (character >= 0x2000 && character <= 0x200D && character != 0x2007) ||
+             character == 0x205F || character == 0x3000 || character == 0x180E){
+                // Spaces that can make a newline
+                lastSpace = outText.size();
+                if (!(character >= 0x200B && character <= 0x200D)){ // If not zero width spaces
+                    charOnLine++;
+                    if (charOnLine == maxChars){
+                        outText.push_back(0x0A);
+                        charsPerLine.push_back(charOnLine-1);
+                        charOnLine = 0;
+                    } else 
+                        outText.push_back(0x20);
+                } else outText.push_back(0x200B); // Else push ZWSP in case a newline is needed
+            } else if (character == 0xA0 || character == 0x2007 || character == 0x202F){
+                // Non breaking spaces
+                outText.push_back(0x20);
+                charOnLine++;
+			} else if (character == 0x2060 || character == 0xFEFF){
+				// Zero width non breaking spaces
+				outText.push_back(0x2060);
+            } else if (character >= 0x3040 && character <= 0x30FF){
+                // Hiragana
+                if (((character-1) & 0xFFFFFFFC) == 0x3098) {    // ゛, ゜ and their combining versions
+                    charOnLine++;
+                    if (charOnLine > maxChars && outText[lastSpace] == 0x0A){ // If word longer than maxChars
+                        lastSpace = outText.size();
+                        charsPerLine.push_back(maxChars);
+                        outText.push_back(0x0A);   // Nah legit fuck this, just chop the word
+                        outText.push_back(((character-1)|0x0002)+1);
+                        charOnLine = 1;
+                    } else if (charOnLine > maxChars){ // If the last space is a space
+                        outText.push_back(((character-1)|0x0002)+1);
+                        outText[lastSpace] = 0x0A;
+                        charsPerLine.push_back(charOnLine - (outText.size() - lastSpace));
+                        charOnLine = outText.size() - lastSpace - 1;
+                        
+                    } else outText.push_back(((character-1)|0x0002)+1);
+                } else {
+                    charOnLine++;
+                    if (outText.back() != 0x20){
+                        lastSpace = outText.size();
+                        if (charOnLine > maxChars){ // If the last space is a space
+                            lastSpace = outText.size();
+                            charsPerLine.push_back(maxChars);
+                            outText.push_back(0x0A);   // Nah legit fuck this, just chop the word
+                            charOnLine = 1;
+                        } else {
+                            outText.push_back(0x200B);
+                        }
+                    } else {
+                        if (charOnLine > maxChars){ // If the last space is a space
+                            lastSpace = outText.size();
+                            charsPerLine.push_back(maxChars);
+                            outText.pop_back();
+                            outText.push_back(0x0A);   // Nah legit fuck this, just chop the word
+                            charOnLine = 1;
+                        }
+                    }
+                    outText.push_back(character);
+
+                }
+            } else {
+                // Normal alphabets with normal breaking rules
+                charOnLine++;
+                if (charOnLine > maxChars && outText[lastSpace] == 0x0A){ // If word longer than maxChars
+                    lastSpace = outText.size();
+                    charsPerLine.push_back(maxChars);
+                    outText.push_back(0x0A);   // Nah legit fuck this, just chop the word
+                    outText.push_back(character);
+                    charOnLine = 1;
+                } else if (charOnLine > maxChars){ // If the last space is a space
+                    outText.push_back(character);
+                    outText[lastSpace] = 0x0A;
+                    charsPerLine.push_back(charOnLine - (outText.size() - lastSpace));
+                    charOnLine = outText.size() - lastSpace - 1;
+                    
+                } else outText.push_back(character);
+            }
+        }
+        charsPerLine.push_back(charOnLine);
+    }
+    uint32_t maxWidth = (maxChars == -1 ? 0 : maxChars);
+    TileMatrix matrix(std::max(*max_element(charsPerLine.begin(), charsPerLine.end()), maxWidth), charsPerLine.size(), 0x20);
+    matrix.fillInvert(inverted);
+    uint32_t x = 0, y = 0;
+    for (uint32_t i = 1; i < outText.size(); i++){
+        if (outText[i] == 0x0A){    // Newline
+            y++;
+            x = 0;
+        } else if (outText[i] == 0x200B || outText[i] == 0x2060){}    // ZWSP, ZWNBSP
+        else {
+            uint32_t bank = std::find(font->codepages.begin(), font->codepages.end(), outText[i]&0xFFFFFF80)-font->codepages.begin();
+            if (bank < font->codepages.size()){
+                matrix.setTile(x++, y, (bank<<7)|(outText[i]&0x7F));
+            } else {
+                matrix.setTile(x++, y, 0x7F);
+            }
+        }
+    }
+    return matrix;
+}
+
+
+// TileMatrix ChrFont::renderToTiles(std::string string, int32_t maxChars, bool inverted){
+//     return renderToTiles(To_UTF32(string), maxChars, inverted);
+// }
+
+// sf::Texture ChrFont::renderToTexture(std::u32string string, int32_t maxChars, bool inverted){
+//     return renderToTiles(string, maxChars, inverted).renderToTexture(texture);
+// }
+
+// sf::Texture ChrFont::renderToTexture(std::string string, int32_t maxChars, bool inverted){
+//     return renderToTiles(To_UTF32(string), maxChars, inverted).renderToTexture(texture);
+// }
 
 #endif  // __TEXTRENDERER_INCLUDED__

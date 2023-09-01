@@ -96,7 +96,7 @@ int main()
 				scale = std::max(static_cast<int>(std::ceil(event.size.height/(4*8*8))), 1);
                 TrackerView.reset(sf::FloatRect(0, 0, event.size.width, event.size.height/scale));
                 TrackerView.setViewport(sf::FloatRect(0.f, 64.f/event.size.height*scale, scale, 1));
-                trackerMatrix = font.renderToTiles(currentTestText, std::ceil((event.size.width/scale)/8));
+                trackerMatrix = TextRenderer::render(currentTestText, &font, std::ceil((event.size.width/scale)/8), false, false);
                 trackerMatrix.resize(trackerMatrix.getWidth()+1, trackerMatrix.getHeight(), 0x20);
                 updateSections |= UPDATE_SCALE;
 
@@ -203,7 +203,7 @@ void renderInstList (sf::RenderWindow *window, sf::View *view, ChrFont *font, sf
                     output = num;
                     palette = 7;                   
                 }
-                TileMatrix string = font->renderToTiles(output, 15);
+                TileMatrix string = TextRenderer::render(To_UTF32(output), font, 15);
                 string.resize(16, 1);
                 string.fillInvert(instNumber == instSelected);
                 string.fillPaletteRect(0, 0, 16, 1, palette);
@@ -238,7 +238,7 @@ void renderInstList (sf::RenderWindow *window, sf::View *view, ChrFont *font, sf
                 output = num;
                 palette = 7;                   
             }
-            TileMatrix string = font->renderToTiles(output, 15);
+            TileMatrix string = TextRenderer::render(To_UTF32(output), font, 15);
             string.resize(16, 1);
             string.fillInvert(instNumber == instSelected);
             string.fillPaletteRect(0, 0, 16, 1, palette);
