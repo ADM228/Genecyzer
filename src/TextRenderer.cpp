@@ -11,13 +11,14 @@ uint32_t excNumberTR = 0;
 struct wrappedText {
     std::u32string text;
     std::vector<uint32_t> charsPerLine;
+    uint32_t maxWidth;
 };
 
 class TextRenderer {
     public:
         static std::u32string preprocess(std::u32string string);
         static wrappedText wrapText(std::u32string text, int maxChars = -1, bool preprocess = 1);
-        static TileMatrix render (wrappedText *text, ChrFont *font, int maxChars = -1, bool inverted = 0);
+        static TileMatrix render (wrappedText *text, ChrFont *font, bool inverted = 0);
         static TileMatrix render (std::u32string text, ChrFont *font, int maxChars = -1, bool preprocess = 1, bool inverted = 0);
     private:
         TextRenderer() {};
@@ -109,16 +110,20 @@ std::u32string TextRenderer::preprocess(std::u32string string){
 }
 
 wrappedText TextRenderer::wrapText(std::u32string text, int maxChars, bool preprocess){
-    
-    if (preprocess) text = TextRenderer::preprocess(text);
+    std::u32string inString;
+    if (preprocess) inString = TextRenderer::preprocess(text);
+    else inString = text;
     std::vector<uint32_t> charsPerLine;
     std::vector<char32_t> outText;
-    { // Refactor the text from Unicode to a simply-displayed mess
+    printf("=====  =====\n");
+    printf("MAXCH: %05d\n", maxChars);
+
+    // Refactor the text from Unicode to a simply-displayed mess
         uint32_t charOnLine = 0;
         uint32_t lastSpace = 0;
         outText.push_back(0x0A);   //HACK 
-        for (uint32_t i = 0; i < text.length(); i++){
-            uint32_t character = text[i];
+        for (uint32_t i = 0; i < inString.length(); i++){
+            uint32_t character = inString[i];
             if ((character >= 0x0A && character <= 0x0D) || character == 0x85 || 
             character == 0x2028 || character == 0x2029){
                 // Line terminators
@@ -126,7 +131,7 @@ wrappedText TextRenderer::wrapText(std::u32string text, int maxChars, bool prepr
                 outText.push_back(0x0A);
                 charsPerLine.push_back(charOnLine);
                 charOnLine = 0;
-                if (character == 0x0D && text[i+1] == 0x0A) // CRLF
+                if (character == 0x0D && inString[i+1] == 0x0A) // CRLF
                     i++;
             } else if (character == 0x09 || character == 0x20 || character == 0x1680 || 
             (character >= 0x2000 && character <= 0x200D && character != 0x2007) ||
@@ -209,50 +214,47 @@ wrappedText TextRenderer::wrapText(std::u32string text, int maxChars, bool prepr
             }
         }
         charsPerLine.push_back(charOnLine);
-    }
-
-    
 
     wrappedText output;
     auto outString = std::u32string(outText.data());
     output.text = outString;
     output.charsPerLine = charsPerLine;
-
-    
+    output.maxWidth = std::max(*max_element(charsPerLine.begin(), charsPerLine.end()), (uint32_t)(maxChars == -1 ? 0 : maxChars));
 
     return output;
 }
 
 
-TileMatrix TextRenderer::render(wrappedText *text, ChrFont *font, int maxChars, bool inverted){
+TileMatrix TextRenderer::render(wrappedText *text, ChrFont *font, bool inverted){
 
     auto string = text->text;
     auto charsPerLine = text->charsPerLine;
     auto codepages = font->codepages;
 
-    uint32_t maxWidth = (maxChars == -1 ? 0 : maxChars);
+    TileMatrix matrix(text->maxWidth, charsPerLine.size(), 0x20);
 
-    TileMatrix matrix(std::max(*std::max_element(charsPerLine.begin(), charsPerLine.end()), maxWidth), charsPerLine.size(), 0x20);
+
     matrix.fillInvert(inverted);
-    uint32_t x = 0, y = 0, character;
-    
+    uint32_t x = 0, y = 0;
+
     for (uint32_t i = 1; i < string.size(); i++){
-        
-        character = static_cast<uint32_t>(string[i]);
-        
-        if (character == 0x0A){    // Newline
+        if (x > matrix.getWidth()) {printf ("X overflow at row %03d, col %03d; CMP: %03d, %03d\n", y, x, matrix.getHeight(), matrix.getWidth()); fflush(stdout);}
+        //if (y > matrix.getHeight()) {printf ("Y overflow at row %03d        ; CMP: %03d, %03d\n", y, matrix.getHeight(), matrix.getWidth()); fflush(stdout);}
+        if (string[i] == 0x0A){    // Newline
             y++;
             x = 0;
-        } else if (character == 0x200B || character == 0x2060){}    // ZWSP, ZWNBSP
+        } else if (string[i] == 0x200B || string[i] == 0x2060){}    // ZWSP, ZWNBSP
         else {
-            uint32_t bank = std::find(codepages.begin(), codepages.end(), character&0xFFFFFF80)-codepages.begin();
+            uint32_t bank = std::find(codepages.begin(), codepages.end(), string[i]&0xFFFFFF80)-codepages.begin();
             if (bank < codepages.size()){
-                matrix.setTile(x++, y, (bank<<7)|(character&0x7F));
+                matrix.setTile(x++, y, (bank<<7)|(string[i]&0x7F));
             } else {
                 matrix.setTile(x++, y, 0x7F);
             }
         }
     }
+
+    text->maxWidth = y;
 
     
     return matrix;
@@ -263,7 +265,12 @@ TileMatrix TextRenderer::render(wrappedText *text, ChrFont *font, int maxChars, 
 
 TileMatrix TextRenderer::render (std::u32string text, ChrFont *font, int maxChars, bool preprocess, bool inverted){
     auto wrappedText = TextRenderer::wrapText(text, maxChars, preprocess);
-    auto matrix = TextRenderer::render(&wrappedText, font, maxChars, inverted);
+    auto maxw = wrappedText.maxWidth;
+    TileMatrix matrix = TextRenderer::render(&wrappedText, font, inverted);
+    for (int i = 0; i < wrappedText.charsPerLine.size(); i++)
+        printf ("%05d: %05d\n", i, wrappedText.charsPerLine[i]);
+    printf(" CMPX: %05d\n", maxw);
+    printf(" CMPY: %05d\n", wrappedText.maxWidth);
     return matrix;
 }
 
