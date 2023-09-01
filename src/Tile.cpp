@@ -183,7 +183,7 @@ class TileMatrix {
 #define inv_arg(x) throw std::invalid_argument(x)
 #else
 uint32_t exception_count = 0;
-#define inv_arg(x) fprintf(stderr, "[Tile.cpp #%08X]: ", exception_count++); fprintf(stderr, x); fprintf(stderr, "\n")
+#define inv_arg(x) fprintf(stderr, "[Tile.cpp #%08X]: ", exception_count++); fprintf(stderr, x); fprintf(stderr, "\n"); return
 #endif
 
 Tile::Tile(uint32_t x, uint32_t y){

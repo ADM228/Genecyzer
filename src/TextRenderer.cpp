@@ -5,10 +5,19 @@
 #include <vector>
 #include "Tile.cpp"
 
+uint32_t excNumberTR = 0;
+#define debugNum(x) { printf("[TextRenderer #%08X]\n", x); fflush(stdout); }
+
+struct wrappedText {
+    std::u32string text;
+    std::vector<uint32_t> charsPerLine;
+};
+
 class TextRenderer {
     public:
         static std::u32string preprocess(std::u32string string);
-        static std::u32string render(std::u32string string, std::vector<uint32_t> *charsOnLine, int maxChars = -1, bool preprocess = 1, bool inverted = 0);
+        static wrappedText wrapText(std::u32string text, int maxChars = -1, bool preprocess = 1);
+        static TileMatrix render (wrappedText *text, ChrFont *font, int maxChars = -1, bool inverted = 0);
         static TileMatrix render (std::u32string text, ChrFont *font, int maxChars = -1, bool preprocess = 1, bool inverted = 0);
     private:
         TextRenderer() {};
@@ -99,13 +108,9 @@ std::u32string TextRenderer::preprocess(std::u32string string){
     return out_string;
 }
 
-TileMatrix TextRenderer::render(std::u32string Atext, ChrFont *font, int maxChars, bool preprocess, bool inverted){
-    std::u32string text;
-    if (preprocess) {
-        text = TextRenderer::preprocess(Atext);
-    } else {
-        text = Atext;
-    }
+wrappedText TextRenderer::wrapText(std::u32string text, int maxChars, bool preprocess){
+    
+    if (preprocess) text = TextRenderer::preprocess(text);
     std::vector<uint32_t> charsPerLine;
     std::vector<char32_t> outText;
     { // Refactor the text from Unicode to a simply-displayed mess
@@ -205,27 +210,62 @@ TileMatrix TextRenderer::render(std::u32string Atext, ChrFont *font, int maxChar
         }
         charsPerLine.push_back(charOnLine);
     }
+
+    
+
+    wrappedText output;
+    auto outString = std::u32string(outText.data());
+    output.text = outString;
+    output.charsPerLine = charsPerLine;
+
+    
+
+    return output;
+}
+
+
+TileMatrix TextRenderer::render(wrappedText *text, ChrFont *font, int maxChars, bool inverted){
+
+    auto string = text->text;
+    auto charsPerLine = text->charsPerLine;
+    auto codepages = font->codepages;
+
     uint32_t maxWidth = (maxChars == -1 ? 0 : maxChars);
-    TileMatrix matrix(std::max(*max_element(charsPerLine.begin(), charsPerLine.end()), maxWidth), charsPerLine.size(), 0x20);
+
+    TileMatrix matrix(std::max(*std::max_element(charsPerLine.begin(), charsPerLine.end()), maxWidth), charsPerLine.size(), 0x20);
     matrix.fillInvert(inverted);
-    uint32_t x = 0, y = 0;
-    for (uint32_t i = 1; i < outText.size(); i++){
-        if (outText[i] == 0x0A){    // Newline
+    uint32_t x = 0, y = 0, character;
+    
+    for (uint32_t i = 1; i < string.size(); i++){
+        
+        character = static_cast<uint32_t>(string[i]);
+        
+        if (character == 0x0A){    // Newline
             y++;
             x = 0;
-        } else if (outText[i] == 0x200B || outText[i] == 0x2060){}    // ZWSP, ZWNBSP
+        } else if (character == 0x200B || character == 0x2060){}    // ZWSP, ZWNBSP
         else {
-            uint32_t bank = std::find(font->codepages.begin(), font->codepages.end(), outText[i]&0xFFFFFF80)-font->codepages.begin();
-            if (bank < font->codepages.size()){
-                matrix.setTile(x++, y, (bank<<7)|(outText[i]&0x7F));
+            uint32_t bank = std::find(codepages.begin(), codepages.end(), character&0xFFFFFF80)-codepages.begin();
+            if (bank < codepages.size()){
+                matrix.setTile(x++, y, (bank<<7)|(character&0x7F));
             } else {
                 matrix.setTile(x++, y, 0x7F);
             }
         }
     }
+
+    
     return matrix;
+
+    
 }
 
+
+TileMatrix TextRenderer::render (std::u32string text, ChrFont *font, int maxChars, bool preprocess, bool inverted){
+    auto wrappedText = TextRenderer::wrapText(text, maxChars, preprocess);
+    auto matrix = TextRenderer::render(&wrappedText, font, maxChars, inverted);
+    return matrix;
+}
 
 // TileMatrix ChrFont::renderToTiles(std::string string, int32_t maxChars, bool inverted){
 //     return renderToTiles(To_UTF32(string), maxChars, inverted);
