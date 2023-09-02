@@ -7,6 +7,9 @@
 #ifndef __CHRFONT_INCLUDED__
 #define __CHRFONT_INCLUDED__
 
+#define TILE_SIZE 8
+#define COLORS 4
+
 class ChrFont {
     public:
         ChrFont() {};
@@ -40,31 +43,31 @@ void ChrFont::init(uint8_t* chrData, uint32_t size, std::vector<uint32_t> codepa
     this->chrDataSize = size;
     this->codepages = codepageTable;
 
-    uint8_t colorBuffer[8*8];
+    uint8_t colorBuffer[TILE_SIZE*TILE_SIZE];
     uint32_t amount = size>>4;
-    std::vector<sf::Uint8> pixels(8*8*4*amount);
+    std::vector<sf::Uint8> pixels(TILE_SIZE*TILE_SIZE*COLORS*amount);
     const uint8_t tableRG[] = {0, 255, 160, 0};
-    const uint8_t invTableRG[] = {0, 0, 256-160, 255};
+    const uint8_t invTableRG[] = {0, 0, 160, 255};
     const uint8_t tableB[] = {0, 255, 176, 0};
-    const uint8_t invTableB[] = {0, 0, 256-176, 255};
+    const uint8_t invTableB[] = {0, 0, 176, 255};
 
     if (inverted) {
-        pixels.resize(8*8*4*2*amount);
+        pixels.resize(TILE_SIZE*TILE_SIZE*COLORS*2*amount);
         int baseIndex;
         for (uint32_t tile = 0; tile < amount; tile++) {
-            for(int i = 0; i < 8; i++){
-                colorBuffer[i*8] = (chrData[(tile<<4)|(i<<1)]>>7)&1 | (chrData[(tile<<4)|(i<<1)|1]>>6)&2;
-                colorBuffer[i*8+1] = (chrData[(tile<<4)|(i<<1)]>>6)&1 | (chrData[(tile<<4)|(i<<1)|1]>>5)&2;
-                colorBuffer[i*8+2] = (chrData[(tile<<4)|(i<<1)]>>5)&1 | (chrData[(tile<<4)|(i<<1)|1]>>4)&2;
-                colorBuffer[i*8+3] = (chrData[(tile<<4)|(i<<1)]>>4)&1 | (chrData[(tile<<4)|(i<<1)|1]>>3)&2;
-                colorBuffer[i*8+4] = (chrData[(tile<<4)|(i<<1)]>>3)&1 | (chrData[(tile<<4)|(i<<1)|1]>>2)&2;
-                colorBuffer[i*8+5] = (chrData[(tile<<4)|(i<<1)]>>2)&1 | (chrData[(tile<<4)|(i<<1)|1]>>1)&2;
-                colorBuffer[i*8+6] = (chrData[(tile<<4)|(i<<1)]>>1)&1 | chrData[(tile<<4)|(i<<1)|1]&2;
-                colorBuffer[i*8+7] = chrData[(tile<<4)|(i<<1)]&1 | (chrData[(tile<<4)|(i<<1)|1]<<1)&2;
+            for(int i = 0; i < TILE_SIZE; i++){
+                colorBuffer[i*TILE_SIZE] = (chrData[(tile<<4)|(i<<1)]>>7)&1 | (chrData[(tile<<4)|(i<<1)|1]>>6)&2;
+                colorBuffer[i*TILE_SIZE+1] = (chrData[(tile<<4)|(i<<1)]>>6)&1 | (chrData[(tile<<4)|(i<<1)|1]>>5)&2;
+                colorBuffer[i*TILE_SIZE+2] = (chrData[(tile<<4)|(i<<1)]>>5)&1 | (chrData[(tile<<4)|(i<<1)|1]>>4)&2;
+                colorBuffer[i*TILE_SIZE+3] = (chrData[(tile<<4)|(i<<1)]>>4)&1 | (chrData[(tile<<4)|(i<<1)|1]>>3)&2;
+                colorBuffer[i*TILE_SIZE+4] = (chrData[(tile<<4)|(i<<1)]>>3)&1 | (chrData[(tile<<4)|(i<<1)|1]>>2)&2;
+                colorBuffer[i*TILE_SIZE+5] = (chrData[(tile<<4)|(i<<1)]>>2)&1 | (chrData[(tile<<4)|(i<<1)|1]>>1)&2;
+                colorBuffer[i*TILE_SIZE+6] = (chrData[(tile<<4)|(i<<1)]>>1)&1 | chrData[(tile<<4)|(i<<1)|1]&2;
+                colorBuffer[i*TILE_SIZE+7] = chrData[(tile<<4)|(i<<1)]&1 | (chrData[(tile<<4)|(i<<1)|1]<<1)&2;
             }
-            for (int i = 0; i < sizeof(colorBuffer); i+=8){
-                for (int j = 0; j < 8; j++){
-                    baseIndex = tile*512+(i*2+j)*4;
+            for (int i = 0; i < sizeof(colorBuffer); i+=TILE_SIZE){
+                for (int j = 0; j < TILE_SIZE; j++){
+                    baseIndex = tile*512+(i*2+j)*COLORS;
                     pixels[baseIndex] = tableRG[colorBuffer[i+j]];
                     pixels[baseIndex+1] = tableRG[colorBuffer[i+j]];
                     pixels[baseIndex+2] = tableB[colorBuffer[i+j]];
@@ -79,15 +82,15 @@ void ChrFont::init(uint8_t* chrData, uint32_t size, std::vector<uint32_t> codepa
         }
     } else {
         for (uint32_t tile = 0; tile < amount; tile++) {
-            for(int i = 0; i < 8; i++){
-                colorBuffer[i*8] = (chrData[(tile<<4)|(i<<1)]>>7)&1 | (chrData[(tile<<4)|(i<<1)|1]>>6)&2;
-                colorBuffer[i*8+1] = (chrData[(tile<<4)|(i<<1)]>>6)&1 | (chrData[(tile<<4)|(i<<1)|1]>>5)&2;
-                colorBuffer[i*8+2] = (chrData[(tile<<4)|(i<<1)]>>5)&1 | (chrData[(tile<<4)|(i<<1)|1]>>4)&2;
-                colorBuffer[i*8+3] = (chrData[(tile<<4)|(i<<1)]>>4)&1 | (chrData[(tile<<4)|(i<<1)|1]>>3)&2;
-                colorBuffer[i*8+4] = (chrData[(tile<<4)|(i<<1)]>>3)&1 | (chrData[(tile<<4)|(i<<1)|1]>>2)&2;
-                colorBuffer[i*8+5] = (chrData[(tile<<4)|(i<<1)]>>2)&1 | (chrData[(tile<<4)|(i<<1)|1]>>1)&2;
-                colorBuffer[i*8+6] = (chrData[(tile<<4)|(i<<1)]>>1)&1 | chrData[(tile<<4)|(i<<1)|1]&2;
-                colorBuffer[i*8+7] = chrData[(tile<<4)|(i<<1)]&1 | (chrData[(tile<<4)|(i<<1)|1]<<1)&2;
+            for(int i = 0; i < TILE_SIZE; i++){
+                colorBuffer[i*TILE_SIZE] = (chrData[(tile<<4)|(i<<1)]>>7)&1 | (chrData[(tile<<4)|(i<<1)|1]>>6)&2;
+                colorBuffer[i*TILE_SIZE+1] = (chrData[(tile<<4)|(i<<1)]>>6)&1 | (chrData[(tile<<4)|(i<<1)|1]>>5)&2;
+                colorBuffer[i*TILE_SIZE+2] = (chrData[(tile<<4)|(i<<1)]>>5)&1 | (chrData[(tile<<4)|(i<<1)|1]>>4)&2;
+                colorBuffer[i*TILE_SIZE+3] = (chrData[(tile<<4)|(i<<1)]>>4)&1 | (chrData[(tile<<4)|(i<<1)|1]>>3)&2;
+                colorBuffer[i*TILE_SIZE+4] = (chrData[(tile<<4)|(i<<1)]>>3)&1 | (chrData[(tile<<4)|(i<<1)|1]>>2)&2;
+                colorBuffer[i*TILE_SIZE+5] = (chrData[(tile<<4)|(i<<1)]>>2)&1 | (chrData[(tile<<4)|(i<<1)|1]>>1)&2;
+                colorBuffer[i*TILE_SIZE+6] = (chrData[(tile<<4)|(i<<1)]>>1)&1 | chrData[(tile<<4)|(i<<1)|1]&2;
+                colorBuffer[i*TILE_SIZE+7] = chrData[(tile<<4)|(i<<1)]&1 | (chrData[(tile<<4)|(i<<1)|1]<<1)&2;
             }
             for (int i = 0; i < sizeof(colorBuffer); i++){
                 pixels[tile*256+i*4] = tableRG[colorBuffer[i]];
@@ -97,8 +100,8 @@ void ChrFont::init(uint8_t* chrData, uint32_t size, std::vector<uint32_t> codepa
             }
         }
     }
-    texture.create(inverted?16:8,8*amount);
-    texture.update(pixels.data(), inverted?16:8, 8*amount, 0, 0);
+    texture.create(inverted?2*TILE_SIZE:TILE_SIZE,TILE_SIZE*amount);
+    texture.update(pixels.data(), inverted?2*TILE_SIZE:TILE_SIZE, TILE_SIZE*amount, 0, 0);
     texture.setSmooth(false);
 }
 

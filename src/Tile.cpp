@@ -6,6 +6,8 @@
 #ifndef __TILE_INCLUDED__
 #define __TILE_INCLUDED__
 
+#define TILE_SIZE 8
+
 class Tile {
     public:
         Tile(uint32_t x, uint32_t y);
@@ -23,15 +25,15 @@ class Tile {
         bool _vFlip = false;
 };
 
-constexpr uint8_t HFLIP = 0x01;
-constexpr uint8_t VFLIP = 0x02;
-constexpr uint8_t FLIPMASK = 0x03;
+#define HFLIP 0x01
+#define VFLIP 0x02
+#define FLIPMASK 0x03
 
-constexpr uint8_t REDMASK = 0x10;
-constexpr uint8_t GRNMASK = 0x20;
-constexpr uint8_t BLUMASK = 0x40;
-constexpr uint8_t PALMASK = 0x70;
-constexpr uint8_t INVMASK = 0x80;
+#define REDMASK 0x10
+#define GRNMASK 0x20
+#define BLUMASK 0x40
+#define PALMASK 0x70
+#define INVMASK 0x80
 
 class TileRow {
     public:
@@ -188,22 +190,22 @@ uint32_t exception_count = 0;
 #endif
 
 Tile::Tile(uint32_t x, uint32_t y){
-    pos.x = x * 8;
-    pos.y = y * 8;
+    pos.x = x * TILE_SIZE;
+    pos.y = y * TILE_SIZE;
     texturePos = sf::Vector2f{0, 0};
     updateRenderVertex();
 }
 
 Tile::Tile(uint32_t x, uint32_t y, uint32_t tile){
-    pos.x = x * 8;
-    pos.y = y * 8;
+    pos.x = x * TILE_SIZE;
+    pos.y = y * TILE_SIZE;
     texturePos = sf::Vector2f{0, static_cast<float>(tile << 3)};
     updateRenderVertex();
 }
 
 Tile::Tile(uint32_t x, uint32_t y, uint32_t tile, bool hFlip, bool vFlip){
-    pos.x = x * 8;
-    pos.y = y * 8;
+    pos.x = x * TILE_SIZE;
+    pos.y = y * TILE_SIZE;
     texturePos = sf::Vector2f{0, static_cast<float>(tile << 3)};
     _hFlip = hFlip;
     _vFlip = vFlip;
@@ -223,10 +225,10 @@ void Tile::setTile(uint32_t tile){
 
 void Tile::updateRenderVertex(){
     renderVertex = sf::VertexArray(sf::TriangleFan);
-    renderVertex.append(sf::Vertex(pos, texturePos+sf::Vector2f(_hFlip?8:0,_vFlip?8:0)));
-    renderVertex.append(sf::Vertex(pos+sf::Vector2f(8,0), texturePos+sf::Vector2f(_hFlip?0:8,_vFlip?8:0)));
-    renderVertex.append(sf::Vertex(pos+sf::Vector2f(8,8), texturePos+sf::Vector2f(_hFlip?0:8,_vFlip?0:8)));
-    renderVertex.append(sf::Vertex(pos+sf::Vector2f(0,8), texturePos+sf::Vector2f(_hFlip?8:0,_vFlip?0:8)));
+    renderVertex.append(sf::Vertex(pos, texturePos+sf::Vector2f(_hFlip?TILE_SIZE:0,_vFlip?TILE_SIZE:0)));
+    renderVertex.append(sf::Vertex(pos+sf::Vector2f(TILE_SIZE,        0), texturePos+sf::Vector2f(_hFlip?0:TILE_SIZE,_vFlip?TILE_SIZE:0)));
+    renderVertex.append(sf::Vertex(pos+sf::Vector2f(TILE_SIZE,TILE_SIZE), texturePos+sf::Vector2f(_hFlip?0:TILE_SIZE,_vFlip?0:TILE_SIZE)));
+    renderVertex.append(sf::Vertex(pos+sf::Vector2f(0        ,TILE_SIZE), texturePos+sf::Vector2f(_hFlip?TILE_SIZE:0,_vFlip?0:TILE_SIZE)));
 }
 
 // Tile row shit
@@ -506,19 +508,38 @@ void TileMatrix::render(uint16_t x, uint16_t y, sf::RenderWindow *window, sf::Te
     sf::Vector2f texturePos {0, 0};
     uint8_t flip_palette;
     sf::Color color;
-    for (uint16_t i = 0; i < _height && i*8+y < window->getSize().y; i++){
-        for (uint16_t j = 0; j < _width && j*8+x < window->getSize().x; j++){
+    for (uint16_t i = 0; i < _height && i*TILE_SIZE+y < window->getSize().y; i++){
+        for (uint16_t j = 0; j < _width && j*TILE_SIZE+x < window->getSize().x; j++){
             flip_palette = _tiles[i]._flip_palette[j];
-            texturePos = {static_cast<float>(flip_palette&INVMASK?8:0), static_cast<float>((_tiles[i]._tiles[j]) << 3)};
+            texturePos = {
+                static_cast<float>(flip_palette&INVMASK?TILE_SIZE:0),
+                static_cast<float>((_tiles[i]._tiles[j]) << 3)
+            };
             color = sf::Color(
                 flip_palette&REDMASK?255:0,
                 flip_palette&GRNMASK?255:0,
                 flip_palette&BLUMASK?255:0);
             sf::Vertex vertices[4] = {
-                sf::Vertex(sf::Vector2f(j*8, i*8), color, texturePos+sf::Vector2f(flip_palette&HFLIP?8:0,flip_palette&VFLIP?8:0)),
-                sf::Vertex(sf::Vector2f(j*8+8, i*8), color, texturePos+sf::Vector2f(flip_palette&HFLIP?0:8,flip_palette&VFLIP?8:0)),
-                sf::Vertex(sf::Vector2f(j*8+8, i*8+8), color, texturePos+sf::Vector2f(flip_palette&HFLIP?0:8,flip_palette&VFLIP?0:8)),
-                sf::Vertex(sf::Vector2f(j*8, i*8+8), color, texturePos+sf::Vector2f(flip_palette&HFLIP?8:0,flip_palette&VFLIP?0:8))
+                sf::Vertex(sf::Vector2f(j*TILE_SIZE,            i*TILE_SIZE),
+                    color, texturePos+sf::Vector2f(
+                        flip_palette&HFLIP?TILE_SIZE:0,
+                        flip_palette&VFLIP?TILE_SIZE:0)
+                    ),
+                sf::Vertex(sf::Vector2f(j*TILE_SIZE+TILE_SIZE,  i*TILE_SIZE),
+                    color, texturePos+sf::Vector2f(
+                        flip_palette&HFLIP?0:TILE_SIZE,
+                        flip_palette&VFLIP?TILE_SIZE:0)
+                    ),
+                sf::Vertex(sf::Vector2f(j*TILE_SIZE+TILE_SIZE,  i*TILE_SIZE+TILE_SIZE),
+                    color, texturePos+sf::Vector2f(
+                        flip_palette&HFLIP?0:TILE_SIZE,
+                        flip_palette&VFLIP?0:TILE_SIZE)
+                    ),
+                sf::Vertex(sf::Vector2f(j*TILE_SIZE,            i*TILE_SIZE+TILE_SIZE),
+                    color, texturePos+sf::Vector2f(
+                        flip_palette&HFLIP?TILE_SIZE:0,
+                        flip_palette&VFLIP?0:TILE_SIZE)
+                    )
             };
             window->draw(vertices, 4, sf::TriangleFan, sf::RenderStates(&texture));
         }
@@ -530,21 +551,39 @@ sf::Texture TileMatrix::renderToTexture(sf::Texture texture){
     uint8_t flip_palette;
     sf::Color color;
     sf::RenderTexture target;
-    target.create(_width*8, _height*8);
+    target.create(_width*TILE_SIZE, _height*TILE_SIZE);
     for (uint16_t i = 0; i < _height; i++){
         uint16_t y = _height - i - 1;
         for (uint16_t j = 0; j < _width; j++){
             flip_palette = _tiles[i]._flip_palette[j];
-            texturePos = {static_cast<float>(flip_palette&INVMASK?8:0), static_cast<float>((_tiles[i]._tiles[j]) << 3)};
+            texturePos = {
+                static_cast<float>(flip_palette&INVMASK?TILE_SIZE:0),
+                static_cast<float>((_tiles[i]._tiles[j]) << 3)
+            };
             color = sf::Color(
                 flip_palette&REDMASK?255:0,
                 flip_palette&GRNMASK?255:0,
                 flip_palette&BLUMASK?255:0);
             sf::Vertex vertices[4] = {
-                sf::Vertex(sf::Vector2f(j*8, y*8+8), color, texturePos+sf::Vector2f(flip_palette&HFLIP?8:0,flip_palette&VFLIP?8:0)),
-                sf::Vertex(sf::Vector2f(j*8+8, y*8+8), color, texturePos+sf::Vector2f(flip_palette&HFLIP?0:8,flip_palette&VFLIP?8:0)),
-                sf::Vertex(sf::Vector2f(j*8+8, y*8), color, texturePos+sf::Vector2f(flip_palette&HFLIP?0:8,flip_palette&VFLIP?0:8)),
-                sf::Vertex(sf::Vector2f(j*8, y*8), color, texturePos+sf::Vector2f(flip_palette&HFLIP?8:0,flip_palette&VFLIP?0:8))
+                sf::Vertex(sf::Vector2f(j*TILE_SIZE,            y*TILE_SIZE+TILE_SIZE),
+                    color, texturePos+sf::Vector2f(
+                        flip_palette&HFLIP?TILE_SIZE:0,
+                        flip_palette&VFLIP?TILE_SIZE:0)
+                    ),
+                sf::Vertex(sf::Vector2f(j*TILE_SIZE+TILE_SIZE,  y*TILE_SIZE+TILE_SIZE),
+                    color, texturePos+sf::Vector2f(
+                        flip_palette&HFLIP?0:TILE_SIZE,
+                        flip_palette&VFLIP?TILE_SIZE:0)
+                    ),
+                sf::Vertex(sf::Vector2f(j*TILE_SIZE+TILE_SIZE,  y*TILE_SIZE),
+                    color, texturePos+sf::Vector2f(
+                        flip_palette&HFLIP?0:TILE_SIZE,
+                        flip_palette&VFLIP?0:TILE_SIZE)
+                    ),
+                sf::Vertex(sf::Vector2f(j*TILE_SIZE,            y*TILE_SIZE),
+                    color, texturePos+sf::Vector2f(
+                        flip_palette&HFLIP?TILE_SIZE:0,
+                        flip_palette&VFLIP?0:TILE_SIZE))
             };
             target.draw(vertices, 4, sf::TriangleFan, sf::RenderStates(&texture));
         }

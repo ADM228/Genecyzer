@@ -15,6 +15,8 @@ constexpr uint64_t UPDATE_SCALE = 1;
 constexpr uint64_t UPDATE_INST_POS = 2;
 constexpr uint64_t UPDATE_INST_lIST = 4;
 
+#define TILE_SIZE 8
+#define INST_ENTRY_WIDTH 16
 
 class Instance {
 
@@ -109,14 +111,14 @@ void Instance::ProcessEvents(){
         if (event.type == sf::Event::Closed)
             window.close();
         else if (event.type == sf::Event::Resized){
-            scale = std::max(static_cast<int>(std::ceil(event.size.height/(4*8*8))), 1);
+            scale = std::max(static_cast<int>(std::ceil(event.size.height/(4*8*TILE_SIZE))), 1);
             TrackerView.reset(sf::FloatRect(0, 0, event.size.width, event.size.height/scale));
             TrackerView.setViewport(sf::FloatRect(0.f, 64.f/event.size.height*scale, scale, 1));
-            trackerMatrix = TextRenderer::render(testString, &font, std::ceil((event.size.width/scale)/8), false, false);
+            trackerMatrix = TextRenderer::render(testString, &font, std::ceil((event.size.width/scale)/TILE_SIZE), false, false);
             trackerMatrix.resize(trackerMatrix.getWidth()+1, trackerMatrix.getHeight(), 0x20);
             updateSections |= UPDATE_SCALE;
 
-            //int width = std::ceil((event.size.width/scale)/8);
+            //int width = std::ceil((event.size.width/scale)/TILE_SIZE);
 
 
         } else if (event.type == sf::Event::KeyPressed){
@@ -189,8 +191,8 @@ void Instance::eventHandleInstList (int limit, int modifier, uint8_t replacement
 }
 
 void Instance::renderInstList () {
-    constexpr uint16_t INST_WIDTH = 512;
-    constexpr uint16_t INST_HEIGHT = 8;
+    #define INST_WIDTH  512
+    #define INST_HEIGHT 8
 
 
     if (instrumentsToUpdate.size() == 0){   // Update the entire list
@@ -200,7 +202,7 @@ void Instance::renderInstList () {
         uint8_t instNumber;
         uint8_t palette;
 
-        for (int i = 0; i < INST_WIDTH; i+=16){
+        for (int i = 0; i < INST_WIDTH; i+=INST_ENTRY_WIDTH){
             instNumber = i>>1;
             for (int j = 0; j < INST_HEIGHT; j++){
                 std::string output;
@@ -219,16 +221,16 @@ void Instance::renderInstList () {
                     palette = 7;                   
                 }
                 TileMatrix string = TextRenderer::render(To_UTF32(output), &font, 15);
-                string.resize(16, 1);
+                string.resize(INST_ENTRY_WIDTH, 1);
                 string.fillInvert(instNumber == instSelected);
-                string.fillPaletteRect(0, 0, 16, 1, palette);
-                instrumentMatrix.copyRect(i, j, 16, 1, &string, 0, 0);
+                string.fillPaletteRect(0, 0, INST_ENTRY_WIDTH, 1, palette);
+                instrumentMatrix.copyRect(i, j, INST_ENTRY_WIDTH, 1, &string, 0, 0);
                 instNumber++;
             }
         }
 
-        instrumentTexture.create(INST_WIDTH*8, INST_HEIGHT*8);
-        // instrumentTexture->update((new TileMatrix(1, INST_HEIGHT, 0x20))->renderToTexture(font->texture), INST_WIDTH*8, 0);
+        instrumentTexture.create(INST_WIDTH*TILE_SIZE, INST_HEIGHT*TILE_SIZE);
+        // instrumentTexture->update((new TileMatrix(1, INST_HEIGHT, 0x20))->renderToTexture(font->texture), INST_WIDTH*TILE_SIZE, 0);
         instrumentTexture.update(instrumentMatrix.renderToTexture(font.texture));
 
         instrumentSprite.setTextureRect(sf::IntRect(0, 0, instrumentTexture.getSize().x, instrumentTexture.getSize().y));
@@ -254,25 +256,25 @@ void Instance::renderInstList () {
                 palette = 7;                   
             }
             TileMatrix string = TextRenderer::render(To_UTF32(output), &font, 15);
-            string.resize(16, 1);
+            string.resize(INST_ENTRY_WIDTH, 1);
             string.fillInvert(instNumber == instSelected);
-            string.fillPaletteRect(0, 0, 16, 1, palette);
+            string.fillPaletteRect(0, 0, INST_ENTRY_WIDTH, 1, palette);
             instrumentTexture.update(string.renderToTexture(font.texture), (instNumber&0xF8)<<(1+3), (instNumber&0x07)<<3);
         }
     }
 }
 
 void Instance::updateInstPage () {
-    if (((instSelected&0xF8)+8/2)*16*scale*2 < window.getSize().x && window.getSize().x >= 8*16*scale)
-        // = (IS>>3)*8*16*scale < winWidth/2 - 8*16*scale/2
+    if (((instSelected&0xF8)+TILE_SIZE/2)*INST_ENTRY_WIDTH*scale*2 < window.getSize().x && window.getSize().x >= TILE_SIZE*INST_ENTRY_WIDTH*scale)
+        // = (IS>>3)*TILE_SIZE*INST_ENTRY_WIDTH*scale < winWidth/2 - TILE_SIZE*INST_ENTRY_WIDTH*scale/2
         // Align left
         InstrumentView.reset(sf::FloatRect(0, 0, window.getSize().x, 64));
-    else if ((32*8-(instSelected&0xF8)-8/2)*16*scale*2 < window.getSize().x && window.getSize().x >= 8*16*scale)
-        // = (32-IS>>3)*8*16*scale < winWidth/2 + 8*16*scale/2
+    else if ((32*TILE_SIZE-(instSelected&0xF8)-TILE_SIZE/2)*INST_ENTRY_WIDTH*scale*2 < window.getSize().x && window.getSize().x >= TILE_SIZE*INST_ENTRY_WIDTH*scale)
+        // = (32-IS>>3)*TILE_SIZE*INST_ENTRY_WIDTH*scale < winWidth/2 + TILE_SIZE*INST_ENTRY_WIDTH*scale/2
         // Align right
-        InstrumentView.reset(sf::FloatRect(32*8*16-(window.getSize().x/scale), 0, window.getSize().x, 64));
+        InstrumentView.reset(sf::FloatRect(32*TILE_SIZE*INST_ENTRY_WIDTH-(window.getSize().x/scale), 0, window.getSize().x, 64));
     else
-        InstrumentView.reset(sf::FloatRect(((instSelected>>3)+1)*8*16-(window.getSize().x/(scale*2))-8*8, 0, window.getSize().x, 64));
+        InstrumentView.reset(sf::FloatRect(((instSelected>>3)+1)*TILE_SIZE*INST_ENTRY_WIDTH-(window.getSize().x/(scale*2))-TILE_SIZE*8, 0, window.getSize().x, 64));
     InstrumentView.setViewport(sf::FloatRect(0, 0, scale, 64.f/window.getSize().y*scale));
 }
 
