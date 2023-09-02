@@ -106,8 +106,9 @@ std::u32string TextRenderer::preprocess(std::u32string string){
             output_text.push_back(character);
     }
 
+    output_text.push_back(0x00);
+
     std::u32string out_string(output_text.data());
-    out_string.resize(output_text.size());
     return out_string;
 }
 
