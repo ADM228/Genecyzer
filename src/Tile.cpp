@@ -65,6 +65,7 @@ class TileRow {
 
 class TileMatrix {
     public:
+        TileMatrix() {};
         TileMatrix(uint16_t width, uint16_t height);
         TileMatrix(uint16_t width, uint16_t height, TileRow tiles[]);
         TileMatrix(uint16_t width, uint16_t height, uint32_t fillTile);

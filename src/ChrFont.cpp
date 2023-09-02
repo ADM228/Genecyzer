@@ -9,7 +9,9 @@
 
 class ChrFont {
     public:
+        ChrFont() {};
         ChrFont(uint8_t* chrData, uint32_t size, std::vector<uint32_t> codepageTable, bool inverted = 0);
+        void init(uint8_t* chrData, uint32_t size, std::vector<uint32_t> codepageTable, bool inverted = 0);
 
         TileRow renderToTileRow(std::string string);
 
@@ -30,6 +32,10 @@ class ChrFont {
 #include "StrConvert.cpp"
 
 ChrFont::ChrFont(uint8_t* chrData, uint32_t size, std::vector<uint32_t> codepageTable, bool inverted){
+    init(chrData, size, codepageTable, inverted);
+}
+
+void ChrFont::init(uint8_t* chrData, uint32_t size, std::vector<uint32_t> codepageTable, bool inverted){
     this->chrDataPtr = chrData;
     this->chrDataSize = size;
     this->codepages = codepageTable;
