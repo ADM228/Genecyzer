@@ -54,9 +54,7 @@ Instrument::Instrument(){
 
 void Instrument::setName(std::string name){
     std::u32string UTF32_name = To_UTF32(name);
-    for (int i = 0; i < INSTRUMENT_NAME_LENGTH && i < UTF32_name.size(); i++){
-        this->name[i] = UTF32_name[i];
-    }
+    setName(UTF32_name);
 }
 
 void Instrument::setName(std::u32string name){
@@ -68,8 +66,10 @@ void Instrument::setName(std::u32string name){
 std::string Instrument::getName(){
     std::u32string UTF32_name;
     for (int i = 0; i < INSTRUMENT_NAME_LENGTH; i++){
+        // printf("%04x ", this->name[i]);
         UTF32_name += this->name[i];
     }
+    // printf("\n"); fflush(stdout);
     std::string output = To_UTF8(UTF32_name);
     return output;
 }

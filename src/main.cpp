@@ -69,7 +69,7 @@ int main()
 
     forceUpdateAll = 1;
 
-    #define t jpTextTest
+    #define t greekTextTest
     std::u32string currentTestText = TextRenderer::preprocess(To_UTF32(t));
 
     for (int i = 0; i < currentTestText.length() && instruments.size() < 256; i+= 12){

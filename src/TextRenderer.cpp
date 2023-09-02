@@ -9,9 +9,9 @@ uint32_t excNumberTR = 0;
 #define debugNum(x) { printf("[TextRenderer #%08X]\n", x); fflush(stdout); }
 
 struct wrappedText {
-    std::u32string text;
-    std::vector<uint32_t> charsPerLine;
-    uint32_t maxWidth;
+    std::vector<char32_t> text;
+    uint16_t width;
+    uint16_t height;
 };
 
 class TextRenderer {
@@ -115,9 +115,6 @@ wrappedText TextRenderer::wrapText(std::u32string text, int maxChars, bool prepr
     else inString = text;
     std::vector<uint32_t> charsPerLine;
     std::vector<char32_t> outText;
-    printf("=====  =====\n");
-    printf("MAXCH: %05d\n", maxChars);
-
     // Refactor the text from Unicode to a simply-displayed mess
         uint32_t charOnLine = 0;
         uint32_t lastSpace = 0;
@@ -216,10 +213,9 @@ wrappedText TextRenderer::wrapText(std::u32string text, int maxChars, bool prepr
         charsPerLine.push_back(charOnLine);
 
     wrappedText output;
-    auto outString = std::u32string(outText.data());
-    output.text = outString;
-    output.charsPerLine = charsPerLine;
-    output.maxWidth = std::max(*max_element(charsPerLine.begin(), charsPerLine.end()), (uint32_t)(maxChars == -1 ? 0 : maxChars));
+    output.text = outText;
+    output.width = std::max(*max_element(charsPerLine.begin(), charsPerLine.end()), (uint32_t)(maxChars == -1 ? 0 : maxChars));
+    output.height = charsPerLine.size();
 
     return output;
 }
@@ -228,17 +224,19 @@ wrappedText TextRenderer::wrapText(std::u32string text, int maxChars, bool prepr
 TileMatrix TextRenderer::render(wrappedText *text, ChrFont *font, bool inverted){
 
     auto string = text->text;
-    auto charsPerLine = text->charsPerLine;
     auto codepages = font->codepages;
 
-    TileMatrix matrix(text->maxWidth, charsPerLine.size(), 0x20);
-
+    TileMatrix matrix(text->width, text->height, 0x20);
 
     matrix.fillInvert(inverted);
     uint32_t x = 0, y = 0;
 
     for (uint32_t i = 1; i < string.size(); i++){
-        if (x > matrix.getWidth()) {printf ("X overflow at row %03d, col %03d; CMP: %03d, %03d\n", y, x, matrix.getHeight(), matrix.getWidth()); fflush(stdout);}
+        // if (x > matrix.getWidth()) {printf ("X overflow at row %03d, col %03d; CMP: %03d, %03d\n=== STRDATA ===\n", y, x, matrix.getHeight(), matrix.getWidth());
+        // for (int j = 1; j < string.size(); j++){
+        //     printf("%04X ", string[j]);
+        // }
+        // printf ("\n=== STRDATA ===\nSTRLEN: %03d\n\n", string.size()-1);  fflush(stdout);}
         //if (y > matrix.getHeight()) {printf ("Y overflow at row %03d        ; CMP: %03d, %03d\n", y, matrix.getHeight(), matrix.getWidth()); fflush(stdout);}
         if (string[i] == 0x0A){    // Newline
             y++;
@@ -253,9 +251,6 @@ TileMatrix TextRenderer::render(wrappedText *text, ChrFont *font, bool inverted)
             }
         }
     }
-
-    text->maxWidth = y;
-
     
     return matrix;
 
@@ -265,12 +260,7 @@ TileMatrix TextRenderer::render(wrappedText *text, ChrFont *font, bool inverted)
 
 TileMatrix TextRenderer::render (std::u32string text, ChrFont *font, int maxChars, bool preprocess, bool inverted){
     auto wrappedText = TextRenderer::wrapText(text, maxChars, preprocess);
-    auto maxw = wrappedText.maxWidth;
     TileMatrix matrix = TextRenderer::render(&wrappedText, font, inverted);
-    for (int i = 0; i < wrappedText.charsPerLine.size(); i++)
-        printf ("%05d: %05d\n", i, wrappedText.charsPerLine[i]);
-    printf(" CMPX: %05d\n", maxw);
-    printf(" CMPY: %05d\n", wrappedText.maxWidth);
     return matrix;
 }
 
