@@ -73,15 +73,6 @@ Instance::Instance() {
     InstrumentView.reset(sf::FloatRect(0.f, 0.f, 200.f, 200.f));
     TrackerView.reset(sf::FloatRect(0.f,0.f,200.f,200.f));
     forceUpdateAll = 1;
-}
-
-void Instance::addMonospaceFont(const uint8_t *data, uint32_t size, std::vector<uint32_t> codepages){
-    unsigned char * fontPointer = const_cast<unsigned char *>(data);
-    font.init(fontPointer, size, codepages, 1);
-}
-
-void Instance::ProcessEvents(){
-
 
 
     std::string allTextTest = "English Ελληνικά Русский にほんこご antidisestablishmentarianism\nThe quick brown fox jumped over the lazy dog\nСъешь же ещё этих мягких французских булочек, да выпей чаю";
@@ -100,6 +91,18 @@ void Instance::ProcessEvents(){
     }
 
 
+
+}
+
+void Instance::addMonospaceFont(const uint8_t *data, uint32_t size, std::vector<uint32_t> codepages){
+    unsigned char * fontPointer = const_cast<unsigned char *>(data);
+    font.init(fontPointer, size, codepages, 1);
+}
+
+void Instance::ProcessEvents(){
+
+
+
     sf::Event event;
 
     updateSections = 0;
@@ -113,7 +116,7 @@ void Instance::ProcessEvents(){
         else if (event.type == sf::Event::Resized){
             scale = std::max(static_cast<int>(std::ceil(event.size.height/(4*8*TILE_SIZE))), 1);
             TrackerView.reset(sf::FloatRect(0, 0, event.size.width, event.size.height/scale));
-            TrackerView.setViewport(sf::FloatRect(0.f, 64.f/event.size.height*scale, scale, 1));
+            TrackerView.setViewport(sf::FloatRect(0.f, 64*scale/(double)event.size.height, scale, 1));
             trackerMatrix = TextRenderer::render(testString, &font, std::ceil((event.size.width/scale)/TILE_SIZE), false, false);
             trackerMatrix.resize(trackerMatrix.getWidth()+1, trackerMatrix.getHeight(), 0x20);
             updateSections |= UPDATE_SCALE;
