@@ -6,3 +6,6 @@ INCBIN(font, "${FONTFILE}");
 #ifdef _MSC_VER
 	#include "${MSVCINCLUDEFILE}"
 #endif
+
+// whenever c23 is finished:
+// #embed "${FONTFILE}

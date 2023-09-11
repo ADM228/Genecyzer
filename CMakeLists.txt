@@ -25,11 +25,9 @@ ExternalProject_Add(SNESFM
 	BUILD_COMMAND $<$<STREQUAL:$<UPPER_CASE:${CMAKE_HOST_SYSTEM_NAME}>,LINUX>:make>
 	BUILD_IN_SOURCE True
 	INSTALL_COMMAND "")
-	
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 add_executable(Genecyzer src/main.cpp)
+target_compile_features(Genecyzer PRIVATE cxx_std_17)
 
 set(FONTFILE "tilesetUnicode.chr")
 set(FONTDIR "${CMAKE_SOURCE_DIR}/SNESFM/graphics/")
