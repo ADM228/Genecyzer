@@ -8,6 +8,8 @@
 #include "Instrument.cpp"
 #include "StrConvert.cpp"
 #include "TextRenderer.cpp"
+#include "Tracker.cpp"
+#include "Effect.cpp"
 
 #include <cmath>
 
@@ -65,6 +67,8 @@ class Instance {
 
         std::u32string testString;
 
+        std::vector<TrackerCell> cells;
+
 };
 
 Instance::Instance() {
@@ -90,7 +94,19 @@ Instance::Instance() {
         instruments.back().setPalette((i / 12)&0x07);
     }
 
+    constexpr uint8_t notes[] = {
+        0+3*12, 0+3*12, 0+3*12, 0+4*12, 0+3*12,
+        3+3*12, 3+4*12, 3+3*12,
+        6+3*12, 6+4*12, 9+3*12,
+        0+3*12, 0+3*12, 0+3*12, 0+4*12, 0+3*12,
+        3+3*12, 3+4*12, 3+3*12,
+        6+3*12, 6+4*12, 9+3*12
+    };
 
+    for (int i = 0; i < 22; i++){
+        cells.push_back(TrackerCell());
+        cells.back().noteValue = notes[i];
+    }
 
 }
 
@@ -117,9 +133,15 @@ void Instance::ProcessEvents(){
             scale = std::max(static_cast<int>(std::ceil(event.size.height/(4*8*TILE_SIZE))), 1);
             TrackerView.reset(sf::FloatRect(0, 0, event.size.width, event.size.height/scale));
             TrackerView.setViewport(sf::FloatRect(0.f, 64*scale/(double)event.size.height, scale, 1));
+
             trackerMatrix = TextRenderer::render(testString, &font, std::ceil((event.size.width/scale)/TILE_SIZE), false, false);
             trackerMatrix.resize(trackerMatrix.getWidth()+1, trackerMatrix.getHeight(), 0x20);
             updateSections |= UPDATE_SCALE;
+
+            for (int i = 0; i < 22 && i < trackerMatrix.getHeight(); i++){
+                auto row = cells[i].render();
+                trackerMatrix.copyRect(0, i, 2+1+2+1+2, 1, &row, 0, 0);
+            }
 
             //int width = std::ceil((event.size.width/scale)/TILE_SIZE);
 
