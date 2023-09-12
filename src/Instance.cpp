@@ -107,7 +107,8 @@ Instance::Instance() {
         cells.push_back(TrackerCell());
         cells.back().noteValue = notes[i];
     }
-
+    cells.push_back(TrackerCell());
+    cells.push_back(TrackerCell());
 }
 
 void Instance::addMonospaceFont(const uint8_t *data, uint32_t size, std::vector<uint32_t> codepages){
@@ -138,9 +139,10 @@ void Instance::ProcessEvents(){
             trackerMatrix.resize(trackerMatrix.getWidth()+1, trackerMatrix.getHeight(), 0x20);
             updateSections |= UPDATE_SCALE;
 
-            for (int i = 0; i < 22 && i < trackerMatrix.getHeight(); i++){
-                auto row = cells[i].render();
-                trackerMatrix.copyRect(0, i, 2+1+2+1+2, 1, &row, 0, 0);
+            for (int i = 0; i < cells.size() && i < trackerMatrix.getHeight(); i++){
+                int cols = 1;
+                auto row = cells[i].render(cols);
+                trackerMatrix.copyRect(0, i, 2+1+2+(1+3)*cols, 1, &row, 0, 0);
             }
 
             //int width = std::ceil((event.size.width/scale)/TILE_SIZE);

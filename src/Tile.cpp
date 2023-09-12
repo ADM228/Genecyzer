@@ -363,8 +363,8 @@ void TileMatrix::fillRect(uint16_t x, uint16_t y, uint16_t width, uint16_t heigh
     if (y >= _height) {inv_arg("[TileMatrix::fillRect]: y is out of bounds");}
     if (width+x > _width) {inv_arg("[TileMatrix::fillRect]: width+x is out of bounds");}
     if (height+y > _height) {inv_arg("[TileMatrix::fillRect]: height+y is out of bounds");}
-    for (uint16_t i = y; i < _height; i++) {
-        for (uint16_t j = x; j < width; j++) {_tiles[i]._tiles[j] = tile;}
+    for (uint16_t i = y; i < height+y; i++) {
+        for (uint16_t j = x; j < width+x; j++) {_tiles[i]._tiles[j] = tile;}
     }
 }
 
