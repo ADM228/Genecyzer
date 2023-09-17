@@ -20,6 +20,8 @@ constexpr uint64_t UPDATE_INST_lIST = 4;
 #define TILE_SIZE 8
 #define INST_ENTRY_WIDTH 16
 
+#define getGlobalBounds_bottom(sprite) (sprite.getGlobalBounds().top + sprite.getGlobalBounds().height)
+
 class Instance {
 
     public:
@@ -35,7 +37,9 @@ class Instance {
     protected:
         void eventHandleInstList (int, int, uint8_t, bool);
         void renderInstList();
+        void renderTracker();
         void updateInstPage();
+        void updateTrackerPos();
 
     private:
         uint8_t instSelected = 0;
@@ -128,22 +132,13 @@ void Instance::ProcessEvents(){
 
     while (window.pollEvent(event))
     {
+
         if (event.type == sf::Event::Closed)
             window.close();
         else if (event.type == sf::Event::Resized){
+            
             scale = std::max(static_cast<int>(std::ceil(event.size.height/(4*8*TILE_SIZE))), 1);
-            TrackerView.reset(sf::FloatRect(0, 0, event.size.width, event.size.height/scale));
-            TrackerView.setViewport(sf::FloatRect(0.f, 64*scale/(double)event.size.height, scale, 1));
-
-            trackerMatrix = TextRenderer::render(testString, &font, std::ceil((event.size.width/scale)/TILE_SIZE), false, false);
-            trackerMatrix.resize(trackerMatrix.getWidth()+1, trackerMatrix.getHeight(), 0x20);
             updateSections |= UPDATE_SCALE;
-
-            for (int i = 0; i < cells.size() && i < trackerMatrix.getHeight(); i++){
-                int cols = 1;
-                auto row = cells[i].render(cols);
-                trackerMatrix.copyRect(0, i, 2+1+2+(1+3)*cols, 1, &row, 0, 0);
-            }
 
             //int width = std::ceil((event.size.width/scale)/TILE_SIZE);
 
@@ -175,8 +170,13 @@ void Instance::Update(){
     if (updateSections & UPDATE_INST_POS)
         renderInstList();
 
-    if (updateSections & (UPDATE_INST_POS | UPDATE_SCALE))          
+    if (updateSections & (UPDATE_INST_POS | UPDATE_SCALE))   
         updateInstPage();
+
+    if (updateSections & UPDATE_SCALE){
+        renderTracker();
+        updateTrackerPos();
+    }
 
     #pragma endregion
     #pragma region AlwaysUpdates
@@ -189,7 +189,7 @@ void Instance::Update(){
 
 
     window.setView(TrackerView);
-    trackerMatrix.render(0, 64, &window, font.texture);
+    trackerMatrix.render(0, getGlobalBounds_bottom(instrumentSprite), &window, font.texture);
 
     // tiles.render(0,0,&window, font[0]);
     // window.draw(tile.renderVertex, sf::RenderStates(&font[0]));
@@ -291,18 +291,57 @@ void Instance::renderInstList () {
     }
 }
 
+void Instance::renderTracker () {
+    
+    #define ROW_SEPARATOR 0x04
+
+    #define HEADER_HEIGHT 5
+
+    int widthInTiles = std::ceil((window.getSize().x/scale)/TILE_SIZE);
+    #pragma region header
+    TileMatrix header = TileMatrix(widthInTiles, HEADER_HEIGHT, 0x20);
+    header.fillRow(0, ROW_SEPARATOR);
+    header.fillRow(2, ROW_SEPARATOR);
+    header.fillRow(4, ROW_SEPARATOR);
+    #pragma endregion
+
+    #pragma region text
+    TileMatrix text = TextRenderer::render(testString, &font, widthInTiles, false, false);
+    int textHeight = text.getHeight();
+
+    for (int i = 0; i < cells.size() && i < textHeight; i++){
+        int cols = 1;
+        auto row = cells[i].render(cols);
+        text.copyRect(0, i, std::min(2+1+2+(1+3)*cols, widthInTiles), 1, &row, 0, 0);
+    }
+    #pragma endregion
+
+    #pragma region putTogether
+    trackerMatrix = TileMatrix(widthInTiles+1, textHeight+HEADER_HEIGHT, 0x20);
+    
+    trackerMatrix.copyRect(0, 0, widthInTiles, HEADER_HEIGHT, &header, 0, 0);
+    trackerMatrix.copyRect(0, HEADER_HEIGHT, widthInTiles, textHeight, &text, 0, 0);
+    #pragma endregion
+
+}
+
 void Instance::updateInstPage () {
     if (((instSelected&0xF8)+TILE_SIZE/2)*INST_ENTRY_WIDTH*scale*2 < window.getSize().x && window.getSize().x >= TILE_SIZE*INST_ENTRY_WIDTH*scale)
         // = (IS>>3)*TILE_SIZE*INST_ENTRY_WIDTH*scale < winWidth/2 - TILE_SIZE*INST_ENTRY_WIDTH*scale/2
         // Align left
-        InstrumentView.reset(sf::FloatRect(0, 0, window.getSize().x, 64));
+        InstrumentView.reset(sf::FloatRect(0, 0, window.getSize().x, INST_HEIGHT*TILE_SIZE));
     else if ((32*TILE_SIZE-(instSelected&0xF8)-TILE_SIZE/2)*INST_ENTRY_WIDTH*scale*2 < window.getSize().x && window.getSize().x >= TILE_SIZE*INST_ENTRY_WIDTH*scale)
         // = (32-IS>>3)*TILE_SIZE*INST_ENTRY_WIDTH*scale < winWidth/2 + TILE_SIZE*INST_ENTRY_WIDTH*scale/2
         // Align right
-        InstrumentView.reset(sf::FloatRect(32*TILE_SIZE*INST_ENTRY_WIDTH-(window.getSize().x/scale), 0, window.getSize().x, 64));
+        InstrumentView.reset(sf::FloatRect(32*TILE_SIZE*INST_ENTRY_WIDTH-(window.getSize().x/scale), 0, window.getSize().x, INST_HEIGHT*TILE_SIZE));
     else
-        InstrumentView.reset(sf::FloatRect(((instSelected>>3)+1)*TILE_SIZE*INST_ENTRY_WIDTH-(window.getSize().x/(scale*2))-TILE_SIZE*8, 0, window.getSize().x, 64));
-    InstrumentView.setViewport(sf::FloatRect(0, 0, scale, 64.f/window.getSize().y*scale));
+        InstrumentView.reset(sf::FloatRect(((instSelected>>3)+1)*TILE_SIZE*INST_ENTRY_WIDTH-(window.getSize().x/(scale*2))-TILE_SIZE*8, 0, window.getSize().x, INST_HEIGHT*TILE_SIZE));
+    InstrumentView.setViewport(sf::FloatRect(0, 0, scale, (double)(INST_HEIGHT*TILE_SIZE)/window.getSize().y*scale));
+}
+
+void Instance::updateTrackerPos () {
+    TrackerView.reset(sf::FloatRect(0, 0, window.getSize().x, (double)window.getSize().y/scale));
+    TrackerView.setViewport(sf::FloatRect(0.f, (double)(INST_HEIGHT*TILE_SIZE*scale)/(double)window.getSize().y, scale, 1));
 }
 
 #endif // __INSTANCE_INCLUDED__
