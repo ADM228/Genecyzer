@@ -12,6 +12,8 @@
 #include "Effect.cpp"
 
 #include <cmath>
+#include <cstdint>
+#include <cstdio>
 
 constexpr uint64_t UPDATE_SCALE = 1;
 constexpr uint64_t UPDATE_INST_POS = 2;
@@ -72,6 +74,8 @@ class Instance {
         std::u32string testString;
 
         std::vector<TrackerCell> cells;
+
+        constexpr static uint16_t tracker_separator_columns[] = {3};
 
 };
 
@@ -247,7 +251,7 @@ void Instance::renderInstList () {
                     output = num;
                     palette = 7;                   
                 }
-                TileMatrix string = TextRenderer::render(To_UTF32(output), &font, 15);
+                TileMatrix string = TextRenderer::render(output, &font, 15);
                 string.resize(INST_ENTRY_WIDTH, 1);
                 string.fillInvert(instNumber == instSelected);
                 string.fillPaletteRect(0, 0, INST_ENTRY_WIDTH, 1, palette);
@@ -282,7 +286,7 @@ void Instance::renderInstList () {
                 output = num;
                 palette = 7;                   
             }
-            TileMatrix string = TextRenderer::render(To_UTF32(output), &font, 15);
+            TileMatrix string = TextRenderer::render(output, &font, 15);
             string.resize(INST_ENTRY_WIDTH, 1);
             string.fillInvert(instNumber == instSelected);
             string.fillPaletteRect(0, 0, INST_ENTRY_WIDTH, 1, palette);
@@ -294,6 +298,11 @@ void Instance::renderInstList () {
 void Instance::renderTracker () {
     
     #define ROW_SEPARATOR 0x04
+    #define COL_SEPARATOR 0x06
+
+    #define INTERSECTION_ALL4 0x05
+    #define INTERSECTION_NOUP 0x07
+    #define INTERSECTION_NORT 0x08
 
     #define HEADER_HEIGHT 5
 
@@ -307,12 +316,32 @@ void Instance::renderTracker () {
 
     #pragma region text
     TileMatrix text = TextRenderer::render(testString, &font, widthInTiles, false, false);
+    text.resize(text.getWidth(), std::max((int)text.getHeight(), (int)cells.size()));
     int textHeight = text.getHeight();
 
-    for (int i = 0; i < cells.size() && i < textHeight; i++){
-        int cols = 1;
-        auto row = cells[i].render(cols);
-        text.copyRect(0, i, std::min(2+1+2+(1+3)*cols, widthInTiles), 1, &row, 0, 0);
+    {
+        char rowNum[4];
+        for (int i = 0; i < cells.size(); i++){
+            std::snprintf(rowNum, 4, "%03X", i);
+            auto rowNumMatrix = TextRenderer::render(std::string(rowNum), &font, 3, 1, 0);
+            text.copyRect(0, i, std::min(3, widthInTiles), 1, &rowNumMatrix, 0, 0);
+
+            if (widthInTiles < 4)
+                continue;
+
+            int cols = 1;
+            auto row = cells[i].render(cols);
+            text.copyRect(4, i, std::min(2+1+2+(1+3)*cols, widthInTiles-4), 1, &row, 0, 0);
+        }
+
+        
+        for (int i = 0; i < countof(tracker_separator_columns); i++) {
+            uint8_t column = tracker_separator_columns[i];
+            if (widthInTiles > column){
+                header.setTile(column,  4, INTERSECTION_NOUP);
+                text.fillCol(column, COL_SEPARATOR);
+            }
+        }
     }
     #pragma endregion
 
@@ -333,9 +362,9 @@ void Instance::updateInstPage () {
     else if ((32*TILE_SIZE-(instSelected&0xF8)-TILE_SIZE/2)*INST_ENTRY_WIDTH*scale*2 < window.getSize().x && window.getSize().x >= TILE_SIZE*INST_ENTRY_WIDTH*scale)
         // = (32-IS>>3)*TILE_SIZE*INST_ENTRY_WIDTH*scale < winWidth/2 + TILE_SIZE*INST_ENTRY_WIDTH*scale/2
         // Align right
-        InstrumentView.reset(sf::FloatRect(32*TILE_SIZE*INST_ENTRY_WIDTH-(window.getSize().x/scale), 0, window.getSize().x, INST_HEIGHT*TILE_SIZE));
+        InstrumentView.reset(sf::FloatRect(32*TILE_SIZE*INST_ENTRY_WIDTH-(window.getSize().x/(double)scale), 0, window.getSize().x, INST_HEIGHT*TILE_SIZE));
     else
-        InstrumentView.reset(sf::FloatRect(((instSelected>>3)+1)*TILE_SIZE*INST_ENTRY_WIDTH-(window.getSize().x/(scale*2))-TILE_SIZE*8, 0, window.getSize().x, INST_HEIGHT*TILE_SIZE));
+        InstrumentView.reset(sf::FloatRect(((instSelected>>3)+1)*TILE_SIZE*INST_ENTRY_WIDTH-(window.getSize().x/(double)(scale*2))-TILE_SIZE*8, 0, window.getSize().x, INST_HEIGHT*TILE_SIZE));
     InstrumentView.setViewport(sf::FloatRect(0, 0, scale, (double)(INST_HEIGHT*TILE_SIZE)/window.getSize().y*scale));
 }
 

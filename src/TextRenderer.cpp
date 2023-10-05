@@ -1,9 +1,12 @@
 #ifndef __TEXTRENDERER_INCLUDED__
 #define __TEXTRENDERER_INCLUDED__
 
+#include <algorithm>
 #include <string>
 #include <vector>
 #include "Tile.cpp"
+#include "ChrFont.cpp"
+#include "StrConvert.cpp"
 
 uint32_t excNumberTR = 0;
 #define debugNum(x) { printf("[TextRenderer #%08X]\n", x); fflush(stdout); }
@@ -18,8 +21,13 @@ class TextRenderer {
     public:
         static std::u32string preprocess(std::u32string string);
         static wrappedText wrapText(std::u32string text, int maxChars = -1, bool preprocess = 1);
-        static TileMatrix render (wrappedText *text, ChrFont *font, bool inverted = 0);
-        static TileMatrix render (std::u32string text, ChrFont *font, int maxChars = -1, bool preprocess = 1, bool inverted = 0);
+        #if defined (__TILE_INCLUDED__) && defined(__CHRFONT_INCLUDED__) 
+            static TileMatrix render (wrappedText *text, ChrFont *font, bool inverted = 0);
+            static TileMatrix render (std::u32string text, ChrFont *font, int maxChars = -1, bool preprocess = 1, bool inverted = 0);
+            #ifdef __STRCONVERT_INCLUDED__
+                static TileMatrix render (std::string text, ChrFont *font, int maxChars = -1, bool preprocess = 1, bool inverted = 0);
+            #endif
+        #endif
     private:
         TextRenderer() {};
         constexpr static uint16_t halfKatakanaTable[] {
@@ -223,6 +231,7 @@ wrappedText TextRenderer::wrapText(std::u32string text, int maxChars, bool prepr
     return output;
 }
 
+#if defined (__TILE_INCLUDED__) && defined(__CHRFONT_INCLUDED__) 
 
 TileMatrix TextRenderer::render(wrappedText *text, ChrFont *font, bool inverted){
 
@@ -267,16 +276,12 @@ TileMatrix TextRenderer::render (std::u32string text, ChrFont *font, int maxChar
     return matrix;
 }
 
-// TileMatrix ChrFont::renderToTiles(std::string string, int32_t maxChars, bool inverted){
-//     return renderToTiles(To_UTF32(string), maxChars, inverted);
-// }
+TileMatrix TextRenderer::render (std::string text, ChrFont *font, int maxChars, bool preprocess, bool inverted){
+    std::u32string text32 = To_UTF32(text);
+    TileMatrix matrix = TextRenderer::render(text32, font, maxChars, preprocess, inverted);
+    return matrix;
+}
 
-// sf::Texture ChrFont::renderToTexture(std::u32string string, int32_t maxChars, bool inverted){
-//     return renderToTiles(string, maxChars, inverted).renderToTexture(texture);
-// }
-
-// sf::Texture ChrFont::renderToTexture(std::string string, int32_t maxChars, bool inverted){
-//     return renderToTiles(To_UTF32(string), maxChars, inverted).renderToTexture(texture);
-// }
+#endif
 
 #endif  // __TEXTRENDERER_INCLUDED__

@@ -28,4 +28,8 @@ std::u32string To_UTF32(const std::string &s)
     return conv.from_bytes(s);
 }
 
+// Uh oh seems like it's more of a general utils file now
+template<std::size_t N, class T>
+constexpr std::size_t countof(T(&)[N]) { return N; }
+
 #endif  // __STRCONVERT_INCLUDED__

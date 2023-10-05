@@ -1,6 +1,7 @@
 #ifndef __EFFECT_INCLUDED__
 #define __EFFECT_INCLUDED__
 
+#include <cstdint>
 #include <vector>
 
 #pragma region classDefinitions
