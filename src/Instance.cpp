@@ -3,6 +3,7 @@
 
 #include <SFML/Graphics.hpp>
 
+#include "SFML/Window/Keyboard.hpp"
 #include "Tile.cpp"
 #include "ChrFont.cpp"
 #include "Instrument.cpp"
@@ -17,7 +18,8 @@
 
 constexpr uint64_t UPDATE_SCALE = 1;
 constexpr uint64_t UPDATE_INST_POS = 2;
-constexpr uint64_t UPDATE_INST_lIST = 4;
+constexpr uint64_t UPDATE_INST_LIST = 4;
+constexpr uint64_t UPDATE_TRACKER = 8;
 
 #define TILE_SIZE 8
 #define INST_ENTRY_WIDTH 16
@@ -47,6 +49,8 @@ class Instance {
         uint8_t instSelected = 0;
         uint8_t scale = 1;
         uint8_t mode = 0;
+
+        bool singleTileTrackerRender = 1;
 
         int debug = 0;
 
@@ -157,6 +161,10 @@ void Instance::ProcessEvents(){
                 eventHandleInstList (256-8, +8, 255, false);
             else if (event.key.code == sf::Keyboard::Left)
                 eventHandleInstList (7, -8, 0, true);
+            else if (event.key.code == sf::Keyboard::E){
+                singleTileTrackerRender ^= 1;
+                updateSections |= UPDATE_TRACKER;
+            }
         }
     }
 }
@@ -177,7 +185,7 @@ void Instance::Update(){
     if (updateSections & (UPDATE_INST_POS | UPDATE_SCALE))   
         updateInstPage();
 
-    if (updateSections & UPDATE_SCALE){
+    if (updateSections & (UPDATE_SCALE | UPDATE_TRACKER)){
         renderTracker();
         updateTrackerPos();
     }
@@ -330,8 +338,8 @@ void Instance::renderTracker () {
                 continue;
 
             int cols = 1;
-            auto row = cells[i].render(cols);
-            text.copyRect(4, i, std::min(2+1+2+(1+3)*cols, widthInTiles-4), 1, &row, 0, 0);
+            auto row = cells[i].render(cols, singleTileTrackerRender);
+            text.copyRect(4, i, std::min(((uint8_t)!singleTileTrackerRender)+2+1+2+(1+3)*cols, widthInTiles-4), 1, &row, 0, 0);
         }
 
         
