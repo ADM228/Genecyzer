@@ -79,8 +79,6 @@ class Instance {
 
         std::vector<TrackerCell> cells;
 
-        constexpr static uint16_t tracker_separator_columns[] = {3};
-
 };
 
 Instance::Instance() {
@@ -328,6 +326,8 @@ void Instance::renderTracker () {
     int textHeight = text.getHeight();
 
     {
+        std::vector<uint16_t> tracker_separator_columns(0);
+        tracker_separator_columns.push_back(3);
         char rowNum[4];
         for (int i = 0; i < cells.size(); i++){
             std::snprintf(rowNum, 4, "%03X", i);
@@ -343,7 +343,7 @@ void Instance::renderTracker () {
         }
 
         
-        for (int i = 0; i < countof(tracker_separator_columns); i++) {
+        for (int i = 0; i < tracker_separator_columns.size(); i++) {
             uint8_t column = tracker_separator_columns[i];
             if (widthInTiles > column){
                 header.setTile(column,  4, INTERSECTION_NOUP);
