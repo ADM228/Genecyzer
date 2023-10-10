@@ -101,5 +101,4 @@ TileMatrix TrackerCell::render(uint16_t effectColumns, bool singleTile) {
 }
 
 
-
 #endif // __TRACKER_INCLUDED__

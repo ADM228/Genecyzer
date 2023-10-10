@@ -11,6 +11,7 @@
 #include "TextRenderer.cpp"
 #include "Tracker.cpp"
 #include "Effect.cpp"
+#include "Project.cpp"
 
 #include <cmath>
 #include <cstdint>
@@ -79,6 +80,7 @@ class Instance {
 
         std::vector<TrackerCell> cells;
 
+        Project activeProject;
 };
 
 Instance::Instance() {
@@ -87,16 +89,17 @@ Instance::Instance() {
     InstrumentView.reset(sf::FloatRect(0.f, 0.f, 200.f, 200.f));
     TrackerView.reset(sf::FloatRect(0.f,0.f,200.f,200.f));
     forceUpdateAll = 1;
+    activeProject = Project();
 
 
-    std::string allTextTest = "English Ελληνικά Русский にほんこご antidisestablishmentarianism\nThe quick brown fox jumped over the lazy dog\nСъешь же ещё этих мягких французских булочек, да выпей чаю";
-	std::string greekTextTest = "   Θωθ   \nΟ Θωθ ή και Θωτ ή και Τωθ υπήρξε ένας από τους πλέον δημοφιλείς θεούς της αιγυπτιακής θρησκείας. Ήταν θεότητα της Σελήνης και της Σοφίας. Οι αρχαίοι Έλληνες τον προσδιόρισαν ως τον Ερμή τον Τρισμέγιστο. \n   Ιδιότητες   \nΣτις αρχέγονες περιόδους του αιγυπτιακού πολιτισμού ήταν θεός της Σελήνης και από το σεληνιακό συσχετισμό του λέγεται ότι αντλεί την πολυμορφία του, καθώς εκφράζεται με πολλά και διαφορετικά πρόσωπα. Όπως η Σελήνη αντλεί το φως της από τον Ήλιο, έτσι και ο Θωθ αντλούσε ένα μεγάλο μέρος της εξουσίας του από τον ηλιακό θεό Ρα, όντας γραφέας και σύμβουλός του. Στην πραγματικότητα, τόσο σημαντικές ήταν οι φάσεις της Σελήνης για τους ρυθμούς της αιγυπτιακής ζωής, ώστε ο Θωθ θεωρήθηκε αρχή της κοσμικής τάξης, καθώς και των θρησκευτικών και κοινωνικών ιδρυμάτων. Ήταν παρών σχεδόν σε κάθε όψη λατρείας στους ναούς, στην απονομή δικαιοσύνης και στις μαγικές τέχνες, με τις οποίες σχετιζόταν ιδιαιτέρως.\n\nΕπίσης είναι ο θεϊκός γραφέας, εκείνος που επινόησε τη γραφή και κύριος της σοφίας. Το ιερατείο απέδιδε σ' εκείνον πολλές από τις ιερές γραφές, ανάμεσα στις οποίες συγκαταλέγεται η Βίβλος των Αναπνοών και ένα τμήμα της Βίβλου των Νεκρών. Πιστευόταν άλλωστε ότι είχε μεταδώσει την τέχνη της ιερογλυφικής γραφής στους Αιγυπτίους από τα πανάρχαια χρόνια.[1], ενώ ήταν και προστάτης των γραφέων. Του αποδίδονταν τιμές ως Κύριου της Γνώσης όλων των Επιστημών, θεωρούμενος η προσωποποίηση της Κατανόησης και της Λογικής. Υπήρξε, επίσης, μεσολαβητής για να επέλθει ειρήνη ανάμεσα στον Ώρο και τον Σηθ. Ιδιαίτερο πεδίο δράσης του ήταν η εσωτερική σοφία και γι' αυτό αποκαλείτο «ο Μυστηριώδης» ή «ο Άγνωστος». Οι μαγικές του δυνάμεις τον συνέδεσαν, επίσης, με την ιατρική και, όταν το σώμα υπέκυπτε τελικώς στο θάνατο, εκείνος ήταν πάλι που οδηγούσε το νεκρό στο βασίλειο των θεών και ακολουθούσε η κρίση της ψυχής του.";
-    std::string jpTextTest = "スーパーファミコン（SUPER Famicom）は、任天堂より日本・中華民国（台湾）・香港などで発売された家庭用ゲーム機。略記・略称はSFC、スーファミなど[注 1]。日本発売は1990年（平成2年）11月21日、生産終了は2003年（平成15年）9月30日。\n\nファミリーコンピュータの後継機として開発された。同世代機の中では後発であったが、ファミリーコンピュータに引き続き、最多出荷台数を記録した。\n\n北米・欧州・オーストラリア・ブラジルなどでは“Super Nintendo Entertainment System”（スーパーニンテンドーエンターテインメントシステム、略称：Super NES、またはSNES）の名称で発売された。 ";
+    const std::string allTextTest = "English Ελληνικά Русский にほんこご antidisestablishmentarianism\nThe quick brown fox jumped over the lazy dog\nСъешь же ещё этих мягких французских булочек, да выпей чаю";
+	const std::string greekTextTest = "   Θωθ   \nΟ Θωθ ή και Θωτ ή και Τωθ υπήρξε ένας από τους πλέον δημοφιλείς θεούς της αιγυπτιακής θρησκείας. Ήταν θεότητα της Σελήνης και της Σοφίας. Οι αρχαίοι Έλληνες τον προσδιόρισαν ως τον Ερμή τον Τρισμέγιστο. \n   Ιδιότητες   \nΣτις αρχέγονες περιόδους του αιγυπτιακού πολιτισμού ήταν θεός της Σελήνης και από το σεληνιακό συσχετισμό του λέγεται ότι αντλεί την πολυμορφία του, καθώς εκφράζεται με πολλά και διαφορετικά πρόσωπα. Όπως η Σελήνη αντλεί το φως της από τον Ήλιο, έτσι και ο Θωθ αντλούσε ένα μεγάλο μέρος της εξουσίας του από τον ηλιακό θεό Ρα, όντας γραφέας και σύμβουλός του. Στην πραγματικότητα, τόσο σημαντικές ήταν οι φάσεις της Σελήνης για τους ρυθμούς της αιγυπτιακής ζωής, ώστε ο Θωθ θεωρήθηκε αρχή της κοσμικής τάξης, καθώς και των θρησκευτικών και κοινωνικών ιδρυμάτων. Ήταν παρών σχεδόν σε κάθε όψη λατρείας στους ναούς, στην απονομή δικαιοσύνης και στις μαγικές τέχνες, με τις οποίες σχετιζόταν ιδιαιτέρως.\n\nΕπίσης είναι ο θεϊκός γραφέας, εκείνος που επινόησε τη γραφή και κύριος της σοφίας. Το ιερατείο απέδιδε σ' εκείνον πολλές από τις ιερές γραφές, ανάμεσα στις οποίες συγκαταλέγεται η Βίβλος των Αναπνοών και ένα τμήμα της Βίβλου των Νεκρών. Πιστευόταν άλλωστε ότι είχε μεταδώσει την τέχνη της ιερογλυφικής γραφής στους Αιγυπτίους από τα πανάρχαια χρόνια.[1], ενώ ήταν και προστάτης των γραφέων. Του αποδίδονταν τιμές ως Κύριου της Γνώσης όλων των Επιστημών, θεωρούμενος η προσωποποίηση της Κατανόησης και της Λογικής. Υπήρξε, επίσης, μεσολαβητής για να επέλθει ειρήνη ανάμεσα στον Ώρο και τον Σηθ. Ιδιαίτερο πεδίο δράσης του ήταν η εσωτερική σοφία και γι' αυτό αποκαλείτο «ο Μυστηριώδης» ή «ο Άγνωστος». Οι μαγικές του δυνάμεις τον συνέδεσαν, επίσης, με την ιατρική και, όταν το σώμα υπέκυπτε τελικώς στο θάνατο, εκείνος ήταν πάλι που οδηγούσε το νεκρό στο βασίλειο των θεών και ακολουθούσε η κρίση της ψυχής του.";
+    const std::string jpTextTest = "スーパーファミコン（SUPER Famicom）は、任天堂より日本・中華民国（台湾）・香港などで発売された家庭用ゲーム機。略記・略称はSFC、スーファミなど[注 1]。日本発売は1990年（平成2年）11月21日、生産終了は2003年（平成15年）9月30日。\n\nファミリーコンピュータの後継機として開発された。同世代機の中では後発であったが、ファミリーコンピュータに引き続き、最多出荷台数を記録した。\n\n北米・欧州・オーストラリア・ブラジルなどでは“Super Nintendo Entertainment System”（スーパーニンテンドーエンターテインメントシステム、略称：Super NES、またはSNES）の名称で発売された。 ";
 
     forceUpdateAll = 1;
 
-    #define t jpTextTest
-    testString = TextRenderer::preprocess(To_UTF32(t));
+    #define textInUse greekTextTest
+    testString = TextRenderer::preprocess(To_UTF32(textInUse));
 
     for (int i = 0; i < testString.length() && instruments.size() < 256; i+= 12){
         instruments.push_back(Instrument());
@@ -143,7 +146,8 @@ void Instance::ProcessEvents(){
             window.close();
         else if (event.type == sf::Event::Resized){
             
-            scale = std::max(static_cast<int>(std::ceil(event.size.height/(4*8*TILE_SIZE))), 1);
+            //scale = std::max(static_cast<int>(std::ceil(event.size.height/(4*8*TILE_SIZE))), 1);
+            
             updateSections |= UPDATE_SCALE;
 
             //int width = std::ceil((event.size.width/scale)/TILE_SIZE);
@@ -162,6 +166,12 @@ void Instance::ProcessEvents(){
             else if (event.key.code == sf::Keyboard::E){
                 singleTileTrackerRender ^= 1;
                 updateSections |= UPDATE_TRACKER;
+            } else if (event.key.code == sf::Keyboard::Equal && event.key.control) {
+                scale++;
+                updateSections |= UPDATE_SCALE;
+            } else if (event.key.code == sf::Keyboard::Hyphen && event.key.control && scale > 1) {
+                scale--;
+                updateSections |= UPDATE_SCALE;
             }
         }
     }
@@ -313,6 +323,7 @@ void Instance::renderTracker () {
     #define HEADER_HEIGHT 5
 
     int widthInTiles = std::ceil((window.getSize().x/scale)/TILE_SIZE);
+    int heightInTiles = std::ceil((window.getSize().y/scale)/TILE_SIZE);
     #pragma region header
     TileMatrix header = TileMatrix(widthInTiles, HEADER_HEIGHT, 0x20);
     header.fillRow(0, ROW_SEPARATOR);
@@ -321,28 +332,40 @@ void Instance::renderTracker () {
     #pragma endregion
 
     #pragma region text
-    TileMatrix text = TextRenderer::render(testString, &font, widthInTiles, false, false);
-    text.resize(text.getWidth(), std::max((int)text.getHeight(), (int)cells.size()));
+    //TileMatrix text = TextRenderer::render(testString, &font, widthInTiles, false, false);
+    //text.resize(text.getWidth(), std::max((int)text.getHeight(), (int)activeProject.patterns[0].cells[0].size()));
+
+    int widthOfTracker = 3;
+
+    for (int i = 0; i < 8; i++) {
+        widthOfTracker += ((uint8_t)!singleTileTrackerRender)+2+1+2+(1+3)*activeProject.effectColumnAmount[i] + 1;
+    }
+
+    TileMatrix text = TileMatrix(widthOfTracker, std::min(heightInTiles, (int)activeProject.patterns[0].cells[0].size()));
     int textHeight = text.getHeight();
+
 
     {
         std::vector<uint16_t> tracker_separator_columns(0);
-        tracker_separator_columns.push_back(3);
         char rowNum[4];
-        for (int i = 0; i < cells.size(); i++){
+        for (int i = 0; i < activeProject.patterns[0].cells[0].size() && i < textHeight; i++){
             std::snprintf(rowNum, 4, "%03X", i);
             auto rowNumMatrix = TextRenderer::render(std::string(rowNum), &font, 3, 1, 0);
-            text.copyRect(0, i, std::min(3, widthInTiles), 1, &rowNumMatrix, 0, 0);
+            text.copyRect(0, i, 3, 1, &rowNumMatrix, 0, 0);
+        }
+        
+        int tileCounter = 4;
+        for (int i = 0; i < 8; i++) {
 
-            if (widthInTiles < 4)
-                continue;
+            for (int j = 0; j < activeProject.patterns[0].cells[i].size() && j < textHeight; j++) {
+                auto row = activeProject.patterns[0].cells[i][j].render(activeProject.effectColumnAmount[i], singleTileTrackerRender);
+                text.copyRect(tileCounter, j, ((uint8_t)!singleTileTrackerRender)+2+1+2+(1+3)*activeProject.effectColumnAmount[i], 1, &row, 0, 0);
+            }
 
-            int cols = 1;
-            auto row = cells[i].render(cols, singleTileTrackerRender);
-            text.copyRect(4, i, std::min(((uint8_t)!singleTileTrackerRender)+2+1+2+(1+3)*cols, widthInTiles-4), 1, &row, 0, 0);
+            tracker_separator_columns.push_back(tileCounter-1); 
+            tileCounter += ((uint8_t)!singleTileTrackerRender)+2+1+2+(1+3)*activeProject.effectColumnAmount[i] + 1;
         }
 
-        
         for (int i = 0; i < tracker_separator_columns.size(); i++) {
             uint8_t column = tracker_separator_columns[i];
             if (widthInTiles > column){
@@ -357,7 +380,7 @@ void Instance::renderTracker () {
     trackerMatrix = TileMatrix(widthInTiles+1, textHeight+HEADER_HEIGHT, 0x20);
     
     trackerMatrix.copyRect(0, 0, widthInTiles, HEADER_HEIGHT, &header, 0, 0);
-    trackerMatrix.copyRect(0, HEADER_HEIGHT, widthInTiles, textHeight, &text, 0, 0);
+    trackerMatrix.copyRect(0, HEADER_HEIGHT, std::min(widthInTiles, widthOfTracker), textHeight, &text, 0, 0);
     #pragma endregion
 
 }

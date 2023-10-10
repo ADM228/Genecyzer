@@ -36,14 +36,13 @@ void ChrFont::init(uint8_t* chrData, uint32_t size, std::vector<uint32_t> codepa
 
     uint8_t colorBuffer[TILE_SIZE*TILE_SIZE];
     uint32_t amount = size>>4;
-    std::vector<sf::Uint8> pixels(TILE_SIZE*TILE_SIZE*COLORS*amount);
+    sf::Uint8 * pixels = (sf::Uint8 *)malloc(TILE_SIZE*TILE_SIZE*COLORS*amount*(1+inverted));
     const uint8_t tableRG[] = {0, 255, 160, 0};
     const uint8_t invTableRG[] = {0, 0, 160, 255};
     const uint8_t tableB[] = {0, 255, 176, 0};
     const uint8_t invTableB[] = {0, 0, 176, 255};
 
     if (inverted) {
-        pixels.resize(TILE_SIZE*TILE_SIZE*COLORS*2*amount);
         int baseIndex;
         for (uint32_t tile = 0; tile < amount; tile++) {
             for(int i = 0; i < TILE_SIZE; i++){
@@ -92,7 +91,7 @@ void ChrFont::init(uint8_t* chrData, uint32_t size, std::vector<uint32_t> codepa
         }
     }
     texture.create(inverted?2*TILE_SIZE:TILE_SIZE,TILE_SIZE*amount);
-    texture.update(pixels.data(), inverted?2*TILE_SIZE:TILE_SIZE, TILE_SIZE*amount, 0, 0);
+    texture.update(pixels, inverted?2*TILE_SIZE:TILE_SIZE, TILE_SIZE*amount, 0, 0);
     texture.setSmooth(false);
 }
 
