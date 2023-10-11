@@ -55,9 +55,7 @@ class Instance {
 
         int debug = 0;
 
-        std::vector<Instrument> instruments;
         sf::Sprite instrumentSprite;
-
 
         #pragma region Update
         bool forceUpdateAll = 0;
@@ -76,10 +74,6 @@ class Instance {
         sf::Texture instrumentTexture;
         TileMatrix trackerMatrix;
 
-        std::u32string testString;
-
-        std::vector<TrackerCell> cells;
-
         Project activeProject;
 };
 
@@ -91,37 +85,24 @@ Instance::Instance() {
     forceUpdateAll = 1;
     activeProject = Project();
 
-
-    const std::string allTextTest = "English Ελληνικά Русский にほんこご antidisestablishmentarianism\nThe quick brown fox jumped over the lazy dog\nСъешь же ещё этих мягких французских булочек, да выпей чаю";
-	const std::string greekTextTest = "   Θωθ   \nΟ Θωθ ή και Θωτ ή και Τωθ υπήρξε ένας από τους πλέον δημοφιλείς θεούς της αιγυπτιακής θρησκείας. Ήταν θεότητα της Σελήνης και της Σοφίας. Οι αρχαίοι Έλληνες τον προσδιόρισαν ως τον Ερμή τον Τρισμέγιστο. \n   Ιδιότητες   \nΣτις αρχέγονες περιόδους του αιγυπτιακού πολιτισμού ήταν θεός της Σελήνης και από το σεληνιακό συσχετισμό του λέγεται ότι αντλεί την πολυμορφία του, καθώς εκφράζεται με πολλά και διαφορετικά πρόσωπα. Όπως η Σελήνη αντλεί το φως της από τον Ήλιο, έτσι και ο Θωθ αντλούσε ένα μεγάλο μέρος της εξουσίας του από τον ηλιακό θεό Ρα, όντας γραφέας και σύμβουλός του. Στην πραγματικότητα, τόσο σημαντικές ήταν οι φάσεις της Σελήνης για τους ρυθμούς της αιγυπτιακής ζωής, ώστε ο Θωθ θεωρήθηκε αρχή της κοσμικής τάξης, καθώς και των θρησκευτικών και κοινωνικών ιδρυμάτων. Ήταν παρών σχεδόν σε κάθε όψη λατρείας στους ναούς, στην απονομή δικαιοσύνης και στις μαγικές τέχνες, με τις οποίες σχετιζόταν ιδιαιτέρως.\n\nΕπίσης είναι ο θεϊκός γραφέας, εκείνος που επινόησε τη γραφή και κύριος της σοφίας. Το ιερατείο απέδιδε σ' εκείνον πολλές από τις ιερές γραφές, ανάμεσα στις οποίες συγκαταλέγεται η Βίβλος των Αναπνοών και ένα τμήμα της Βίβλου των Νεκρών. Πιστευόταν άλλωστε ότι είχε μεταδώσει την τέχνη της ιερογλυφικής γραφής στους Αιγυπτίους από τα πανάρχαια χρόνια.[1], ενώ ήταν και προστάτης των γραφέων. Του αποδίδονταν τιμές ως Κύριου της Γνώσης όλων των Επιστημών, θεωρούμενος η προσωποποίηση της Κατανόησης και της Λογικής. Υπήρξε, επίσης, μεσολαβητής για να επέλθει ειρήνη ανάμεσα στον Ώρο και τον Σηθ. Ιδιαίτερο πεδίο δράσης του ήταν η εσωτερική σοφία και γι' αυτό αποκαλείτο «ο Μυστηριώδης» ή «ο Άγνωστος». Οι μαγικές του δυνάμεις τον συνέδεσαν, επίσης, με την ιατρική και, όταν το σώμα υπέκυπτε τελικώς στο θάνατο, εκείνος ήταν πάλι που οδηγούσε το νεκρό στο βασίλειο των θεών και ακολουθούσε η κρίση της ψυχής του.";
-    const std::string jpTextTest = "スーパーファミコン（SUPER Famicom）は、任天堂より日本・中華民国（台湾）・香港などで発売された家庭用ゲーム機。略記・略称はSFC、スーファミなど[注 1]。日本発売は1990年（平成2年）11月21日、生産終了は2003年（平成15年）9月30日。\n\nファミリーコンピュータの後継機として開発された。同世代機の中では後発であったが、ファミリーコンピュータに引き続き、最多出荷台数を記録した。\n\n北米・欧州・オーストラリア・ブラジルなどでは“Super Nintendo Entertainment System”（スーパーニンテンドーエンターテインメントシステム、略称：Super NES、またはSNES）の名称で発売された。 ";
-
     forceUpdateAll = 1;
 
-    #define textInUse greekTextTest
-    testString = TextRenderer::preprocess(To_UTF32(textInUse));
+    // TODO: convert into raw data
 
-    for (int i = 0; i < testString.length() && instruments.size() < 256; i+= 12){
-        instruments.push_back(Instrument());
-        instruments.back().setName(testString.substr(i, std::min(static_cast<int>(testString.size()-i), 12)));
-        instruments.back().setPalette((i / 12)&0x07);
-    }
+    // constexpr uint8_t notes[] = {
+    //     0+3*12, 0+3*12, 0+3*12, 0+4*12, 0+3*12,
+    //     3+3*12, 3+4*12, 3+3*12,
+    //     6+3*12, 6+4*12, 9+3*12,
+    //     0+3*12, 0+3*12, 0+3*12, 0+4*12, 0+3*12,
+    //     3+3*12, 3+4*12, 3+3*12,
+    //     6+3*12, 6+4*12, 9+3*12
+    // };
 
-    constexpr uint8_t notes[] = {
-        0+3*12, 0+3*12, 0+3*12, 0+4*12, 0+3*12,
-        3+3*12, 3+4*12, 3+3*12,
-        6+3*12, 6+4*12, 9+3*12,
-        0+3*12, 0+3*12, 0+3*12, 0+4*12, 0+3*12,
-        3+3*12, 3+4*12, 3+3*12,
-        6+3*12, 6+4*12, 9+3*12
-    };
+    // for (int i = 0; i < 22; i++){
+    //     cells.push_back(TrackerCell());
+    //     cells.back().noteValue = notes[i];
+    // }
 
-    for (int i = 0; i < 22; i++){
-        cells.push_back(TrackerCell());
-        cells.back().noteValue = notes[i];
-    }
-    cells.push_back(TrackerCell());
-    cells.push_back(TrackerCell());
 }
 
 void Instance::addMonospaceFont(const uint8_t *data, uint32_t size, std::vector<uint32_t> codepages){
@@ -241,6 +222,7 @@ void Instance::renderInstList () {
     #define INST_WIDTH  512
     #define INST_HEIGHT 8
 
+    auto instruments = &activeProject.instruments;
 
     if (instrumentsToUpdate.size() == 0){   // Update the entire list
 
@@ -249,16 +231,17 @@ void Instance::renderInstList () {
         uint8_t instNumber;
         uint8_t palette;
 
+
         for (int i = 0; i < INST_WIDTH; i+=INST_ENTRY_WIDTH){
             instNumber = i>>1;
             for (int j = 0; j < INST_HEIGHT; j++){
                 std::string output;
-                if (instNumber < instruments.size()){
+                if (instNumber < instruments->size()){
                     char numchar[5];
                     std::snprintf(numchar, 5, "%02X:", instNumber);
                     std::string num(numchar);
-                    output = num + instruments[instNumber].getName() + " ";
-                    palette = instruments[instNumber].getPalette();
+                    output = num + (*instruments)[instNumber].getName() + " ";
+                    palette = (*instruments)[instNumber].getPalette();
                     if (palette == 0) palette = 7;
                 } else { 
                     char numchar[17];
@@ -288,12 +271,12 @@ void Instance::renderInstList () {
             instrumentsToUpdate.pop_back();
             uint8_t palette;
             std::string output;
-            if (instNumber < instruments.size()){
+            if (instNumber < instruments->size()){
                 char numchar[5];
                 std::snprintf(numchar, 5, "%02X:", instNumber);
                 std::string num(numchar);
-                output = num + instruments[instNumber].getName() + " ";
-                palette = instruments[instNumber].getPalette();
+                output = num + (*instruments)[instNumber].getName() + " ";
+                palette = (*instruments)[instNumber].getPalette();
                 if (palette == 0) palette = 7;
             } else { 
                 char numchar[17];
