@@ -2,8 +2,12 @@
 #define __INSTANCE_INCLUDED__
 
 #include <SFML/Graphics.hpp>
+#include <SFML/Window.hpp>
+#include <SFML/System.hpp>
 
-#include "SFML/Window/Keyboard.hpp"
+#include "SFML/Graphics/RectangleShape.hpp"
+#include "SFML/System/Vector2.hpp"
+#include "SFML/Window/Event.hpp"
 #include "Tile.cpp"
 #include "ChrFont.cpp"
 #include "Instrument.cpp"
@@ -13,6 +17,7 @@
 #include "Effect.cpp"
 #include "Project.cpp"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -21,6 +26,9 @@ constexpr uint64_t UPDATE_SCALE = 1;
 constexpr uint64_t UPDATE_INST_POS = 2;
 constexpr uint64_t UPDATE_INST_LIST = 4;
 constexpr uint64_t UPDATE_TRACKER = 8;
+constexpr uint64_t UPDATE_TRACKER_SELECTION = 16;
+
+constexpr uint16_t MOUSE_DOWN = 1;
 
 #define TILE_SIZE 8
 #define INST_ENTRY_WIDTH 16
@@ -45,6 +53,7 @@ class Instance {
         void renderTracker();
         void updateInstPage();
         void updateTrackerPos();
+        void updateTrackerSelection();
 
     private:
         uint8_t instSelected = 0;
@@ -63,6 +72,7 @@ class Instance {
         uint64_t updateSections = 0;
 
         std::vector<uint8_t> instrumentsToUpdate;
+        uint16_t selectionBounds[4];
         #pragma endregion
 
         sf::RenderWindow window;
@@ -75,6 +85,10 @@ class Instance {
         TileMatrix trackerMatrix;
 
         Project activeProject;
+
+        uint16_t mouseFlags;
+
+        sf::Event::MouseButtonEvent lastMousePress;
 };
 
 Instance::Instance() {
@@ -154,6 +168,26 @@ void Instance::ProcessEvents(){
                 scale--;
                 updateSections |= UPDATE_SCALE;
             }
+        } else if (event.type == sf::Event::MouseButtonPressed) {
+            lastMousePress = event.mouseButton;
+            // do sumn for time
+            mouseFlags |= MOUSE_DOWN;
+        } else if (event.type == sf::Event::MouseMoved || event.type == sf::Event::TouchMoved) {
+            if (mouseFlags & MOUSE_DOWN) {
+                // determine region
+                if (
+                    lastMousePress.y > scale*TILE_SIZE*(8+5) &&
+                    lastMousePress.x > scale*TILE_SIZE*(3+1)
+                ) {
+                    selectionBounds[0] = lastMousePress.x  / (scale*TILE_SIZE);
+                    selectionBounds[1] = lastMousePress.y  / (scale*TILE_SIZE);
+                    selectionBounds[2] = event.mouseMove.x / (scale*TILE_SIZE);
+                    selectionBounds[3] = event.mouseMove.y / (scale*TILE_SIZE);
+                    updateSections |= UPDATE_TRACKER_SELECTION;
+                }
+            }
+        } else if (event.type == sf::Event::MouseButtonReleased) {
+            mouseFlags &= ~MOUSE_DOWN;
         }
     }
 }
@@ -179,6 +213,9 @@ void Instance::Update(){
         updateTrackerPos();
     }
 
+    if (updateSections & UPDATE_TRACKER_SELECTION)
+        updateTrackerSelection();
+
     #pragma endregion
     #pragma region AlwaysUpdates
 
@@ -191,6 +228,14 @@ void Instance::Update(){
 
     window.setView(TrackerView);
     trackerMatrix.render(0, getGlobalBounds_bottom(instrumentSprite), &window, font.texture);
+
+    // auto selection = sf::RectangleShape(
+    //     sf::Vector2f((selectionBounds[2] - selectionBounds[0])*TILE_SIZE, 
+    //     (selectionBounds[3] - selectionBounds[1])*TILE_SIZE));
+    // selection.setPosition(selectionBounds[0]*TILE_SIZE, 
+    //     (selectionBounds[1]-8)*TILE_SIZE);
+    // selection.setFillColor(sf::Color(128, 128, 255, 80));
+    // window.draw(selection);
 
     // tiles.render(0,0,&window, font[0]);
     // window.draw(tile.renderVertex, sf::RenderStates(&font[0]));
@@ -305,6 +350,10 @@ void Instance::renderTracker () {
 
     #define HEADER_HEIGHT 5
 
+    #define TRACKER_NOTE_WIDTH ((uint8_t)!singleTileTrackerRender)+2
+
+    #define TRACKER_ROW_WIDTH(effectColumns) TRACKER_NOTE_WIDTH+1+2+(1+3)*effectColumns
+
     int widthInTiles = std::ceil((window.getSize().x/scale)/TILE_SIZE);
     int heightInTiles = std::ceil((window.getSize().y/scale)/TILE_SIZE);
     #pragma region header
@@ -321,7 +370,7 @@ void Instance::renderTracker () {
     int widthOfTracker = 3;
 
     for (int i = 0; i < 8; i++) {
-        widthOfTracker += ((uint8_t)!singleTileTrackerRender)+2+1+2+(1+3)*activeProject.effectColumnAmount[i] + 1;
+        widthOfTracker += TRACKER_ROW_WIDTH(activeProject.effectColumnAmount[i]) + 1;
     }
 
     TileMatrix text = TileMatrix(widthOfTracker, std::min(heightInTiles, (int)activeProject.patterns[0].cells[0].size()));
@@ -342,17 +391,17 @@ void Instance::renderTracker () {
 
             for (int j = 0; j < activeProject.patterns[0].cells[i].size() && j < textHeight; j++) {
                 auto row = activeProject.patterns[0].cells[i][j].render(activeProject.effectColumnAmount[i], singleTileTrackerRender);
-                text.copyRect(tileCounter, j, ((uint8_t)!singleTileTrackerRender)+2+1+2+(1+3)*activeProject.effectColumnAmount[i], 1, &row, 0, 0);
+                text.copyRect(tileCounter, j, TRACKER_ROW_WIDTH(activeProject.effectColumnAmount[i]), 1, &row, 0, 0);
             }
 
             tracker_separator_columns.push_back(tileCounter-1); 
-            tileCounter += ((uint8_t)!singleTileTrackerRender)+2+1+2+(1+3)*activeProject.effectColumnAmount[i] + 1;
+            tileCounter += TRACKER_ROW_WIDTH(activeProject.effectColumnAmount[i]) + 1;
         }
 
         for (int i = 0; i < tracker_separator_columns.size(); i++) {
             uint8_t column = tracker_separator_columns[i];
             if (widthInTiles > column){
-                header.setTile(column,  4, INTERSECTION_NOUP);
+                header.setTile(column, 4, INTERSECTION_NOUP);
                 text.fillCol(column, COL_SEPARATOR);
             }
         }
@@ -385,6 +434,69 @@ void Instance::updateInstPage () {
 void Instance::updateTrackerPos () {
     TrackerView.reset(sf::FloatRect(0, 0, window.getSize().x, (double)window.getSize().y/scale));
     TrackerView.setViewport(sf::FloatRect(0.f, (double)(INST_HEIGHT*TILE_SIZE*scale)/(double)window.getSize().y, scale, 1));
+}
+
+void Instance::updateTrackerSelection () {
+    int tileX = 3;
+
+    int x1 = selectionBounds[0], x2 = selectionBounds[2];
+    int y1 = selectionBounds[1], y2 = selectionBounds[3];
+    int beginX = std::max(std::min(x1, x2), 3),
+        endX = std::min(std::max(x1, x2), (int)trackerMatrix.getWidth());
+    int beginY = std::min(y1, y2),
+        endY = std::max(y1, y2);
+    x1 = -1, x2 = -1, y1 = std::max(beginY-8, 5), y2 = std::min(endY-8, (int)trackerMatrix.getHeight());    
+
+    for (int i = 0; i < 8; i++){
+        if (beginX >= tileX && beginX < tileX+TRACKER_NOTE_WIDTH+1) {
+            // Begins at the note tile
+            x1 = tileX+1;
+            break;
+        } else if (beginX >= tileX+TRACKER_NOTE_WIDTH+1 && beginX < tileX+TRACKER_NOTE_WIDTH+4) {
+            // Begins at instrument tile
+            x1 = tileX+TRACKER_NOTE_WIDTH+1+1;
+            break;
+        } else if (beginX >= tileX+TRACKER_NOTE_WIDTH+4 && beginX <= tileX+TRACKER_ROW_WIDTH(activeProject.effectColumnAmount[i])) {
+            // Begins at an effect tile
+            for (int j = 0; j < std::max((int)activeProject.effectColumnAmount[i], 1); j++) {
+                if (beginX >= tileX+TRACKER_NOTE_WIDTH+4+4*j && beginX <= tileX+TRACKER_NOTE_WIDTH+4+4+4*j) { 
+                    x1 = tileX+TRACKER_NOTE_WIDTH+1+4+4*j;
+                    break;
+                }
+            break;
+            }
+        }
+        tileX += TRACKER_ROW_WIDTH(activeProject.effectColumnAmount[i])+1;
+    }
+
+    tileX = 3;
+    for (int i = 0; i < 8; i++){
+        if (endX > tileX && endX <= tileX+TRACKER_NOTE_WIDTH+1) {
+            // Ends at the note tile
+            x2 = tileX+TRACKER_NOTE_WIDTH+1;
+            break;
+        } else if (endX > tileX+TRACKER_NOTE_WIDTH+1 && endX <= tileX+TRACKER_NOTE_WIDTH+4) {
+            // Ends at instrument tile
+            x2 = tileX+TRACKER_NOTE_WIDTH+1+3;
+            break;
+        } else if (endX > tileX+TRACKER_NOTE_WIDTH+4 && endX <= tileX+TRACKER_ROW_WIDTH(activeProject.effectColumnAmount[i])+1) {
+            // Ends at an effect tile
+            for (int j = 0; j < std::max((int)activeProject.effectColumnAmount[i], 1); j++) {
+                if (endX > tileX+TRACKER_NOTE_WIDTH+4+4*j && endX <= tileX+TRACKER_NOTE_WIDTH+1+4+4+4*j) { 
+                    x2 = tileX+TRACKER_NOTE_WIDTH+4+4+4*j;
+                    break;
+                }
+            }
+            break;
+        }
+        tileX += TRACKER_ROW_WIDTH(activeProject.effectColumnAmount[i])+1;
+    }
+
+    if (x1 == -1) x1 = 4;
+    if (x2 == -1) x2 = trackerMatrix.getWidth();
+
+    trackerMatrix.fillInvert(false);
+    trackerMatrix.fillInvertRect(x1, y1, x2-x1, y2-y1, true);
 }
 
 #endif // __INSTANCE_INCLUDED__

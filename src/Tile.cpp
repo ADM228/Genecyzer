@@ -415,7 +415,7 @@ void TileMatrix::fillInvertRect(uint16_t x, uint16_t y, uint16_t width, uint16_t
     if (y >= _height) {inv_arg("[TileMatrix::fillInvertRect]: y is out of bounds");}
     if (width+x > _width) {inv_arg("[TileMatrix::fillInvertRect]: width+x is out of bounds");}
     if (height+y > _height) {inv_arg("[TileMatrix::fillInvertRect]: height+y is out of bounds");}
-    for (uint16_t i = y; i < _height; i++) {
+    for (uint16_t i = y; i < height+y; i++) {
         _tiles[i].fillInvert(x, width, invert);
     }
 }
@@ -448,7 +448,7 @@ void TileMatrix::fillPaletteRect(uint16_t x, uint16_t y, uint16_t width, uint16_
     if (y >= _height) {inv_arg("[TileMatrix::fillPaletteRect]: y is out of bounds");}
     if (width+x > _width) {inv_arg("[TileMatrix::fillPaletteRect]: width+x is out of bounds");}
     if (height+y > _height) {inv_arg("[TileMatrix::fillPaletteRect]: height+y is out of bounds");}
-    for (uint16_t i = y; i < _height; i++) {
+    for (uint16_t i = y; i < height+y; i++) {
         _tiles[i].fillPalette(x, width, palette);
     }
 }
