@@ -107,7 +107,7 @@ Instance::Instance() {
 
     forceUpdateAll = 1;
 
-    renderBeatsTexture();
+    
 
     // TODO: convert into raw data
 
@@ -219,6 +219,7 @@ void Instance::Update(){
     if (updateSections & (UPDATE_SCALE | UPDATE_TRACKER)){
         renderTracker();
         updateTrackerPos();
+        renderBeatsTexture();
     }
 
     if (updateSections & UPDATE_TRACKER_SELECTION)
@@ -238,9 +239,10 @@ void Instance::Update(){
     trackerMatrix.render(0, getGlobalBounds_bottom(instrumentSprite), &window, font.texture);
 
     //auto beats = sf::Sprite(beatsTexture, sf::IntRect(0, 5*TILE_SIZE, ));
-    auto beats = sf::RectangleShape(sf::Vector2f(window.getSize().x, beatsTexture.getSize().y*TILE_SIZE));
+    auto beats = sf::RectangleShape(sf::Vector2f(beatsTexture.getSize().x, beatsTexture.getSize().y));
     beats.setPosition(0, 5*TILE_SIZE);
     beats.setTexture(&beatsTexture);
+    beats.setScale(2, TILE_SIZE);
     window.draw(beats);
 
     // auto selection = sf::RectangleShape(
@@ -517,30 +519,59 @@ void Instance::updateTrackerSelection () {
 }
 
 void Instance::renderBeatsTexture() {
-    int rows = activeProject.patterns[0].cells[0].size();
+    if (!(trackerMatrix.getWidth())) return;
+    int rows = std::min(activeProject.patterns[0].cells[0].size(), (uint64_t)trackerMatrix.getHeight()-5);
     auto * maj_beats = &activeProject.patterns[0].beats_major;
     auto * min_beats = &activeProject.patterns[0].beats_minor;
-    uint8_t * pixels = (uint8_t *) calloc(rows, sizeof(sf::Color)); // automatically zeroes out alpha value
+    uint8_t * colors = (uint8_t *) calloc(rows, sizeof(uint8_t));
+    uint8_t * pixels = (uint8_t *) calloc(rows*trackerMatrix.getWidth()*TILE_SIZE/2, sizeof(sf::Color)); // automatically zeroes out alpha value
     for (int i = 0; i < rows;) {
         for (int j = 0; j < min_beats->size() && i < rows; j++) {
-            pixels[i<<2] = 128;
-            pixels[(i<<2)+1] = 128;
-            pixels[(i<<2)+2] = 255;
-            pixels[(i<<2)+3] = 48;
+            // pixels[i<<2] = 128;
+            // pixels[(i<<2)+1] = 128;
+            // pixels[(i<<2)+2] = 255;
+            // pixels[(i<<2)+3] = 48;
+            colors[i] = 1;
             i += (*min_beats)[j];
         }
     }
     for (int i = 0; i < rows;) {
         for (int j = 0; j < maj_beats->size() && i < rows; j++) {
-            pixels[i<<2] = 128;
-            pixels[(i<<2)+1] = 128;
-            pixels[(i<<2)+2] = 255;
-            pixels[(i<<2)+3] = 96;
+            // pixels[i<<2] = 128;
+            // pixels[(i<<2)+1] = 128;
+            // pixels[(i<<2)+2] = 255;
+            // pixels[(i<<2)+3] = 96;
+            colors[i] = 2;
             i += (*maj_beats)[j];
         }
     }
-    beatsTexture.create(1, rows);
+
+    uint64_t pixelIndex = 0;
+
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < trackerMatrix.getWidth(); j++, pixelIndex+=16) {
+            if (colors[i] > 0) {
+                for (int k = 0; k < 16; k+=4){
+                    pixels[pixelIndex+k+0] = 128;
+                    pixels[pixelIndex+k+1] = 128;
+                    pixels[pixelIndex+k+2] = 255;
+                    pixels[pixelIndex+k+3] = colors[i] == 1 ? 48 : 96;
+                }
+            }
+            if (trackerMatrix[i+HEADER_HEIGHT][j] == COL_SEPARATOR){
+                pixels[pixelIndex+1*4+3] = 0;
+                pixels[pixelIndex+2*4+3] = 0;
+            }
+
+            //pixelIndex+=16;
+        }
+    }
+
+    beatsTexture.create(trackerMatrix.getWidth()*TILE_SIZE/2, rows);
     beatsTexture.update(pixels);
+
+    free(colors);
+    free(pixels);
 }
 
 #endif // __INSTANCE_INCLUDED__

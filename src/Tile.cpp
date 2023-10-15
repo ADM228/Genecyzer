@@ -60,6 +60,9 @@ class TileRow {
         void copy(uint32_t src[]);
         void copy(uint16_t offset, uint16_t length, uint32_t src[]);
 
+              uint32_t& operator[](std::size_t idx)       { return _tiles[idx]; }
+        const uint32_t& operator[](std::size_t idx) const { return _tiles[idx]; }
+
         std::vector <uint32_t> _tiles;
         std::vector <uint8_t> _flip_palette;
 
@@ -167,6 +170,9 @@ class TileMatrix {
 
         uint16_t getWidth (){ return _width; };
         uint16_t getHeight (){ return _height; };
+
+              TileRow& operator[](std::size_t idx)       { return _tiles[idx]; }
+        const TileRow& operator[](std::size_t idx) const { return _tiles[idx]; }
 
         #pragma endregion
 

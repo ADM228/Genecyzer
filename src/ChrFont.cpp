@@ -93,6 +93,8 @@ void ChrFont::init(uint8_t* chrData, uint32_t size, std::vector<uint32_t> codepa
     texture.create(inverted?2*TILE_SIZE:TILE_SIZE,TILE_SIZE*amount);
     texture.update(pixels, inverted?2*TILE_SIZE:TILE_SIZE, TILE_SIZE*amount, 0, 0);
     texture.setSmooth(false);
+
+    free(pixels);
 }
 
 
