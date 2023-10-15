@@ -45,7 +45,7 @@ Project::Project() {
     };
     defaultPattern.cells.fill(std::vector<TrackerCell>(64));
     patterns.push_back(defaultPattern);
-    effectColumnAmount.fill(1);
+    effectColumnAmount.fill(2);
 
 
     const std::string allTextTest = "English Ελληνικά Русский にほんこご antidisestablishmentarianism\nThe quick brown fox jumped over the lazy dog\nСъешь же ещё этих мягких французских булочек, да выпей чаю";

@@ -68,7 +68,7 @@ TileMatrix TrackerCell::render(uint16_t effectColumns, bool singleTile) {
         firstIndex = 0; 
         noteTileTable = const_cast<uint32_t *>(&doubleNoteTileTable[0]);
     }
-    if (effectColumns == 0) effectColumns = 1;
+    if (!effectColumns) effectColumns = 1;
     TileMatrix output(tileAppend+2+1+2+effectColumns*(3+1), 1, 0x20);
     // Render note
     if (noteValue == EMPTY_NOTE){

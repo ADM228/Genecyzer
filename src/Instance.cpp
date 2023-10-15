@@ -77,7 +77,7 @@ class Instance {
         uint64_t updateSections = 0;
 
         std::vector<uint8_t> instrumentsToUpdate;
-        uint16_t selectionBounds[4];
+        int selectionBounds[4];
         #pragma endregion
 
         sf::RenderWindow window;
@@ -479,8 +479,8 @@ void Instance::updateTrackerSelection () {
                     x1 = tileX+TRACKER_NOTE_WIDTH+1+4+4*j;
                     break;
                 }
-            break;
             }
+            break;
         }
         tileX += TRACKER_ROW_WIDTH(activeProject.effectColumnAmount[i])+1;
     }
@@ -508,12 +508,12 @@ void Instance::updateTrackerSelection () {
         tileX += TRACKER_ROW_WIDTH(activeProject.effectColumnAmount[i])+1;
     }
 
-    if (x1 == -1) x1 = 4;
-    if (x2 == -1) x2 = x1;
-
     trackerMatrix.fillInvert(false);
 
+    if (x1 == -1) x1 = 4;
+    if (x2 == -1) x2 = endX > tileX ? tileX : x1;
     if (x1 >= x2 || y1 >= y2) return;
+    x2 = std::min(x2, (int)trackerMatrix.getWidth());
 
     trackerMatrix.fillInvertRect(x1, y1, x2-x1, y2-y1, true);
 }
