@@ -5,9 +5,13 @@
 #include <SFML/Window.hpp>
 #include <SFML/System.hpp>
 
+#include "SFML/Graphics/Color.hpp"
+#include "SFML/Graphics/Rect.hpp"
 #include "SFML/Graphics/RectangleShape.hpp"
+#include "SFML/Graphics/Sprite.hpp"
 #include "SFML/System/Vector2.hpp"
 #include "SFML/Window/Event.hpp"
+#include "SFML/Window/Mouse.hpp"
 #include "Tile.cpp"
 #include "ChrFont.cpp"
 #include "Instrument.cpp"
@@ -54,6 +58,7 @@ class Instance {
         void updateInstPage();
         void updateTrackerPos();
         void updateTrackerSelection();
+        void renderBeatsTexture();
 
     private:
         uint8_t instSelected = 0;
@@ -83,6 +88,7 @@ class Instance {
 
         sf::Texture instrumentTexture;
         TileMatrix trackerMatrix;
+        sf::Texture beatsTexture;
 
         Project activeProject;
 
@@ -100,6 +106,8 @@ Instance::Instance() {
     activeProject = Project();
 
     forceUpdateAll = 1;
+
+    renderBeatsTexture();
 
     // TODO: convert into raw data
 
@@ -171,7 +179,7 @@ void Instance::ProcessEvents(){
         } else if (event.type == sf::Event::MouseButtonPressed) {
             lastMousePress = event.mouseButton;
             // do sumn for time
-            mouseFlags |= MOUSE_DOWN;
+            if (event.mouseButton.button == sf::Mouse::Left) mouseFlags |= MOUSE_DOWN;
         } else if (event.type == sf::Event::MouseMoved || event.type == sf::Event::TouchMoved) {
             if (mouseFlags & MOUSE_DOWN) {
                 // determine region
@@ -187,7 +195,7 @@ void Instance::ProcessEvents(){
                 }
             }
         } else if (event.type == sf::Event::MouseButtonReleased) {
-            mouseFlags &= ~MOUSE_DOWN;
+            if (event.mouseButton.button == sf::Mouse::Left) mouseFlags &= ~MOUSE_DOWN;
         }
     }
 }
@@ -228,6 +236,12 @@ void Instance::Update(){
 
     window.setView(TrackerView);
     trackerMatrix.render(0, getGlobalBounds_bottom(instrumentSprite), &window, font.texture);
+
+    //auto beats = sf::Sprite(beatsTexture, sf::IntRect(0, 5*TILE_SIZE, ));
+    auto beats = sf::RectangleShape(sf::Vector2f(window.getSize().x, beatsTexture.getSize().y*TILE_SIZE));
+    beats.setPosition(0, 5*TILE_SIZE);
+    beats.setTexture(&beatsTexture);
+    window.draw(beats);
 
     // auto selection = sf::RectangleShape(
     //     sf::Vector2f((selectionBounds[2] - selectionBounds[0])*TILE_SIZE, 
@@ -493,10 +507,40 @@ void Instance::updateTrackerSelection () {
     }
 
     if (x1 == -1) x1 = 4;
-    if (x2 == -1) x2 = trackerMatrix.getWidth();
+    if (x2 == -1) x2 = x1;
 
     trackerMatrix.fillInvert(false);
+
+    if (x1 >= x2 || y1 >= y2) return;
+
     trackerMatrix.fillInvertRect(x1, y1, x2-x1, y2-y1, true);
+}
+
+void Instance::renderBeatsTexture() {
+    int rows = activeProject.patterns[0].cells[0].size();
+    auto * maj_beats = &activeProject.patterns[0].beats_major;
+    auto * min_beats = &activeProject.patterns[0].beats_minor;
+    uint8_t * pixels = (uint8_t *) calloc(rows, sizeof(sf::Color)); // automatically zeroes out alpha value
+    for (int i = 0; i < rows;) {
+        for (int j = 0; j < min_beats->size() && i < rows; j++) {
+            pixels[i<<2] = 128;
+            pixels[(i<<2)+1] = 128;
+            pixels[(i<<2)+2] = 255;
+            pixels[(i<<2)+3] = 48;
+            i += (*min_beats)[j];
+        }
+    }
+    for (int i = 0; i < rows;) {
+        for (int j = 0; j < maj_beats->size() && i < rows; j++) {
+            pixels[i<<2] = 128;
+            pixels[(i<<2)+1] = 128;
+            pixels[(i<<2)+2] = 255;
+            pixels[(i<<2)+3] = 96;
+            i += (*maj_beats)[j];
+        }
+    }
+    beatsTexture.create(1, rows);
+    beatsTexture.update(pixels);
 }
 
 #endif // __INSTANCE_INCLUDED__

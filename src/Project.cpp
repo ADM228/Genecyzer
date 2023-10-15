@@ -40,8 +40,8 @@ class Project {
 Project::Project() {
     TrackerPattern defaultPattern {
         {},
-        std::vector<uint16_t> {0, 16, 32, 48},
-        std::vector<uint16_t> {8, 24, 40, 56}
+        std::vector<uint16_t> {16},
+        std::vector<uint16_t> {4}
     };
     defaultPattern.cells.fill(std::vector<TrackerCell>(64));
     patterns.push_back(defaultPattern);
