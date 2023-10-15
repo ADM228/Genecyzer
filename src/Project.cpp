@@ -1,8 +1,13 @@
 #ifndef __PROJECT_INCLUDED__
 #define __PROJECT_INCLUDED__
 
+#include <cstddef>
 #include <cstdint>
+#include <cstring>
+#include <exception>
 #include <fstream>
+#include <stdexcept>
+#include <string>
 #include <vector>
 #include <array>
 #include "TextRenderer.cpp"
@@ -15,6 +20,27 @@ struct TrackerPattern {
     std::vector<uint16_t> beats_minor;
 };
 
+class FileException : public std::exception {
+    public:
+        FileException (const char * what_arg) : std::exception() {
+            std::string output = "Reading a file has failed: ";
+            output += what_arg;
+            message = (char *)malloc(output.size()+1);
+            strcpy(message, output.c_str());    // Unsafe as fuck and idc
+        };
+
+        ~FileException () {
+            free (message);
+        }
+
+        virtual const char * what () const noexcept {
+            return message;
+        }
+
+    private:
+        char * message;
+};
+
 class Project {
     public:
         // Create new project
@@ -22,7 +48,12 @@ class Project {
         // Import project from file
         Project (std::ifstream file);
         // Import project from file
-        Project (uint8_t * data);
+        Project (uint8_t * data, size_t size);
+
+        // Save project to filestream
+        void save (std::ofstream file);
+        // Save project to memory
+        uint8_t * save (size_t * size_out);
 
         // Export project's patterns to SNESFM opcode format
         uint8_t * exportSNESFM ();
@@ -60,8 +91,21 @@ Project::Project() {
         instruments.back().setName(testString.substr(i, std::min(static_cast<int>(testString.size()-i), 12)));
         instruments.back().setPalette((i / 12)&0x07);
     }
-
-
 }
+
+Project::Project(uint8_t * data, size_t size) : Project () {
+    int idx = 0;
+
+    #define CURRENT_FILE_FORMAT 0
+    uint16_t fileFormat = data[idx] | (data[idx+1] << 8);
+    if (fileFormat > CURRENT_FILE_FORMAT) throw FileException("file too new.");
+
+    idx+=2;
+
+    for (int i = 0; i < 8; i++) {
+        effectColumnAmount[i] = data[idx++];
+    }
+}
+
 
 #endif

@@ -103,9 +103,15 @@ Instance::Instance() {
     InstrumentView.reset(sf::FloatRect(0.f, 0.f, 200.f, 200.f));
     TrackerView.reset(sf::FloatRect(0.f,0.f,200.f,200.f));
     forceUpdateAll = 1;
-    activeProject = Project();
 
-    forceUpdateAll = 1;
+    constexpr uint8_t data[] = {
+        0x00, 0x00,
+        1, 2, 3, 2, 1, 2, 2, 4
+    };
+
+
+    activeProject = Project(const_cast<uint8_t *>(data), 2);
+
 
     
 
@@ -510,8 +516,8 @@ void Instance::updateTrackerSelection () {
 
     trackerMatrix.fillInvert(false);
 
-    if (x1 == -1) x1 = 4;
-    if (x2 == -1) x2 = endX > tileX ? tileX : x1;
+    if (x1 == -1) x1 = beginX >= tileX ? tileX-3 : 4;
+    if (x2 == -1) x2 = endX >= tileX ? tileX : x1;
     if (x1 >= x2 || y1 >= y2) return;
     x2 = std::min(x2, (int)trackerMatrix.getWidth());
 
@@ -527,20 +533,13 @@ void Instance::renderBeatsTexture() {
     uint8_t * pixels = (uint8_t *) calloc(rows*trackerMatrix.getWidth()*TILE_SIZE/2, sizeof(sf::Color)); // automatically zeroes out alpha value
     for (int i = 0; i < rows;) {
         for (int j = 0; j < min_beats->size() && i < rows; j++) {
-            // pixels[i<<2] = 128;
-            // pixels[(i<<2)+1] = 128;
-            // pixels[(i<<2)+2] = 255;
-            // pixels[(i<<2)+3] = 48;
+
             colors[i] = 1;
             i += (*min_beats)[j];
         }
     }
     for (int i = 0; i < rows;) {
         for (int j = 0; j < maj_beats->size() && i < rows; j++) {
-            // pixels[i<<2] = 128;
-            // pixels[(i<<2)+1] = 128;
-            // pixels[(i<<2)+2] = 255;
-            // pixels[(i<<2)+3] = 96;
             colors[i] = 2;
             i += (*maj_beats)[j];
         }
@@ -562,8 +561,6 @@ void Instance::renderBeatsTexture() {
                 pixels[pixelIndex+1*4+3] = 0;
                 pixels[pixelIndex+2*4+3] = 0;
             }
-
-            //pixelIndex+=16;
         }
     }
 

@@ -35,7 +35,7 @@ class TrackerCell {
         constexpr static uint32_t doubleNoteTileTable[] {
             0x43, 0x43, 0x44, 0x44, 0x45,               // C, C#, D, D#, E
             0x46, 0x46, 0x47, 0x47, 0x41, 0x41, 0x42,   // F, F#, G, G#, A, A#, B
-            NOSHARP, SHARP, NOSHARP,  SHARP,  NOSHARP,  
+            NOSHARP, SHARP, NOSHARP,  SHARP, NOSHARP,  
             NOSHARP, SHARP, NOSHARP,  SHARP, NOSHARP, SHARP, NOSHARP
         };
         constexpr static uint32_t emptyRow[] {
