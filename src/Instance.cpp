@@ -519,8 +519,8 @@ void Instance::updateTrackerSelection () {
 }
 
 void Instance::renderBeatsTexture() {
-    if (!(trackerMatrix.getWidth())) return;
-    int rows = std::min(activeProject.patterns[0].cells[0].size(), (uint64_t)trackerMatrix.getHeight()-5);
+    int rows = std::min(activeProject.patterns[0].cells[0].size(), (size_t)trackerMatrix.getHeight()-5);
+    if (!(trackerMatrix.getWidth() && rows)) return;
     auto * maj_beats = &activeProject.patterns[0].beats_major;
     auto * min_beats = &activeProject.patterns[0].beats_minor;
     uint8_t * colors = (uint8_t *) calloc(rows, sizeof(uint8_t));
