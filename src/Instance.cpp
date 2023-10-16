@@ -110,7 +110,8 @@ Instance::Instance() {
     };
 
 
-    activeProject = Project(const_cast<uint8_t *>(data), 2);
+    activeProject = Project();
+    activeProject.Load(const_cast<uint8_t *>(data), 2);
 
 
     
@@ -372,12 +373,12 @@ void Instance::renderTracker () {
 
     #define HEADER_HEIGHT 5
 
-    #define TRACKER_NOTE_WIDTH ((uint8_t)!singleTileTrackerRender)+2
+    #define TRACKER_ROW_WIDTH(effectColumns) trackerNoteWidth+1+2+(1+3)*effectColumns
 
-    #define TRACKER_ROW_WIDTH(effectColumns) TRACKER_NOTE_WIDTH+1+2+(1+3)*effectColumns
-
-    int widthInTiles = std::ceil((window.getSize().x/scale)/TILE_SIZE);
-    int heightInTiles = std::ceil((window.getSize().y/scale)/TILE_SIZE);
+    uint8_t trackerNoteWidth = ((uint8_t)!singleTileTrackerRender)+2;
+    size_t widthInTiles = std::ceil((window.getSize().x/scale)/TILE_SIZE);
+    size_t heightInTiles = std::ceil((window.getSize().y/scale)/TILE_SIZE);
+    size_t rows = activeProject.patterns[0].rows;
     #pragma region header
     TileMatrix header = TileMatrix(widthInTiles, HEADER_HEIGHT, 0x20);
     header.fillRow(0, ROW_SEPARATOR);
@@ -389,20 +390,20 @@ void Instance::renderTracker () {
     //TileMatrix text = TextRenderer::render(testString, &font, widthInTiles, false, false);
     //text.resize(text.getWidth(), std::max((int)text.getHeight(), (int)activeProject.patterns[0].cells[0].size()));
 
-    int widthOfTracker = 3;
+    size_t widthOfTracker = 3;
 
     for (int i = 0; i < 8; i++) {
         widthOfTracker += TRACKER_ROW_WIDTH(activeProject.effectColumnAmount[i]) + 1;
     }
 
-    TileMatrix text = TileMatrix(widthOfTracker, std::min(heightInTiles, (int)activeProject.patterns[0].cells[0].size()));
+    TileMatrix text = TileMatrix(widthOfTracker, std::min(heightInTiles, rows));
     int textHeight = text.getHeight();
 
 
     {
         std::vector<uint16_t> tracker_separator_columns(0);
         char rowNum[4];
-        for (int i = 0; i < activeProject.patterns[0].cells[0].size() && i < textHeight; i++){
+        for (int i = 0; i < rows && i < textHeight; i++){
             std::snprintf(rowNum, 4, "%03X", i);
             auto rowNumMatrix = TextRenderer::render(std::string(rowNum), &font, 3, 1, 0);
             text.copyRect(0, i, 3, 1, &rowNumMatrix, 0, 0);
@@ -411,8 +412,10 @@ void Instance::renderTracker () {
         int tileCounter = 4;
         for (int i = 0; i < 8; i++) {
 
-            for (int j = 0; j < activeProject.patterns[0].cells[i].size() && j < textHeight; j++) {
-                auto row = activeProject.patterns[0].cells[i][j].render(activeProject.effectColumnAmount[i], singleTileTrackerRender);
+            auto* patternData = &activeProject.patternData[activeProject.patterns[0].cells[i]]; 
+
+            for (int j = 0; j < rows && j < textHeight; j++) {
+                auto row = (*patternData)[j].render(activeProject.effectColumnAmount[i], singleTileTrackerRender);
                 text.copyRect(tileCounter, j, TRACKER_ROW_WIDTH(activeProject.effectColumnAmount[i]), 1, &row, 0, 0);
             }
 
@@ -460,6 +463,7 @@ void Instance::updateTrackerPos () {
 
 void Instance::updateTrackerSelection () {
     int tileX = 3;
+    uint8_t trackerNoteWidth = ((uint8_t)!singleTileTrackerRender)+2;
 
     int x1 = selectionBounds[0], x2 = selectionBounds[2];
     int y1 = selectionBounds[1], y2 = selectionBounds[3];
@@ -470,19 +474,19 @@ void Instance::updateTrackerSelection () {
     x1 = -1, x2 = -1, y1 = std::max(beginY-8, 5), y2 = std::min(endY-8, (int)trackerMatrix.getHeight());    
 
     for (int i = 0; i < 8; i++){
-        if (beginX >= tileX && beginX < tileX+TRACKER_NOTE_WIDTH+1) {
+        if (beginX >= tileX && beginX < tileX+trackerNoteWidth+1) {
             // Begins at the note tile
             x1 = tileX+1;
             break;
-        } else if (beginX >= tileX+TRACKER_NOTE_WIDTH+1 && beginX < tileX+TRACKER_NOTE_WIDTH+4) {
+        } else if (beginX >= tileX+trackerNoteWidth+1 && beginX < tileX+trackerNoteWidth+4) {
             // Begins at instrument tile
-            x1 = tileX+TRACKER_NOTE_WIDTH+1+1;
+            x1 = tileX+trackerNoteWidth+1+1;
             break;
-        } else if (beginX >= tileX+TRACKER_NOTE_WIDTH+4 && beginX <= tileX+TRACKER_ROW_WIDTH(activeProject.effectColumnAmount[i])) {
+        } else if (beginX >= tileX+trackerNoteWidth+4 && beginX <= tileX+TRACKER_ROW_WIDTH(activeProject.effectColumnAmount[i])) {
             // Begins at an effect tile
             for (int j = 0; j < std::max((int)activeProject.effectColumnAmount[i], 1); j++) {
-                if (beginX >= tileX+TRACKER_NOTE_WIDTH+4+4*j && beginX <= tileX+TRACKER_NOTE_WIDTH+4+4+4*j) { 
-                    x1 = tileX+TRACKER_NOTE_WIDTH+1+4+4*j;
+                if (beginX >= tileX+trackerNoteWidth+4+4*j && beginX <= tileX+trackerNoteWidth+4+4+4*j) { 
+                    x1 = tileX+trackerNoteWidth+1+4+4*j;
                     break;
                 }
             }
@@ -493,19 +497,19 @@ void Instance::updateTrackerSelection () {
 
     tileX = 3;
     for (int i = 0; i < 8; i++){
-        if (endX > tileX && endX <= tileX+TRACKER_NOTE_WIDTH+1) {
+        if (endX > tileX && endX <= tileX+trackerNoteWidth+1) {
             // Ends at the note tile
-            x2 = tileX+TRACKER_NOTE_WIDTH+1;
+            x2 = tileX+trackerNoteWidth+1;
             break;
-        } else if (endX > tileX+TRACKER_NOTE_WIDTH+1 && endX <= tileX+TRACKER_NOTE_WIDTH+4) {
+        } else if (endX > tileX+trackerNoteWidth+1 && endX <= tileX+trackerNoteWidth+4) {
             // Ends at instrument tile
-            x2 = tileX+TRACKER_NOTE_WIDTH+1+3;
+            x2 = tileX+trackerNoteWidth+1+3;
             break;
-        } else if (endX > tileX+TRACKER_NOTE_WIDTH+4 && endX <= tileX+TRACKER_ROW_WIDTH(activeProject.effectColumnAmount[i])+1) {
+        } else if (endX > tileX+trackerNoteWidth+4 && endX <= tileX+TRACKER_ROW_WIDTH(activeProject.effectColumnAmount[i])+1) {
             // Ends at an effect tile
             for (int j = 0; j < std::max((int)activeProject.effectColumnAmount[i], 1); j++) {
-                if (endX > tileX+TRACKER_NOTE_WIDTH+4+4*j && endX <= tileX+TRACKER_NOTE_WIDTH+1+4+4+4*j) { 
-                    x2 = tileX+TRACKER_NOTE_WIDTH+4+4+4*j;
+                if (endX > tileX+trackerNoteWidth+4+4*j && endX <= tileX+trackerNoteWidth+1+4+4+4*j) { 
+                    x2 = tileX+trackerNoteWidth+4+4+4*j;
                     break;
                 }
             }
@@ -525,7 +529,7 @@ void Instance::updateTrackerSelection () {
 }
 
 void Instance::renderBeatsTexture() {
-    int rows = std::min(activeProject.patterns[0].cells[0].size(), (size_t)trackerMatrix.getHeight()-5);
+    int rows = std::min(activeProject.patterns[0].rows, (size_t)trackerMatrix.getHeight()-5);
     if (!(trackerMatrix.getWidth() && rows)) return;
     auto * maj_beats = &activeProject.patterns[0].beats_major;
     auto * min_beats = &activeProject.patterns[0].beats_minor;

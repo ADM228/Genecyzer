@@ -15,9 +15,10 @@
 #include "Tracker.cpp"
 
 struct TrackerPattern {
-    std::array<std::vector<TrackerCell>, 8> cells;
+    std::array<uint32_t, 8> cells;
     std::vector<uint16_t> beats_major;
     std::vector<uint16_t> beats_minor;
+    size_t rows;
 };
 
 class FileException : public std::exception {
@@ -45,10 +46,11 @@ class Project {
     public:
         // Create new project
         Project ();
-        // Import project from file
-        Project (std::ifstream file);
-        // Import project from file
-        Project (uint8_t * data, size_t size);
+
+        // Load project from filestream
+        int Load (std::ifstream file);
+        // Load project from memory
+        int Load (uint8_t * data, size_t size);
 
         // Save project to filestream
         void save (std::ofstream file);
@@ -61,6 +63,8 @@ class Project {
         // The very cells
         std::vector<TrackerPattern> patterns;
 
+        std::vector<std::vector<TrackerCell>> patternData;
+
         std::array<uint8_t, 8> effectColumnAmount; 
 
         std::vector<Instrument> instruments;
@@ -70,12 +74,13 @@ class Project {
 
 Project::Project() {
     TrackerPattern defaultPattern {
-        {},
+        {0, 0, 0, 0, 0, 0, 0, 0},
         std::vector<uint16_t> {16},
-        std::vector<uint16_t> {4}
+        std::vector<uint16_t> {4},
+        64
     };
-    defaultPattern.cells.fill(std::vector<TrackerCell>(64));
     patterns.push_back(defaultPattern);
+    patternData.push_back(std::vector<TrackerCell>(64));
     effectColumnAmount.fill(2);
 
 
@@ -93,18 +98,21 @@ Project::Project() {
     }
 }
 
-Project::Project(uint8_t * data, size_t size) : Project () {
+int Project::Load(uint8_t * data, size_t size) {
     int idx = 0;
 
     #define CURRENT_FILE_FORMAT 0
     uint16_t fileFormat = data[idx] | (data[idx+1] << 8);
-    if (fileFormat > CURRENT_FILE_FORMAT) throw FileException("file too new.");
+    if (fileFormat > CURRENT_FILE_FORMAT) return 1;
 
     idx+=2;
 
     for (int i = 0; i < 8; i++) {
         effectColumnAmount[i] = data[idx++];
+        if (idx >= size) return 2;
     }
+
+    return 0;
 }
 
 
