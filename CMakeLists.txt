@@ -5,15 +5,26 @@ include(FetchContent)
 FetchContent_Declare(SFML
     GIT_REPOSITORY https://github.com/SFML/SFML.git
     GIT_TAG 2.6.x)
+set(SFML_BUILD_NETWORK FALSE)
+
 FetchContent_Declare(incbin
 	GIT_REPOSITORY https://github.com/morswin22/cmake-incbin.git
 	GIT_TAG main)
-set(SFML_BUILD_NETWORK FALSE)
+
+FetchContent_Declare(clip
+	GIT_REPOSITORY https://github.com/dacap/clip.git
+	GIT_TAG v1.6)
+set(CLIP_EXAMPLES FALSE)
+set(CLIP_TESTS FALSE)
+if (UNIX AND NOT APPLE)
+	set(CLIP_X11_WITH_PNG FALSE)
+endif()
+
 
 option(SFML_BUILD_SHARED_LIBS "Build shared SFML libraries (normally static just in case)" FALSE)
 set(BUILD_SHARED_LIBS ${SFML_BUILD_SHARED_LIBS})
 
-FetchContent_MakeAvailable(SFML incbin)
+FetchContent_MakeAvailable(SFML incbin clip)
 
 include(ExternalProject)
 ExternalProject_Add(SNESFM
@@ -62,12 +73,12 @@ else()
 	set_target_properties(incbin-tool PROPERTIES EXCLUDE_FROM_ALL True EXCLUDE_FROM_DEFAULT_BUILD True)
 endif()
 
-target_link_libraries(Genecyzer PRIVATE sfml-graphics sfml-audio Font)
+target_link_libraries(Genecyzer PRIVATE sfml-graphics sfml-audio Font clip)
 
 if (WIN32 AND BUILD_SHARED_LIBS)
     add_custom_command(TARGET Genecyzer POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:CMakeSFMLProject> $<TARGET_FILE_DIR:CMakeSFMLProject> COMMAND_EXPAND_LISTS)
 endif()
 
-install(TARGETS Genecyzer)
-
+install(TARGETS Genecyzer CONFIGURATIONS Debug
+	RUNTIME DESTINATION ${CMAKE_BINARY_DIR}/bin/Debug)
