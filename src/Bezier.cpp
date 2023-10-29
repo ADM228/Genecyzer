@@ -1,15 +1,7 @@
-
-#include "SFML/Graphics/Color.hpp"
-#include "SFML/Graphics/PrimitiveType.hpp"
-#include "SFML/Graphics/RenderStates.hpp"
-#include "SFML/Graphics/RenderTarget.hpp"
-#include "SFML/Graphics/VertexArray.hpp"
-#include "SFML/System/Vector2.hpp"
 #include <SFML/System.hpp>
 #include <SFML/Graphics.hpp>
 #include <array>
 #include <cmath>
-#include <pthread.h>
 
 #ifndef __BEZIER_INCLUDED__
 #define __BEZIER_INCLUDED__
