@@ -19,6 +19,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
+#include <chrono>
 
 constexpr uint64_t UPDATE_SCALE = 1;
 constexpr uint64_t UPDATE_INST_POS = 2;
@@ -267,7 +268,11 @@ void Instance::Update(){
         case 1: {
             auto deeznuts = new std::array<sf::Vector2f, 4> 
             {sf::Vector2f(25.f, 25.f), {225, 25}, {25, 125}, {225, 125}};
+            // auto start = std::chrono::high_resolution_clock::now();
             bezierTest.calculate(*deeznuts, 3.f/scale);
+            // auto elapsed = std::chrono::high_resolution_clock::now() - start;
+            // uint64_t microseconds = std::chrono::duration_cast<std::chrono::microseconds>( elapsed).count();
+            // printf("Elapsed: %08lu \n", microseconds); fflush(stdout);
             delete deeznuts;
             window.draw(bezierTest);
             break;

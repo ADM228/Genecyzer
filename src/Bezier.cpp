@@ -20,15 +20,26 @@
 //         void calculate
 // }
 
-float lerp(float a, float b, float f) 
-{
-    return (a * (1.0 - f)) + (b * f);
+sf::Vector2f operator*(sf::Vector2f a, float b) {
+    return sf::Vector2f(a.x*b, a.y*b);
 }
 
-sf::Vector2f lerp(sf::Vector2f a, sf::Vector2f b, float f) 
-{
-    return sf::Vector2f(lerp(a.x, b.x, f), lerp(a.y, b.y, f));
+sf::Vector2f operator*(sf::Vector2f a, int b) {
+    return sf::Vector2f(a.x*b, a.y*b);
 }
+
+sf::Vector2f operator/(sf::Vector2f a, float b) {
+    return sf::Vector2f(a.x/b, a.y/b);
+}
+
+sf::Vector2f operator/(sf::Vector2f a, double b) {
+    return sf::Vector2f(a.x/b, a.y/b);
+}
+
+sf::Vector2f operator/(sf::Vector2f a, int b) {
+    return sf::Vector2f(a.x/b, a.y/b);
+}
+
 
 class ThinCubicBezier : public sf::Drawable
 {
@@ -72,18 +83,20 @@ void ThinCubicBezier::calculate(std::array<sf::Vector2f, 4>& points) {
     #endif
 
     #define lengthOfLine(begin, end) std::sqrt(std::pow(end.x-begin.x, 2)+std::pow(end.y-begin.y, 2))
-    #define pxy(a) a.x, a.y
 
     float precision = 4/(lengthOfLine(points[0], points[1]) + lengthOfLine(points[2], points[1]) + lengthOfLine(points[3], points[2]));
-    for (float t = 0; t < 1; t += precision) {
-        auto pt1 = lerp(points[0], points[1], t);
-        auto pt2 = lerp(points[1], points[2], t);
-        auto pt3 = lerp(points[2], points[3], t);
-        auto pt4 = lerp(pt1, pt2, t);
-        pt1 = lerp(pt2, pt3, t);
-        vertices.append(sf::Vertex(lerp(pt4, pt1, t), color));
+
+    // pol0 is just points[0]
+    sf::Vector2f pol1 = points[0] *-3 + points[1] * 3;
+    sf::Vector2f pol2 = points[0] * 3 + points[1] *-6 + points[2] * 3;
+    sf::Vector2f pol3 = points[0] *-1 + points[1] * 3 + points[2] *-3 + points[3];
+
+    float limit = 1 + precision * 0.5;
+
+    for (float t = 0; t < limit; t += precision) {
+        if (t > 1) {t = 1;}
+        vertices.append(sf::Vertex(points[0] + t * pol1 + t*t * pol2 + t*t*t * pol3, color));
     }
-    vertices.append(sf::Vertex(points[3], color));
 }
 
 void ThinCubicBezier::draw (sf::RenderTarget &target, sf::RenderStates states) const {
@@ -108,24 +121,23 @@ void ThickCubicBezier::calculate(std::array<sf::Vector2f, 4>& points, float line
 
     #define lengthOfLine(begin, end) std::sqrt(std::pow(end.x-begin.x, 2)+std::pow(end.y-begin.y, 2))
     #define lengthOfVelocity(velocity) std::sqrt(std::pow(velocity.x, 2)+std::pow(velocity.y, 2))
-    #define pxy(a) a.x, a.y
 
     float precision = 4/(lengthOfLine(points[0], points[1]) + lengthOfLine(points[1], points[2]) + lengthOfLine(points[2], points[3]));
     sf::Vector2f prevPoint = points[0], velocity;
 
+    // pol0 is just points[0]
+    sf::Vector2f pol1 = points[0] *-3 + points[1] * 3;
+    sf::Vector2f pol2 = points[0] * 3 + points[1] *-6 + points[2] * 3;
+    sf::Vector2f pol3 = points[0] *-1 + points[1] * 3 + points[2] *-3 + points[3];
+
     for (float t = 0; t < 1+precision*0.5; t += precision) {
         if (t > 1) {t = 1;}
-        auto pt1 = lerp(points[0], points[1], t);
-        auto pt2 = lerp(points[1], points[2], t);
-        auto pt3 = lerp(points[2], points[3], t);
-        auto pt4 = lerp(pt1, pt2, t);
-        pt1 = lerp(pt2, pt3, t);
-        pt2 = lerp(pt4, pt1, t);    // Final center point
-        velocity = pt2 - prevPoint;
-        velocity = { static_cast<float>(velocity.x/lengthOfVelocity(velocity)), static_cast<float>(velocity.y/lengthOfVelocity(velocity)) };
+        auto point = points[0] + t * pol1 + t*t * pol2 + t*t*t * pol3;    // Center point
+        velocity = point - prevPoint;
+        velocity = velocity / lengthOfVelocity(velocity);
         vertices.append(sf::Vertex(sf::Vector2f(prevPoint.x+velocity.y*lineWidth, prevPoint.y-velocity.x*lineWidth), color));
         vertices.append(sf::Vertex(sf::Vector2f(prevPoint.x-velocity.y*lineWidth, prevPoint.y+velocity.x*lineWidth), color));
-        prevPoint = pt2;
+        prevPoint = point;
         #ifdef BEZIER_DEBUG
         center.append(sf::Vertex(pt2, sf::Color::Red));
         #endif
