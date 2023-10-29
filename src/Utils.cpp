@@ -4,6 +4,7 @@
 #include <string>
 #include <locale>
 #include <codecvt>
+#include <SFML/System.hpp>
 
 // utility wrapper to adapt locale-bound facets for wstring/wbuffer convert
 template<class Facet>
@@ -31,5 +32,22 @@ std::u32string To_UTF32(const std::string &s)
 // Uh oh seems like it's more of a general utils file now
 template<std::size_t N, class T>
 constexpr std::size_t countof(T(&)[N]) { return N; }
+
+
+template <typename T, typename U>
+inline sf::Vector2<T>& operator/=(sf::Vector2<T> &left, U right) {
+    left = sf::Vector2<T>(left.x/right, left.y/right);
+    return left;
+}
+
+template <typename T, typename U>
+inline sf::Vector2<T> operator*(sf::Vector2<T>& left, U right) {
+    return sf::Vector2<T>(left.x*right, left.y*right);
+}
+
+template <typename T, typename U>
+inline sf::Vector2<T> operator/(sf::Vector2<T>& left, U right) {
+    return sf::Vector2f(left.x/right, left.y/right);
+}
 
 #endif  // __STRCONVERT_INCLUDED__

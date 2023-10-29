@@ -8,7 +8,7 @@
 #include "Tile.cpp"
 #include "ChrFont.cpp"
 #include "Instrument.cpp"
-#include "StrConvert.cpp"
+#include "Utils.cpp"
 #include "TextRenderer.cpp"
 #include "Tracker.cpp"
 #include "Effect.cpp"
@@ -278,6 +278,8 @@ void Instance::Update(){
             break;
         }
     }
+
+    // 24, 36, 54
 
     // auto selection = sf::RectangleShape(
     //     sf::Vector2f((selectionBounds[2] - selectionBounds[0])*TILE_SIZE, 

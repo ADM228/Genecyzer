@@ -6,7 +6,7 @@
 #include <vector>
 #include "Tile.cpp"
 #include "ChrFont.cpp"
-#include "StrConvert.cpp"
+#include "Utils.cpp"
 
 uint32_t excNumberTR = 0;
 #define debugNum(x) { printf("[TextRenderer #%08X]\n", x); fflush(stdout); }

@@ -1,3 +1,4 @@
+#include "Utils.cpp"
 #include <SFML/System.hpp>
 #include <SFML/Graphics.hpp>
 #include <array>
@@ -11,26 +12,6 @@
 //     public:
 //         void calculate
 // }
-
-sf::Vector2f operator*(sf::Vector2f a, float b) {
-    return sf::Vector2f(a.x*b, a.y*b);
-}
-
-sf::Vector2f operator*(sf::Vector2f a, int b) {
-    return sf::Vector2f(a.x*b, a.y*b);
-}
-
-sf::Vector2f operator/(sf::Vector2f a, float b) {
-    return sf::Vector2f(a.x/b, a.y/b);
-}
-
-sf::Vector2f operator/(sf::Vector2f a, double b) {
-    return sf::Vector2f(a.x/b, a.y/b);
-}
-
-sf::Vector2f operator/(sf::Vector2f a, int b) {
-    return sf::Vector2f(a.x/b, a.y/b);
-}
 
 class CubicBezier : public sf::Drawable
 {
@@ -109,16 +90,17 @@ void CubicBezier::calculate(std::array<sf::Vector2f, 4>& points, float precision
         if (t > 1) {t = 1;}
         auto point = points[0] + t * pol1 + t*t * pol2 + t*t*t * pol3;    // Center point
         velocity = point - prevPoint;
-        velocity = velocity / lengthOfVelocity(velocity);
-        vertices.append(sf::Vertex(sf::Vector2f(prevPoint.x+velocity.y*lineWidth, prevPoint.y-velocity.x*lineWidth), color));
-        vertices.append(sf::Vertex(sf::Vector2f(prevPoint.x-velocity.y*lineWidth, prevPoint.y+velocity.x*lineWidth), color));
+        velocity /= lengthOfVelocity(velocity);
+        velocity *= lineWidth;
+        vertices.append(sf::Vertex(sf::Vector2f(prevPoint.x+velocity.y, prevPoint.y-velocity.x), color));
+        vertices.append(sf::Vertex(sf::Vector2f(prevPoint.x-velocity.y, prevPoint.y+velocity.x), color));
         prevPoint = point;
         #ifdef BEZIER_DEBUG
         center.append(sf::Vertex(point, sf::Color::Red));
         #endif
     }
-    vertices.append(sf::Vertex(sf::Vector2f(prevPoint.x+velocity.y*lineWidth, prevPoint.y-velocity.x*lineWidth), color));
-    vertices.append(sf::Vertex(sf::Vector2f(prevPoint.x-velocity.y*lineWidth, prevPoint.y+velocity.x*lineWidth), color));
+    vertices.append(sf::Vertex(sf::Vector2f(prevPoint.x+velocity.y, prevPoint.y-velocity.x), color));
+    vertices.append(sf::Vertex(sf::Vector2f(prevPoint.x-velocity.y, prevPoint.y+velocity.x), color));
 }
 
 void CubicBezier::draw (sf::RenderTarget &target, sf::RenderStates states) const {

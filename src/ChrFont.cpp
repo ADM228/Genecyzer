@@ -23,7 +23,7 @@ class ChrFont {
 
 #pragma endregion
 
-#include "StrConvert.cpp"
+#include "Utils.cpp"
 
 ChrFont::ChrFont(uint8_t* chrData, uint32_t size, std::vector<uint32_t> codepageTable, bool inverted){
     init(chrData, size, codepageTable, inverted);
