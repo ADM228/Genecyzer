@@ -78,7 +78,7 @@ void CubicBezier::calculate(std::array<sf::Vector2f, 4>& points, float precision
     sf::Vector2f pol2 = points[0] * 3 + points[1] *-6 + points[2] * 3;
     sf::Vector2f pol3 = points[0] *-1 + points[1] * 3 + points[2] *-3 + points[3];
 
-    float limit = 1 + precision * 0.5;
+    float limit = 1 + precision;
 
     for (float t = 0; t < limit; t += precision) {
         if (t > 1) {t = 1;}
@@ -111,7 +111,9 @@ void CubicBezier::calculate(std::array<sf::Vector2f, 4>& points, float precision
     sf::Vector2f pol2 = points[0] * 3 + points[1] *-6 + points[2] * 3;
     sf::Vector2f pol3 = points[0] *-1 + points[1] * 3 + points[2] *-3 + points[3];
 
-    for (float t = 0; t < 1+precision*0.5; t += precision) {
+    float limit = 1+precision;
+
+    for (float t = 0; t < limit; t += precision) {
         if (t > 1) {t = 1;}
         auto point = points[0] + t * pol1 + t*t * pol2 + t*t*t * pol3;    // Center point
         velocity = point - prevPoint;
