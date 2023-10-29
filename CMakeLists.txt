@@ -29,7 +29,7 @@ FetchContent_MakeAvailable(SFML incbin clip)
 include(ExternalProject)
 ExternalProject_Add(SNESFM
 	PREFIX ${CMAKE_BINARY_DIR}/SNESFM
-	SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/SNESFM
+	SOURCE_DIR ${CMAKE_BINARY_DIR}/SNESFM/source
 	GIT_REPOSITORY https://github.com/ADM228/SNES-FM.git
 	GIT_TAG master
 	CONFIGURE_COMMAND ""
@@ -41,7 +41,7 @@ add_executable(Genecyzer src/main.cpp)
 target_compile_features(Genecyzer PRIVATE cxx_std_17)
 
 set(FONTFILE "tilesetUnicode.chr")
-set(FONTDIR "${CMAKE_SOURCE_DIR}/SNESFM/graphics/")
+set(FONTDIR "${CMAKE_BINARY_DIR}/SNESFM/source/graphics/")
 
 set(BININCLUDEFILE ${CMAKE_BINARY_DIR}/binIncludes.cpp)
 set(MSVCINCLUDEFILE ${CMAKE_BINARY_DIR}/MSVCIncludes.h)
@@ -80,5 +80,5 @@ if (WIN32 AND BUILD_SHARED_LIBS)
         COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:CMakeSFMLProject> $<TARGET_FILE_DIR:CMakeSFMLProject> COMMAND_EXPAND_LISTS)
 endif()
 
-install(TARGETS Genecyzer CONFIGURATIONS Debug
-	RUNTIME DESTINATION ${CMAKE_BINARY_DIR}/bin/Debug)
+# install(TARGETS Genecyzer CONFIGURATIONS Debug
+	# RUNTIME DESTINATION ${CMAKE_BINARY_DIR}/bin/Debug)

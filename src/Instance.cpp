@@ -561,7 +561,7 @@ void Instance::renderBeatsTexture() {
                     pixels[pixelIndex+k+3] = colors[i] == 1 ? 48 : 96;
                 }
             }
-            if (trackerMatrix[i+HEADER_HEIGHT][j] == COL_SEPARATOR){
+            if (trackerMatrix[i+HEADER_HEIGHT][j].tileIndex == COL_SEPARATOR){
                 pixels[pixelIndex+1*4+3] = 0;
                 pixels[pixelIndex+2*4+3] = 0;
             }

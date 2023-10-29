@@ -1,18 +1,24 @@
 #ifndef __INSTRUMENT_INCLUDED__
 #define __INSTRUMENT_INCLUDED__
 
+#include <array>
 #include <string>
 #include <vector>
 #include "StrConvert.cpp"
 
 #pragma region classDefinitions
 
-class Macro {
-    public:
-        Macro(uint8_t = 1, uint8_t = 0);
-        uint8_t speed;
-        uint8_t loopingType;
-        std::vector<uint8_t> data;
+struct Macro {
+    uint8_t speed = 1;
+    uint8_t loopingType = 0;
+};
+
+struct ModSynthMacro : Macro {
+    std::vector<uint16_t> pointers;
+};
+
+struct RestOfMacros : Macro {
+    std::vector<uint8_t> data;
 };
 
 constexpr uint32_t INSTRUMENT_NAME_LENGTH = 12;
@@ -31,16 +37,9 @@ class Instrument {
         uint32_t name[INSTRUMENT_NAME_LENGTH];
         uint8_t palette;
 
+        std::array<Macro, 5> macros;
+
 };
-
-#pragma endregion
-#pragma region macroImplementation
-
-Macro::Macro(uint8_t speed, uint8_t loopingType){
-    this->speed = speed;
-    this->loopingType = loopingType;
-    this->data.resize(0);
-}
 
 #pragma endregion
 #pragma region instrumentImplementation
