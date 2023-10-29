@@ -92,7 +92,7 @@ class Instance {
 
         sf::Event::MouseButtonEvent lastMousePress;
 
-        ThickCubicBezier bezierTest;
+        CubicBezier bezierTest;
 };
 
 Instance::Instance() {
@@ -267,9 +267,9 @@ void Instance::Update(){
 
         case 1: {
             auto deeznuts = new std::array<sf::Vector2f, 4> 
-            {sf::Vector2f(25.f, 25.f), {225, 25}, {25, 125}, {225, 125}};
+            {sf::Vector2f(25.f, 25.f), {225, 25}, {25, 320}, {225, 320}};
             // auto start = std::chrono::high_resolution_clock::now();
-            bezierTest.calculate(*deeznuts, 3.f/scale);
+            bezierTest.calculate(*deeznuts, (float)scale/16, 3.f/scale);
             // auto elapsed = std::chrono::high_resolution_clock::now() - start;
             // uint64_t microseconds = std::chrono::duration_cast<std::chrono::microseconds>( elapsed).count();
             // printf("Elapsed: %08lu \n", microseconds); fflush(stdout);
