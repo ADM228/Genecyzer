@@ -5,13 +5,6 @@
 #include <SFML/Window.hpp>
 #include <SFML/System.hpp>
 
-#include "SFML/Graphics/Color.hpp"
-#include "SFML/Graphics/Rect.hpp"
-#include "SFML/Graphics/RectangleShape.hpp"
-#include "SFML/Graphics/Sprite.hpp"
-#include "SFML/System/Vector2.hpp"
-#include "SFML/Window/Event.hpp"
-#include "SFML/Window/Mouse.hpp"
 #include "Tile.cpp"
 #include "ChrFont.cpp"
 #include "Instrument.cpp"
@@ -20,6 +13,7 @@
 #include "Tracker.cpp"
 #include "Effect.cpp"
 #include "Project.cpp"
+#include "Bezier.cpp"
 
 #include <algorithm>
 #include <cmath>
@@ -63,7 +57,8 @@ class Instance {
     private:
         uint8_t instSelected = 0;
         uint8_t scale = 1;
-        uint8_t mode = 0;
+        uint8_t upperHalfMode = 0;
+        uint8_t lowerHalfMode = 0;
 
         bool singleTileTrackerRender = 1;
 
@@ -95,6 +90,8 @@ class Instance {
         uint16_t mouseFlags;
 
         sf::Event::MouseButtonEvent lastMousePress;
+
+        ThickCubicBezier bezierTest;
 };
 
 Instance::Instance() {
@@ -182,6 +179,9 @@ void Instance::ProcessEvents(){
             } else if (event.key.code == sf::Keyboard::Hyphen && event.key.control && scale > 1) {
                 scale--;
                 updateSections |= UPDATE_SCALE;
+            } else if (event.key.code == sf::Keyboard::Apostrophe) {
+                lowerHalfMode ^= 1;
+                forceUpdateAll = 1;
             }
         } else if (event.type == sf::Event::MouseButtonPressed) {
             lastMousePress = event.mouseButton;
@@ -191,6 +191,7 @@ void Instance::ProcessEvents(){
             if (mouseFlags & MOUSE_DOWN) {
                 // determine region
                 if (
+                    lowerHalfMode == 0 &&
                     lastMousePress.y > scale*TILE_SIZE*(8+5) &&
                     lastMousePress.x > scale*TILE_SIZE*(3+1)
                 ) {
@@ -222,15 +223,24 @@ void Instance::Update(){
 
     if (updateSections & (UPDATE_INST_POS | UPDATE_SCALE))   
         updateInstPage();
+        
+    switch (lowerHalfMode) {
+        case 0:
+            if (updateSections & (UPDATE_SCALE | UPDATE_TRACKER)){
+                renderTracker();
+                updateTrackerPos();
+                renderBeatsTexture();
+            }
+            if (updateSections & UPDATE_TRACKER_SELECTION)
+                updateTrackerSelection();
+            break;
 
-    if (updateSections & (UPDATE_SCALE | UPDATE_TRACKER)){
-        renderTracker();
-        updateTrackerPos();
-        renderBeatsTexture();
+        case 1:
+            if (updateSections & UPDATE_SCALE)
+                updateTrackerPos();
+            break;
+
     }
-
-    if (updateSections & UPDATE_TRACKER_SELECTION)
-        updateTrackerSelection();
 
     #pragma endregion
     #pragma region AlwaysUpdates
@@ -240,17 +250,29 @@ void Instance::Update(){
     window.setView(InstrumentView);
     window.draw(instrumentSprite);
 
-
-
     window.setView(TrackerView);
-    trackerMatrix.render(0, getGlobalBounds_bottom(instrumentSprite), &window, font.texture);
 
-    //auto beats = sf::Sprite(beatsTexture, sf::IntRect(0, 5*TILE_SIZE, ));
-    auto beats = sf::RectangleShape(sf::Vector2f(beatsTexture.getSize().x, beatsTexture.getSize().y));
-    beats.setPosition(0, 5*TILE_SIZE);
-    beats.setTexture(&beatsTexture);
-    beats.setScale(2, TILE_SIZE);
-    window.draw(beats);
+    switch (lowerHalfMode) {
+        case 0: {
+            window.draw(trackerMatrix);
+
+            auto beats = sf::RectangleShape(sf::Vector2f(beatsTexture.getSize().x, beatsTexture.getSize().y));
+            beats.setPosition(0, 5*TILE_SIZE);
+            beats.setTexture(&beatsTexture);
+            beats.setScale(2, TILE_SIZE);
+            window.draw(beats);
+            break;
+        }
+
+        case 1: {
+            auto deeznuts = new std::array<sf::Vector2f, 4> 
+            {sf::Vector2f(25.f, 25.f), {225, 25}, {25, 125}, {225, 125}};
+            bezierTest.calculate(*deeznuts, 3.f/scale);
+            delete deeznuts;
+            window.draw(bezierTest);
+            break;
+        }
+    }
 
     // auto selection = sf::RectangleShape(
     //     sf::Vector2f((selectionBounds[2] - selectionBounds[0])*TILE_SIZE, 
@@ -438,6 +460,7 @@ void Instance::renderTracker () {
     
     trackerMatrix.copyRect(0, 0, widthInTiles, HEADER_HEIGHT, &header, 0, 0);
     trackerMatrix.copyRect(0, HEADER_HEIGHT, std::min(widthInTiles, widthOfTracker), textHeight, &text, 0, 0);
+    trackerMatrix.setTexture(font.texture);
     #pragma endregion
 
 }

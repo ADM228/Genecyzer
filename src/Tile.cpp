@@ -1,3 +1,4 @@
+#include "SFML/System/Vector2.hpp"
 #pragma region header
 
 #include <SFML/Graphics.hpp>
@@ -23,7 +24,7 @@ struct Tile {
     uint8_t flip_palette;
 };
 
-class TileMatrix {
+class TileMatrix : public sf::Drawable {
     public:
         TileMatrix() {};
         TileMatrix(uint16_t width, uint16_t height);
@@ -111,8 +112,10 @@ class TileMatrix {
         #pragma endregion
         #pragma region rendering
 
-        // Render TileMatrix to a sf::RenderWindow
-        void render(uint16_t x, uint16_t y, sf::RenderWindow *window, sf::Texture texture);
+        void setTexture(sf::Texture & texture) { _texture = &texture; };
+
+        void setPosition(sf::Vector2f position) { _pos = position; };
+
         // Render TileMatrix to a sf::Texture
         sf::Texture renderToTexture(sf::Texture texture);
 
@@ -129,8 +132,13 @@ class TileMatrix {
 
     private:
 
+        // Render TileMatrix to a sf::RenderWindow
+        virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const;
+
         uint16_t _width, _height;
         std::vector<std::vector<Tile>> _tiles;
+        sf::Texture * _texture;
+        sf::Vector2f _pos {0, 0};
 
 };
 
@@ -362,12 +370,15 @@ void TileMatrix::copyRect(uint16_t out_x, uint16_t out_y, uint16_t width, uint16
 #pragma endregion
 #pragma region rendering
 
-void TileMatrix::render(uint16_t x, uint16_t y, sf::RenderWindow *window, sf::Texture texture){
+void TileMatrix::draw(sf::RenderTarget& target, sf::RenderStates states) const {
     sf::Vector2f texturePos {0, 0};
     uint8_t flip_palette;
     sf::Color color;
-    for (uint16_t i = 0; i < _tiles.size() && i*TILE_SIZE+y < window->getSize().y; i++){
-        for (uint16_t j = 0; j < _tiles[i].size() && j*TILE_SIZE+x < window->getSize().x; j++){
+    float x = _pos.x, y = _pos.y;
+    if (_texture == nullptr) return;
+    else states.texture = _texture;
+    for (uint16_t i = 0; i < _tiles.size() && i*TILE_SIZE < target.getSize().y; i++){
+        for (uint16_t j = 0; j < _tiles[i].size() && j*TILE_SIZE < target.getSize().x; j++){
             flip_palette = _tiles[i][j].flip_palette;
             texturePos = {
                 static_cast<float>(flip_palette&INVMASK?TILE_SIZE:0),
@@ -378,28 +389,29 @@ void TileMatrix::render(uint16_t x, uint16_t y, sf::RenderWindow *window, sf::Te
                 flip_palette&GRNMASK?255:0,
                 flip_palette&BLUMASK?255:0);
             sf::Vertex vertices[4] = {
-                sf::Vertex(sf::Vector2f(j*TILE_SIZE,            i*TILE_SIZE),
+                sf::Vertex(sf::Vector2f(x+j*TILE_SIZE,            y+i*TILE_SIZE),
                     color, texturePos+sf::Vector2f(
                         flip_palette&HFLIP?TILE_SIZE:0,
                         flip_palette&VFLIP?TILE_SIZE:0)
                     ),
-                sf::Vertex(sf::Vector2f(j*TILE_SIZE+TILE_SIZE,  i*TILE_SIZE),
+                sf::Vertex(sf::Vector2f(x+j*TILE_SIZE+TILE_SIZE,  y+i*TILE_SIZE),
                     color, texturePos+sf::Vector2f(
                         flip_palette&HFLIP?0:TILE_SIZE,
                         flip_palette&VFLIP?TILE_SIZE:0)
                     ),
-                sf::Vertex(sf::Vector2f(j*TILE_SIZE+TILE_SIZE,  i*TILE_SIZE+TILE_SIZE),
+                sf::Vertex(sf::Vector2f(x+j*TILE_SIZE+TILE_SIZE,  y+i*TILE_SIZE+TILE_SIZE),
                     color, texturePos+sf::Vector2f(
                         flip_palette&HFLIP?0:TILE_SIZE,
                         flip_palette&VFLIP?0:TILE_SIZE)
                     ),
-                sf::Vertex(sf::Vector2f(j*TILE_SIZE,            i*TILE_SIZE+TILE_SIZE),
+                sf::Vertex(sf::Vector2f(x+j*TILE_SIZE,            y+i*TILE_SIZE+TILE_SIZE),
                     color, texturePos+sf::Vector2f(
                         flip_palette&HFLIP?TILE_SIZE:0,
                         flip_palette&VFLIP?0:TILE_SIZE)
                     )
             };
-            window->draw(vertices, 4, sf::TriangleFan, sf::RenderStates(&texture));
+
+            target.draw(vertices, 4, sf::TriangleFan, states);
         }
     }
 }
