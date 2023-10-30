@@ -1,6 +1,7 @@
 #ifndef __STRCONVERT_INCLUDED__
 #define __STRCONVERT_INCLUDED__
 
+#include "SFML/System/Vector2.hpp"
 #include <string>
 #include <locale>
 #include <codecvt>
@@ -49,5 +50,11 @@ template <typename T, typename U>
 inline sf::Vector2<T> operator/(sf::Vector2<T>& left, U right) {
     return sf::Vector2f(left.x/right, left.y/right);
 }
+
+template <typename T>
+sf::Vector2<T> perpendiculate(sf::Vector2<T>& vector) {
+    return sf::Vector2<T>(vector.y, -vector.x);
+}
+
 
 #endif  // __STRCONVERT_INCLUDED__

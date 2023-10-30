@@ -1,6 +1,7 @@
 #ifndef __INSTANCE_INCLUDED__
 #define __INSTANCE_INCLUDED__
 
+#include "SFML/Window/Mouse.hpp"
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 #include <SFML/System.hpp>
@@ -13,7 +14,7 @@
 #include "Tracker.cpp"
 #include "Effect.cpp"
 #include "Project.cpp"
-#include "Bezier.cpp"
+#include "ModularSynth.cpp"
 
 #include <algorithm>
 #include <cmath>
@@ -92,7 +93,7 @@ class Instance {
 
         sf::Event::MouseButtonEvent lastMousePress;
 
-        CubicBezier bezierTest;
+        ModSynthBezier bezierTest;
 };
 
 Instance::Instance() {
@@ -101,6 +102,10 @@ Instance::Instance() {
     InstrumentView.reset(sf::FloatRect(0.f, 0.f, 200.f, 200.f));
     TrackerView.reset(sf::FloatRect(0.f,0.f,200.f,200.f));
     forceUpdateAll = 1;
+    lastMousePress.x = 0;
+    lastMousePress.y = 0;
+    selectionBounds[0] = 0;
+    selectionBounds[1] = 0;
 
     constexpr uint8_t data[] = {
         0x00, 0x00,
@@ -201,6 +206,12 @@ void Instance::ProcessEvents(){
                     selectionBounds[2] = event.mouseMove.x / (scale*TILE_SIZE);
                     selectionBounds[3] = event.mouseMove.y / (scale*TILE_SIZE);
                     updateSections |= UPDATE_TRACKER_SELECTION;
+                } else if (
+                    lowerHalfMode == 1 &&
+                    lastMousePress.y > scale*TILE_SIZE*8
+                ) {
+                    selectionBounds[0] = event.mouseMove.x;
+                    selectionBounds[1] = event.mouseMove.y;
                 }
             }
         } else if (event.type == sf::Event::MouseButtonReleased) {
@@ -266,14 +277,14 @@ void Instance::Update(){
         }
 
         case 1: {
-            auto deeznuts = new std::array<sf::Vector2f, 4> 
-            {sf::Vector2f(25.f, 25.f), {225, 25}, {25, 320}, {225, 320}};
+            auto deeznuts = std::array<sf::Vector2f, 2> 
+            {sf::Vector2f((float)selectionBounds[0] / scale, (float)selectionBounds[1] / scale - 8*TILE_SIZE), {100, 100}};
+            
             // auto start = std::chrono::high_resolution_clock::now();
-            bezierTest.calculate(*deeznuts, (float)scale/16, 3.f/scale);
+            bezierTest.calculate(deeznuts, (float)scale/16, 3.f/scale, false);
             // auto elapsed = std::chrono::high_resolution_clock::now() - start;
             // uint64_t microseconds = std::chrono::duration_cast<std::chrono::microseconds>( elapsed).count();
             // printf("Elapsed: %08lu \n", microseconds); fflush(stdout);
-            delete deeznuts;
             window.draw(bezierTest);
             break;
         }
