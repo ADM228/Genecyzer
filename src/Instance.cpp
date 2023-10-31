@@ -574,8 +574,8 @@ void Instance::renderBeatsTexture() {
     if (!(trackerMatrix.getWidth() && rows)) return;
     auto * maj_beats = &activeProject.patterns[0].beats_major;
     auto * min_beats = &activeProject.patterns[0].beats_minor;
-    uint8_t * colors = (uint8_t *) calloc(rows, sizeof(uint8_t));
-    uint8_t * pixels = (uint8_t *) calloc(rows*trackerMatrix.getWidth()*TILE_SIZE/2, sizeof(sf::Color)); // automatically zeroes out alpha value
+    auto colors = new uint8_t[rows]();
+    auto pixels = new uint8_t[rows*trackerMatrix.getWidth()*TILE_SIZE/2*sizeof(sf::Color)](); // automatically zeroes out alpha value
     for (int i = 0; i < rows;) {
         for (int j = 0; j < min_beats->size() && i < rows; j++) {
 
@@ -590,7 +590,7 @@ void Instance::renderBeatsTexture() {
         }
     }
 
-    uint64_t pixelIndex = 0;
+    size_t pixelIndex = 0;
 
     for (int i = 0; i < rows; i++) {
         for (int j = 0; j < trackerMatrix.getWidth(); j++, pixelIndex+=16) {
@@ -612,8 +612,8 @@ void Instance::renderBeatsTexture() {
     beatsTexture.create(trackerMatrix.getWidth()*TILE_SIZE/2, rows);
     beatsTexture.update(pixels);
 
-    free(colors);
-    free(pixels);
+    delete[] colors;
+    delete[] pixels;
 }
 
 #endif // __INSTANCE_INCLUDED__

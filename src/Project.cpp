@@ -26,12 +26,12 @@ class FileException : public std::exception {
         FileException (const char * what_arg) : std::exception() {
             std::string output = "Reading a file has failed: ";
             output += what_arg;
-            message = (char *)malloc(output.size()+1);
+            message = new char[output.size()+1];
             strcpy(message, output.c_str());    // Unsafe as fuck and idc
         };
 
         ~FileException () {
-            free (message);
+            delete[] message;
         }
 
         virtual const char * what () const noexcept {

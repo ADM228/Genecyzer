@@ -36,7 +36,7 @@ void ChrFont::init(uint8_t* chrData, uint32_t size, std::vector<uint32_t> codepa
 
     uint8_t colorBuffer[TILE_SIZE*TILE_SIZE];
     uint32_t amount = size>>4;
-    sf::Uint8 * pixels = (sf::Uint8 *)malloc(TILE_SIZE*TILE_SIZE*COLORS*amount*(1+inverted));
+    auto pixels = new uint8_t [TILE_SIZE*TILE_SIZE*COLORS*amount*(1+inverted)];
     const uint8_t tableRG[] = {0, 255, 160, 0};
     const uint8_t invTableRG[] = {0, 0, 160, 255};
     const uint8_t tableB[] = {0, 255, 176, 0};
@@ -94,7 +94,7 @@ void ChrFont::init(uint8_t* chrData, uint32_t size, std::vector<uint32_t> codepa
     texture.update(pixels, inverted?2*TILE_SIZE:TILE_SIZE, TILE_SIZE*amount, 0, 0);
     texture.setSmooth(false);
 
-    free(pixels);
+    delete[] pixels;
 }
 
 

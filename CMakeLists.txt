@@ -11,6 +11,7 @@ FetchContent_Declare(incbin
 	GIT_REPOSITORY https://github.com/morswin22/cmake-incbin.git
 	GIT_TAG main)
 
+cmake_policy(SET CMP0077 NEW)
 FetchContent_Declare(clip
 	GIT_REPOSITORY https://github.com/dacap/clip.git
 	GIT_TAG v1.6)
