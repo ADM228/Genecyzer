@@ -5,6 +5,7 @@
 #include <string>
 #include <locale>
 #include <codecvt>
+#include <vector>
 #include <SFML/System.hpp>
 
 // utility wrapper to adapt locale-bound facets for wstring/wbuffer convert
@@ -56,5 +57,12 @@ sf::Vector2<T> perpendiculate(sf::Vector2<T>& vector) {
     return sf::Vector2<T>(vector.y, -vector.x);
 }
 
+template <typename T>
+T get_back(std::vector<T>& vector) {
+    if (vector.empty()) return 0;
+    T tempBack = vector.back();
+    vector.pop_back();
+    return tempBack;
+}
 
 #endif  // __STRCONVERT_INCLUDED__

@@ -1,6 +1,7 @@
 #ifndef __PROJECT_INCLUDED__
 #define __PROJECT_INCLUDED__
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -50,7 +51,7 @@ class Project {
         // Load project from filestream
         int Load (std::ifstream file);
         // Load project from memory
-        int Load (uint8_t * data, size_t size);
+        int Load (std::vector<uint8_t>& data);
 
         // Save project to filestream
         void save (std::ofstream file);
@@ -98,19 +99,19 @@ Project::Project() {
     }
 }
 
-int Project::Load(uint8_t * data, size_t size) {
-    int idx = 0;
+int Project::Load(std::vector<uint8_t>& data) {
+    std::vector<uint8_t> rData(data.size());
+    std::reverse_copy(data.begin(), data.end(), rData.begin());
 
     #define CURRENT_FILE_FORMAT 0
-    uint16_t fileFormat = data[idx] | (data[idx+1] << 8);
+    uint16_t fileFormat = get_back(rData) | (get_back(rData) << 8);
     if (fileFormat > CURRENT_FILE_FORMAT) return 1;
 
-    idx+=2;
-
     for (int i = 0; i < 8; i++) {
-        effectColumnAmount[i] = data[idx++];
-        if (idx >= size) return 2;
+        effectColumnAmount[i] = get_back(rData);
     }
+
+    
 
     return 0;
 }

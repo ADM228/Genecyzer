@@ -8,21 +8,39 @@
 
 class ModSynthBezier : public CubicBezier {
     public:
-        void calculate(std::array<sf::Vector2f, 2> & position, float precision, float lineWidth, bool thin);
+        void updatePosition(std::array<sf::Vector2f, 2> & position);
+        void updatePosition(sf::Vector2f & position, bool end);
+        void calculate(float precision, float lineWidth, bool thin);
 
+    private:
+        std::array<sf::Vector2f, 2> position;
 };
 
-class ModSynthElement : sf::Drawable {
+class ModSynthElement : public sf::Drawable {
     public:
+        ModSynthElement ();
+
+        void connectOutputBezier(ModSynthBezier & bezier);
 
     private:
         virtual void draw(sf::RenderTarget &target, sf::RenderStates states) const override; 
 
-        std::vector<std::shared_ptr<ModSynthBezier>> inputs;
-        std::vector<std::shared_ptr<ModSynthBezier>> outputs;
+        virtual void calculate();
+
+        std::vector<std::weak_ptr<ModSynthBezier>> outputs;
 };
 
-void ModSynthBezier::calculate(std::array<sf::Vector2f, 2> & position, float precision, float lineWidth, bool thin) {
+
+
+void ModSynthBezier::updatePosition(std::array<sf::Vector2f, 2> & position) {
+    this->position = position;
+}
+
+void ModSynthBezier::updatePosition(sf::Vector2f & position, bool end) {
+    this->position[end] = position;
+}
+
+void ModSynthBezier::calculate(float precision, float lineWidth, bool thin) {
     if (lineWidth <= 0) return;
     // Get 4 points from the 2 provided
     // Four types of connections:
@@ -101,5 +119,10 @@ void ModSynthBezier::calculate(std::array<sf::Vector2f, 2> & position, float pre
         CubicBezier::calculate(points, precision, lineWidth, thin);
     }
 }
+
+void ModSynthElement::connectOutputBezier(ModSynthBezier & bezier) {
+    outputs.push_back(std::make_shared<ModSynthBezier>(bezier));
+}
+
 
 #endif  // __MODULAR_SYNTH_INCLUDED__

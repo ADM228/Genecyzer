@@ -107,14 +107,14 @@ Instance::Instance() {
     selectionBounds[0] = 0;
     selectionBounds[1] = 0;
 
-    constexpr uint8_t data[] = {
+    std::vector<uint8_t> data = {
         0x00, 0x00,
         1, 2, 3, 2, 1, 2, 2, 4
     };
 
 
     activeProject = Project();
-    activeProject.Load(const_cast<uint8_t *>(data), 2);
+    activeProject.Load(data);
 
 
     
@@ -281,7 +281,8 @@ void Instance::Update(){
             {sf::Vector2f((float)selectionBounds[0] / scale, (float)selectionBounds[1] / scale - 8*TILE_SIZE), {100, 100}};
             
             // auto start = std::chrono::high_resolution_clock::now();
-            bezierTest.calculate(deeznuts, (float)scale/16, 3.f/scale, false);
+            bezierTest.updatePosition(deeznuts);
+            bezierTest.calculate((float)scale/16, 3.f/scale, false);
             // auto elapsed = std::chrono::high_resolution_clock::now() - start;
             // uint64_t microseconds = std::chrono::duration_cast<std::chrono::microseconds>( elapsed).count();
             // printf("Elapsed: %08lu \n", microseconds); fflush(stdout);
