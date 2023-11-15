@@ -433,8 +433,8 @@ void Instance::renderTracker () {
 
     size_t widthOfTracker = 3;
 
-    for (int i = 0; i < 8; i++) {
-        widthOfTracker += TRACKER_ROW_WIDTH(activeProject.effectColumnAmount[i]) + 1;
+    for (auto & column : activeProject.effectColumnAmount) {
+        widthOfTracker += TRACKER_ROW_WIDTH(column) + 1;
     }
 
     TileMatrix text = TileMatrix(widthOfTracker, std::min(heightInTiles, rows));
@@ -464,8 +464,7 @@ void Instance::renderTracker () {
             tileCounter += TRACKER_ROW_WIDTH(activeProject.effectColumnAmount[i]) + 1;
         }
 
-        for (int i = 0; i < tracker_separator_columns.size(); i++) {
-            uint8_t column = tracker_separator_columns[i];
+        for (auto column : tracker_separator_columns) {
             if (widthInTiles > column){
                 header.setTile(column, 4, INTERSECTION_NOUP);
                 text.fillCol(column, COL_SEPARATOR);

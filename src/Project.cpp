@@ -107,8 +107,8 @@ int Project::Load(std::vector<uint8_t>& data) {
     uint16_t fileFormat = get_back(rData) | (get_back(rData) << 8);
     if (fileFormat > CURRENT_FILE_FORMAT) return 1;
 
-    for (int i = 0; i < 8; i++) {
-        effectColumnAmount[i] = get_back(rData);
+    for (auto & i : effectColumnAmount) {
+        i = get_back(rData);
     }
 
     

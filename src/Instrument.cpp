@@ -45,8 +45,8 @@ class Instrument {
 #pragma region instrumentImplementation
 
 Instrument::Instrument(){
-    for (int i = 0; i < INSTRUMENT_NAME_LENGTH; i++){
-        this->name[i] = 0x20;   // Space
+    for (auto & i : name){
+        i = 0x20;   // Space
     }
     this->palette = 7;
 }
@@ -57,9 +57,7 @@ void Instrument::setName(std::string name){
 }
 
 void Instrument::setName(std::u32string name){
-    for (int i = 0; i < INSTRUMENT_NAME_LENGTH && i < name.size(); i++){
-        this->name[i] = name[i];
-    }
+    std::copy_n(name.data(), std::min((size_t)INSTRUMENT_NAME_LENGTH, name.size()), this->name);
 }
 
 std::string Instrument::getName(){
