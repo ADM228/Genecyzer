@@ -4,11 +4,17 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
+#include <ios>
 #include <vector>
+#include <fstream>
 
 #include "BitConverter.cpp"
 
 #define CHUNK_NAME_LEN 4
+#define CHUNK_NAME_LEN_INCHAR 5
+
+namespace RIFF {
 
 class RIFFChunkBase {
     public:
@@ -16,7 +22,7 @@ class RIFFChunkBase {
         virtual void exportData (uint8_t * outPtr);
         virtual size_t size ();
     protected:
-        char type[CHUNK_NAME_LEN];
+        char type[CHUNK_NAME_LEN_INCHAR];
         std::vector<uint8_t> data;
 };
 
@@ -69,9 +75,41 @@ size_t RIFFListChunk::size() {
     return output+CHUNK_NAME_LEN+sizeof(uint32_t);
 }
 
-class RIFFFile {
+class RIFFFile : public RIFFChunkBase, protected std::fstream {      // the entire RIFF file format is a RIFF chunk in itself
+    public:
+        inline void open( const char* filename, std::ios_base::openmode mode = std::ios_base::in | std::ios_base::out );
+        inline void open( const std::string& filename, std::ios_base::openmode mode = std::ios_base::in | std::ios_base::out );
+        inline void open( const std::filesystem::path& filename, std::ios_base::openmode mode = std::ios_base::in | std::ios_base::out );
+
+        using std::fstream::close;
+        using std::fstream::is_open;
+        ~RIFFFile();
+
+        // Writes latest chunk to the file if open
+        void writeLatestChunk();
+
+        // Writes the entire file to the file if open
+        void writeFile();
     private:
+        char type[CHUNK_NAME_LEN_INCHAR] = "RIFF";
         std::vector<RIFFChunkBase> chunks;
 };
+RIFFFile::~RIFFFile() {
+    if (std::basic_fstream<char>::is_open()) std::fstream::close();
+}
+
+void RIFFFile::writeLatestChunk() {
+    auto temp = new uint8_t[chunks.back().size()];
+    chunks.back().exportData(temp);
+    std::fstream::write((char *)temp, chunks.back().size());
+    delete[] temp;
+}
+
+void RIFFFile::open( const char* filename, std::ios_base::openmode mode) { std::fstream::open(filename, mode | std::ios::binary); }
+void RIFFFile::open( const std::string& filename, std::ios_base::openmode mode) { std::fstream::open(filename, mode | std::ios::binary); }
+void RIFFFile::open( const std::filesystem::path& filename, std::ios_base::openmode mode) { std::fstream::open(filename, mode | std::ios::binary); }
+
+
+}
 
 #endif  // __RIFF_INCLUDED__
