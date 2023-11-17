@@ -14,22 +14,22 @@
 // system is natively little-endian, no conversion needed
 
 // Write a uint64_t to ptr, exists for portability with big-endian systems
-inline void writeBytes (uint64_t input, void * ptr) { *(uint64_t *)ptr = input; }
+template <typename T> inline void writeBytes (uint64_t input, T * ptr) { *(uint64_t *)ptr = input; }
 
-// Write a uint32_t to ptr, exists for portability with big-endian systems
-inline void writeBytes (uint32_t input, void * ptr) { *(uint32_t *)ptr = input; }
+// Write a uint32_t to ptr, existautos for portability with big-endian systems
+template <typename T> inline void writeBytes (uint32_t input, T * ptr) { *(uint32_t *)ptr = input; }
 
 // Write a uint16_t to ptr, exists for portability with big-endian systems
-inline void writeBytes (uint16_t input, void * ptr) { *(uint16_t *)ptr = input; }
+template <typename T> inline void writeBytes (uint16_t input, T * ptr) { *(uint16_t *)ptr = input; }
 
 // Read a uint64_t from ptr, exists for portability with big-endian systems
-inline uint64_t readUint64 (uint8_t * ptr) {return *(uint64_t *) ptr;}
+template <typename T> inline uint64_t readUint64 (T * ptr) {return *(uint64_t *) ptr;}
 
 // Read a uint32_t from ptr, exists for portability with big-endian systems
-inline uint32_t readUint32 (uint8_t * ptr) {return *(uint32_t *) ptr;}
+template <typename T> inline uint32_t readUint32 (T * ptr) {return *(uint32_t *) ptr;}
 
 // Read a uint16_t from ptr, exists for portability with big-endian systems
-inline uint16_t readUint16 (uint8_t * ptr) {return *(uint16_t *) ptr;}
+template <typename T> inline uint16_t readUint16 (T * ptr) {return *(uint16_t *) ptr;}
 
 #elif defined(__BYTE_ORDER) && __BYTE_ORDER == __BIG_ENDIAN || \
     defined(__BIG_ENDIAN__) || \
