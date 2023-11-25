@@ -14,6 +14,7 @@
 #include "TextRenderer.cpp"
 #include "Instrument.cpp"
 #include "Tracker.cpp"
+#include "libriff/riff.h"
 
 struct TrackerPattern {
     std::array<uint32_t, 8> cells;

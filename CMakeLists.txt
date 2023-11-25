@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(Genecyzer LANGUAGES CXX)
+project(Genecyzer LANGUAGES CXX C)
 
 include(FetchContent)
 FetchContent_Declare(SFML
@@ -44,6 +44,8 @@ target_compile_features(Genecyzer PRIVATE cxx_std_17)
 set(FONTFILE "tilesetUnicode.chr")
 set(FONTDIR "${CMAKE_BINARY_DIR}/SNESFM/source/graphics/")
 
+set(THIRDPARTY "${CMAKE_SOURCE_DIR}/thirdparty/")
+
 set(BININCLUDEFILE ${CMAKE_BINARY_DIR}/binIncludes.cpp)
 set(MSVCINCLUDEFILE ${CMAKE_BINARY_DIR}/MSVCIncludes.h)
 
@@ -52,12 +54,14 @@ set(INCBIN_STYLE INCBIN_STYLE_SNAKE)
 set(INCBIN_TOOL_STYLE snakecase)
 
 configure_file("${CMAKE_SOURCE_DIR}/src/binIncludes.cpp.in" "${BININCLUDEFILE}")
-target_include_directories(Genecyzer PRIVATE ${CMAKE_BINARY_DIR})
+target_include_directories(Genecyzer PRIVATE ${CMAKE_BINARY_DIR} ${THIRDPARTY})
 
 add_library(Font STATIC "${BININCLUDEFILE}")
 add_custom_command(OUTPUT "${FONTDIR}" "${FONTDIR}${FONTFILE}" DEPENDS SNESFM COMMAND "")
 target_sources(Font PUBLIC "${FONTDIR}${FONTFILE}")
 target_link_libraries(Font PUBLIC incbin)
+
+add_library(libriff STATIC "${THIRDPARTY}/libriff/riff.c")
 
 if (MSVC)	# Replacement of functions in cmake-incbin wrapper (it does not allow include directories, so fuck it)
 	get_filename_component(BININCLUDEFILE_NAME ${BININCLUDEFILE} NAME)
@@ -74,7 +78,8 @@ else()
 	set_target_properties(incbin-tool PROPERTIES EXCLUDE_FROM_ALL True EXCLUDE_FROM_DEFAULT_BUILD True)
 endif()
 
-target_link_libraries(Genecyzer PRIVATE sfml-graphics sfml-audio Font clip)
+
+target_link_libraries(Genecyzer PRIVATE sfml-graphics sfml-audio Font clip libriff)
 
 if (WIN32 AND BUILD_SHARED_LIBS)
     add_custom_command(TARGET Genecyzer POST_BUILD
