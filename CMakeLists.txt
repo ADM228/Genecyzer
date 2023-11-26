@@ -27,24 +27,34 @@ set(BUILD_SHARED_LIBS ${SFML_BUILD_SHARED_LIBS})
 
 FetchContent_MakeAvailable(SFML incbin clip)
 
+set(THIRDPARTY "${CMAKE_SOURCE_DIR}/thirdparty/")
+
 include(ExternalProject)
 ExternalProject_Add(SNESFM
-	PREFIX ${CMAKE_BINARY_DIR}/SNESFM
-	SOURCE_DIR ${CMAKE_BINARY_DIR}/SNESFM/source
 	GIT_REPOSITORY https://github.com/ADM228/SNES-FM.git
 	GIT_TAG master
 	CONFIGURE_COMMAND ""
 	BUILD_COMMAND $<$<STREQUAL:$<UPPER_CASE:${CMAKE_HOST_SYSTEM_NAME}>,LINUX>:make>
 	BUILD_IN_SOURCE True
 	INSTALL_COMMAND "")
+ExternalProject_Add(tinyfiledialogs
+	GIT_REPOSITORY https://git.code.sf.net/p/tinyfiledialogs/code
+	GIT_TAG master
+	CONFIGURE_COMMAND ""
+	BUILD_COMMAND ""
+	INSTALL_COMMAND "")
+
+ExternalProject_Get_Property(SNESFM SOURCE_DIR)
+set (SNESFM_SOURCE_DIR "${SOURCE_DIR}")
+ExternalProject_Get_Property(tinyfiledialogs SOURCE_DIR)
+set (TINYFD_SOURCE_DIR "${SOURCE_DIR}")
 
 add_executable(Genecyzer src/main.cpp)
 target_compile_features(Genecyzer PRIVATE cxx_std_17)
 
 set(FONTFILE "tilesetUnicode.chr")
-set(FONTDIR "${CMAKE_BINARY_DIR}/SNESFM/source/graphics/")
+set(FONTDIR "${SNESFM_SOURCE_DIR}/graphics/")
 
-set(THIRDPARTY "${CMAKE_SOURCE_DIR}/thirdparty/")
 
 set(BININCLUDEFILE ${CMAKE_BINARY_DIR}/binIncludes.cpp)
 set(MSVCINCLUDEFILE ${CMAKE_BINARY_DIR}/MSVCIncludes.h)
@@ -54,14 +64,16 @@ set(INCBIN_STYLE INCBIN_STYLE_SNAKE)
 set(INCBIN_TOOL_STYLE snakecase)
 
 configure_file("${CMAKE_SOURCE_DIR}/src/binIncludes.cpp.in" "${BININCLUDEFILE}")
-target_include_directories(Genecyzer PRIVATE ${CMAKE_BINARY_DIR} ${THIRDPARTY})
+target_include_directories(Genecyzer PRIVATE ${CMAKE_BINARY_DIR} ${THIRDPARTY} ${TINYFD_SOURCE_DIR})
 
 add_library(Font STATIC "${BININCLUDEFILE}")
 add_custom_command(OUTPUT "${FONTDIR}" "${FONTDIR}${FONTFILE}" DEPENDS SNESFM COMMAND "")
+add_custom_command(OUTPUT "${TINYFD_SOURCE_DIR}" "${TINYFD_SOURCE_DIR}/tinyfiledialogs.c" DEPENDS tinyfiledialogs COMMAND "")
 target_sources(Font PUBLIC "${FONTDIR}${FONTFILE}")
 target_link_libraries(Font PUBLIC incbin)
 
 add_library(riff STATIC "${THIRDPARTY}/libriff/riff.c")
+add_library(tinyfd STATIC "${TINYFD_SOURCE_DIR}/tinyfiledialogs.c")
 
 if (MSVC)	# Replacement of functions in cmake-incbin wrapper (it does not allow include directories, so fuck it)
 	get_filename_component(BININCLUDEFILE_NAME ${BININCLUDEFILE} NAME)
@@ -79,7 +91,7 @@ else()
 endif()
 
 
-target_link_libraries(Genecyzer PRIVATE sfml-graphics sfml-audio Font clip riff)
+target_link_libraries(Genecyzer PRIVATE sfml-graphics sfml-audio Font clip riff tinyfd)
 
 if (WIN32 AND BUILD_SHARED_LIBS)
     add_custom_command(TARGET Genecyzer POST_BUILD

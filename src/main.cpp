@@ -6,10 +6,14 @@
 
 #include "binIncludes.cpp"
 #include "Instance.cpp"
+#include "tinyfiledialogs.h"
 
+char const * test[] = {"*.gczr"};
 
 int main()
 {
+
+    tinyfd_openFileDialog("Open a Genecyzer project file", NULL, 1, test, "Genecyzer project file", 0);
     
     Instance instance;
 
