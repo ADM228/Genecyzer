@@ -18,11 +18,11 @@ Written in C++ with the [SFML framework](https://sfml-dev.org), it is (theoretic
 - The wonderful [SFML framework](https://sfml-dev.org) 
 - The [cmake-incbin wrapper](https://github.com/morswin22/cmake-incbin) of the [incbin utility](https://github.com/graphitemaster/incbin) to include the font
 - The [clip library](https://github.com/dacap/clip) 
-- [libriff](https://github.com/murkymark/libriff) (unmodified but with my own shitty wrapper)
+- The source code, license and RIFF spec from [libriff](https://github.com/murkymark/libriff) (the rest was stripped out)
 
 # FAQ
 Q: Can I use it?  
 A: No lmao it's nowhere near done
 
 Q: Is this for the Sega Genesis?  
-A: It will make your SNES one \:)
+A: It will make your SNES one \:\)

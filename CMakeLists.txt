@@ -61,7 +61,7 @@ add_custom_command(OUTPUT "${FONTDIR}" "${FONTDIR}${FONTFILE}" DEPENDS SNESFM CO
 target_sources(Font PUBLIC "${FONTDIR}${FONTFILE}")
 target_link_libraries(Font PUBLIC incbin)
 
-add_library(libriff STATIC "${THIRDPARTY}/libriff/riff.c")
+add_library(riff STATIC "${THIRDPARTY}/libriff/riff.c")
 
 if (MSVC)	# Replacement of functions in cmake-incbin wrapper (it does not allow include directories, so fuck it)
 	get_filename_component(BININCLUDEFILE_NAME ${BININCLUDEFILE} NAME)
@@ -79,7 +79,7 @@ else()
 endif()
 
 
-target_link_libraries(Genecyzer PRIVATE sfml-graphics sfml-audio Font clip libriff)
+target_link_libraries(Genecyzer PRIVATE sfml-graphics sfml-audio Font clip riff)
 
 if (WIN32 AND BUILD_SHARED_LIBS)
     add_custom_command(TARGET Genecyzer POST_BUILD

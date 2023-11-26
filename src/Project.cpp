@@ -99,23 +99,130 @@ Project::Project() {
         instruments.back().setPalette((i / 12)&0x07);
     }
 }
+// Project file format:
+
+/* It's a RIFF file, with the gczr file extension
+    The RIFF specification can be found at 
+        thirdparty/libriff/docs/riffmci.pdf
+    Chunk types:
+        "RIFF" - the root of everything, as per the RIFF spec:
+            4 bytes [00:03] -
+                The string "RIFF". The loading will be aborted
+                if the string doesn't match.
+            4 bytes [04:07] - 
+                The length of the data in the chunk.
+            4 bytes [08:11] - (counts as data)
+                The string indicating the file format. It
+                should be "GCZR" for Genecyzer, the loading
+                will be aborted if it doesn't match that.
+            X bytes [12:] - (counts as data)
+                The rest of the data in the chunk, which is the
+                entire file.
+
+        For the rest of the chunk types' descriptions, the
+        chunk header is omitted.
+
+        "fmt " - tells about the file format:
+            8 bytes [08:15] - 
+                the branch of Genecyzer where this file was
+                saved from. Full Genecyzer releases only accept
+                "Release ", and in development versions on the
+                main branch also accept "Dev Main", otherwise
+                loading will be aborted. If you are creating a
+                fork with incompatible file data, please use a
+                different combination of 8 bytes, otherwise
+                stuff might break.
+            4 bytes [16:19] -
+                the version of the files inside that branch.
+
+        "LIST" - The list chunk as per the RIFF spec. Several
+        types are in use by Genecyzer:
+
+        Type "INFO" - as per RIFF spec. Only the following 
+        subchunks are used by Genecyzer (the rest are ignored
+        on reading):
+            "IART" - Artist. 
+                Lists the contents of the composer field.
+            "ICMT" - Comments.
+                Lists the contents of the notes field. Since
+                the RIFF spec explicitly says not to include 
+                newline characters, they are converted into the
+                Record Separator characters (0x1E) when writing
+                to the file, and back into newline characters
+                when reading from it.
+            "ICOP" - Copyright.
+                Lists the contents of the copyright field.
+            "ICRD" - Creation date.
+                Lists the latest time the file has been saved.
+            "INAM" - Name.
+                Lists the title of the project.
+            "ISFT" - Software.
+                Genecyzer always sets this field to 
+                "Genecyzer", gives a warning if the string
+                doesn't match it on reading.
+
+        Type "song" - the internal Genecyzer song format. 
+        Contains the following subchunks:
+            "effc" - The amount of effect columns:
+                8 bytes [08:15] - the amount of effect columns
+                for the corresponding channel.
+            "INAM" - Name. 
+                Lists the song title.
+            "col " - Color.
+                Lists the color of the song in the standard
+                24-bit color format.
+            "LIST" chunk of type "patd" - An ordered list of 
+            the song's patterns. Subchunks:
+                "LIST" chunk of type "pat " - a pattern.
+                Subchunks:
+                    "idx " - The pattern indexes themselves,
+                    16-bit words, size is fixed at 8*2 = 16 
+                    bytes.
+                    "bmaj" - The major beats. Variable size.
+                    "bmin" - The minor beats. Variable size.
+            "LIST" chunk of type "ntd " - An ordered list of
+            the song's note data. Subchunks:
+                "note" chunk - a chunk of a "note struct":
+                    4 bytes - the amount of note structs in 
+                    this chunk. Each note struct consists of:
+                        1 byte - the note value:
+                            In range 0..96 for C0..B7, 
+                            253 means to repeat the default 
+                            tracker cell (and no further data
+                            follows after this),
+                            254 means a KEY OFF/stop note,
+                            255 means an empty note cell.
+                        1 byte - the flags for the following
+                        data:
+                            bit 7 - whether the note has attack
+                            enabled,
+                            bit 6 - whether an instrument value
+                            is set,      
+                            bit 5 - whether a volume value
+                            is set,
+                            bit 4 - whether any effects are 
+                            declared,
+                            bit 3 - whether to set this cell as
+                            the default cell.
+                        1 byte (optional) - Instrument value
+                            Only present if bit 6 is set in the
+                            flags byte.
+                        1 byte (optional) - Volume value
+                            Only present if bit 5 is set in the
+                            flags byte.
+                        X bytes (optional) - Effect data
+                            TODO
+
+        
+*/
 
 int Project::Load(std::vector<uint8_t>& data) {
-    std::vector<uint8_t> rData(data.size());
-    std::reverse_copy(data.begin(), data.end(), rData.begin());
-
-    #define CURRENT_FILE_FORMAT 0
-    uint16_t fileFormat = get_back(rData) | (get_back(rData) << 8);
-    if (fileFormat > CURRENT_FILE_FORMAT) return 1;
-
-    for (auto & i : effectColumnAmount) {
-        i = get_back(rData);
-    }
 
     
 
     return 0;
 }
+
 
 
 #endif
