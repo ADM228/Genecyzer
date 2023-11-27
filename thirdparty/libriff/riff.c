@@ -98,7 +98,7 @@ int riff_open_file(riff_handle *rh, FILE *f, size_t size){
 
 /*****************************************************************************/
 size_t read_mem(riff_handle *rh, void *ptr, size_t size){
-	memcpy(ptr, (void*)(rh->fh+rh->pos), size);
+	memcpy(ptr, ((unsigned char*)rh->fh+rh->pos), size);
 	return size;
 }
 
