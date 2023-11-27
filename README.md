@@ -18,7 +18,7 @@ Written in C++ with the [SFML framework](https://sfml-dev.org), it is (theoretic
 - The wonderful [SFML framework](https://sfml-dev.org) 
 - The [cmake-incbin wrapper](https://github.com/morswin22/cmake-incbin) of the [incbin utility](https://github.com/graphitemaster/incbin) to include the font
 - The [clip library](https://github.com/dacap/clip) 
-- The source code, license and RIFF spec from [libriff](https://github.com/murkymark/libriff) (the rest was stripped out)
+- An unbloated and modified [libriff](https://github.com/murkymark/libriff)
 
 # FAQ
 Q: Can I use it?  

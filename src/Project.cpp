@@ -216,10 +216,16 @@ Project::Project() {
         
 */
 
-int Project::Load(std::vector<uint8_t>& data) {
+char fileType[5] = "GCZR";
 
-    
-
+int Project::Load(std::vector<uint8_t>& __data) {
+    auto file = RIFF::RIFFFile();
+    auto errCode = file.open(__data.data());
+    if (errCode) return errCode;
+    if (strcmp(file.rh->h_type, fileType)) return -1;
+    // auto errdata = file.readChunkData();
+    // if (errdata->errorCode) return errdata->errorCode;
+    // auto data = *(errdata->data);
     return 0;
 }
 

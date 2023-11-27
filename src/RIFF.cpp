@@ -7,19 +7,26 @@ extern "C" {
     #include "libriff/riff.h"
 }
 #include <fstream>
+#include <vector>
 #include <filesystem>
 
 namespace RIFF {
+
+struct vecErr {
+    int errorCode;
+    std::vector<uint8_t> * data;
+};
 
 class RIFFFile {
     public:
         RIFFFile();
         ~RIFFFile();
-        void open(const char* __filename, const char * __mode);
-        inline void open(const std::string& __filename, const char * __mode) 
+        int open(const char* __filename, const char * __mode);
+        inline int open(const std::string& __filename, const char * __mode) 
             {open(__filename.c_str(), __mode);};
-        void open(const std::filesystem::path& __filename, const char * __mode)
+        inline int open(const std::filesystem::path& __filename, const char * __mode)
             {open(__filename.c_str(), __mode);};
+        int open(void * __mem_ptr, uint32_t __size = 0);
 
         void close();
 
@@ -32,6 +39,13 @@ class RIFFFile {
          * @return size_t Amount of data read successfully
          */
         inline size_t readInChunk (void *to, size_t size) {return riff_readInChunk(rh, to, size);};
+        /**
+         * @brief Read current chunk's data
+         * @note Returns an error in the vecErr if an error occured
+         * 
+         * @return vecErr* 
+         */
+        vecErr * readChunkData ();
         /**
          * @brief Seek in current chunk
          * @note Returns RIFF_ERROR_EOC if end of chunk is reached
@@ -115,10 +129,15 @@ RIFFFile::~RIFFFile() {
     free(file);
 }
 
-void RIFFFile::open (const char* __filename, const char * __mode) {
+int RIFFFile::open (const char* __filename, const char * __mode) {
     file = std::fopen(__filename, __mode);
-    riff_open_file(rh, file, 0);
     opened = 1;
+    return riff_open_file(rh, file, 0);
+}
+
+int RIFFFile::open (void * __mem_ptr, uint32_t __size) {
+    opened = 1;
+    return riff_open_mem(rh, __mem_ptr, __size);
 }
 
 void RIFFFile::close () {
@@ -134,6 +153,27 @@ std::string RIFFFile::errorToString (int errorCode) {
     std::string outstring (buffer);
     outstring += errorString;
     return outstring;
+}
+
+vecErr * RIFFFile::readChunkData() {
+    auto outVE = new vecErr;
+    int errCode;
+    errCode = seekChunkStart(); 
+    if (errCode) {
+        outVE->errorCode = errCode;
+        outVE->data = nullptr;
+        return outVE;
+    }
+    auto outVec = new std::vector<uint8_t>(rh->c_size);
+    outVE->data = outVec;
+    size_t succSize = readInChunk(outVec->data(), rh->c_size);
+    if (succSize == rh->c_size) {
+        outVE->errorCode = 0;
+        return outVE;
+    } else {
+        outVE->errorCode = succSize;
+        return outVE;
+    }
 }
 
 }

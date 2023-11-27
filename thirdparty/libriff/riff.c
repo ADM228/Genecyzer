@@ -87,9 +87,8 @@ int riff_open_file(riff_handle *rh, FILE *f, size_t size){
 		rh->fp_read = &read_file;
 		rh->fp_seek = &seek_file;
 		
-		riff_readHeader(rh);
+		return riff_readHeader(rh);
 	}
-	return RIFF_ERROR_NONE;
 }
 
 
@@ -121,9 +120,7 @@ int riff_open_mem(riff_handle *rh, void *ptr, size_t size){
 	rh->fp_read = &read_mem;
 	rh->fp_seek = &seek_mem;
 	
-	riff_readHeader(rh);
-	
-	return RIFF_ERROR_NONE;
+	return riff_readHeader(rh);
 }
 
 
