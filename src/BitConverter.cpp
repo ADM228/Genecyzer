@@ -3,13 +3,12 @@
 
 #include <cstdint>
 
-#if !defined(__BIG_ENDIAN_OVERRIDE) && ( \
-    defined(__BYTE_ORDER) && __BYTE_ORDER == __LITTLE_ENDIAN || \
+#if defined(__BYTE_ORDER) && __BYTE_ORDER == __LITTLE_ENDIAN || \
     defined(__LITTLE_ENDIAN__) || \
     defined(__ARMEL__) || \
     defined(__THUMBEL__) || \
     defined(__AARCH64EL__) || \
-    defined(_MIPSEL) || defined(__MIPSEL) || defined(__MIPSEL__) )
+    defined(_MIPSEL) || defined(__MIPSEL) || defined(__MIPSEL__)
 
 // system is natively little-endian, no conversion needed
 
