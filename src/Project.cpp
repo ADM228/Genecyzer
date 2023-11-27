@@ -15,6 +15,7 @@
 #include "Instrument.cpp"
 #include "Tracker.cpp"
 #include "RIFF.cpp"
+#include "BitConverter.cpp"
 
 struct TrackerPattern {
     std::array<uint32_t, 8> cells;
@@ -211,19 +212,28 @@ Project::Project() {
         
 */
 
-char fileType   [5]     = "GCZR";
-char software   [10]    = "Genecyzer";
-char mainBranch [9]     = "Release ";
-char thisBranch [9]     = "Dev Main";
+const char fileType   [5]     = "GCZR";
+const char software   [10]    = "Genecyzer";
+
+const char mainBranch [9]     = "Release ";
+const char thisBranch [9]     = "Dev Main";
+
+const uint32_t mainBranchVer = 0;
+const uint32_t thisBranchVer = 0;
 
 int Project::Load(std::vector<uint8_t>& __data) {
     auto file = RIFF::RIFFFile();
     auto errCode = file.open(__data.data());
     if (errCode) return errCode;
     if (strcmp(file.rh->h_type, fileType)) return -1;
-    char buffer [20];
-    auto size = file.readInChunk(buffer, 20);
-    printByteArray(buffer, size, 4);
+    auto test = file.readChunkData();
+    printByteArray(test->data->data(), test->data->size(), 4);
+    auto tmp = test->data->data();
+    auto size = test->data->size();
+    if ( !(
+        (!memcmp(tmp, mainBranch, 8) && readUint32(tmp+8) <= mainBranchVer) || 
+        (!memcmp(tmp, thisBranch, 8) && readUint32(tmp+8) <= thisBranchVer)
+    ) )  printf("File is invalid");
     // auto errdata = file.readChunkData();
     // if (errdata->errorCode) return errdata->errorCode;
     // auto data = *(errdata->data);

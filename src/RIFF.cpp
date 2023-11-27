@@ -125,8 +125,10 @@ RIFFFile::RIFFFile() {
 
 RIFFFile::~RIFFFile() {
     riff_handleFree(rh);
-    std::fclose(file);
-    free(file);
+    if (file != nullptr) {
+        std::fclose(file);
+        free(file);
+    }
 }
 
 int RIFFFile::open (const char* __filename, const char * __mode) {
@@ -136,13 +138,16 @@ int RIFFFile::open (const char* __filename, const char * __mode) {
 }
 
 int RIFFFile::open (void * __mem_ptr, uint32_t __size) {
+    file = nullptr;
     opened = 1;
     return riff_open_mem(rh, __mem_ptr, __size);
 }
 
 void RIFFFile::close () {
-    std::fclose(file);
-    free (file);
+    if (file != nullptr) {
+        std::fclose(file);
+        free (file);
+    }
     opened = 0;
 }
 
