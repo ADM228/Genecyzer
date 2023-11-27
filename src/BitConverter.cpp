@@ -3,12 +3,13 @@
 
 #include <cstdint>
 
-#if defined(__BYTE_ORDER) && __BYTE_ORDER == __LITTLE_ENDIAN || \
+#if !defined(__BIG_ENDIAN_OVERRIDE) && ( \
+    defined(__BYTE_ORDER) && __BYTE_ORDER == __LITTLE_ENDIAN || \
     defined(__LITTLE_ENDIAN__) || \
     defined(__ARMEL__) || \
     defined(__THUMBEL__) || \
     defined(__AARCH64EL__) || \
-    defined(_MIPSEL) || defined(__MIPSEL) || defined(__MIPSEL__)
+    defined(_MIPSEL) || defined(__MIPSEL) || defined(__MIPSEL__) )
 
 // system is natively little-endian, no conversion needed
 
@@ -35,9 +36,10 @@ template <typename T> inline uint16_t readUint16 (T * ptr) {return *(uint16_t *)
     defined(__ARMEB__) || \
     defined(__THUMBEB__) || \
     defined(__AARCH64EB__) || \
-    defined(_MIBSEB) || defined(__MIBSEB) || defined(__MIBSEB__)
+    defined(_MIBSEB) || defined(__MIBSEB) || defined(__MIBSEB__) || \
+    defined(_MSC_VER)   // MSVC YOU FUCKING SON OF A BITCH
 
-// system is natively big-endian, conversion required
+// system is natively big-endian (or undetermined in case of MSVC), conversion required
 
 // Write a uint64_t to ptr, while converting it to little-endian
 template <typename T>
