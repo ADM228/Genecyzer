@@ -64,13 +64,13 @@ int riff_printf(const char *format, ... ){
 
 
 /*****************************************************************************/
-size_t read_file(void *fh, void *ptr, size_t size){
-	return fread(ptr, 1, size, (FILE*)fh);
+size_t read_file(riff_handle *rh, void *ptr, size_t size){
+	return fread(ptr, 1, size, (FILE*)(rh->fh));
 }
 
 /*****************************************************************************/
-size_t seek_file(void *fh, size_t pos){
-	fseek((FILE*)fh, pos, SEEK_SET);
+size_t seek_file(riff_handle *rh, size_t pos){
+	fseek((FILE*)(rh->fh), pos, SEEK_SET);
 	return pos;
 }
 
@@ -97,13 +97,13 @@ int riff_open_file(riff_handle *rh, FILE *f, size_t size){
 
 
 /*****************************************************************************/
-size_t read_mem(void *fh, void *ptr, size_t size){
-	memcpy(ptr, fh, size);
+size_t read_mem(riff_handle *rh, void *ptr, size_t size){
+	memcpy(ptr, (void*)(rh->fh+rh->pos), size);
 	return size;
 }
 
 /*****************************************************************************/
-size_t seek_mem(void *fh, size_t pos){
+size_t seek_mem(riff_handle *rh, size_t pos){
 	return pos; //instant in memory
 }
 
@@ -141,7 +141,7 @@ unsigned int convUInt32LE(void *p){
 //read 32 bit LE from file via FP and return as native
 unsigned int readUInt32LE(riff_handle *rh){
 	char buf[4] = {0};
-	rh->fp_read(rh->fh, buf, 4);
+	rh->fp_read(rh, buf, 4);
 	rh->pos += 4;
 	rh->c_pos += 4;
 	return convUInt32LE(buf);
@@ -154,7 +154,7 @@ unsigned int readUInt32LE(riff_handle *rh){
 int riff_readChunkHeader(riff_handle *rh){
 	char buf[8];
 	
-	int n = rh->fp_read(rh->fh, buf, 8);
+	int n = rh->fp_read(rh, buf, 8);
 	
 	if(n != 8){
 		if(rh->fp_printf)
@@ -301,7 +301,7 @@ int riff_readHeader(riff_handle *rh){
 		return RIFF_ERROR_INVALID_HANDLE;
 	}
 	
-	int n = rh->fp_read(rh->fh, buf, RIFF_HEADER_SIZE);
+	int n = rh->fp_read(rh, buf, RIFF_HEADER_SIZE);
 	rh->pos += n;
 	
 	if(n != RIFF_HEADER_SIZE){
@@ -320,7 +320,7 @@ int riff_readHeader(riff_handle *rh){
 			rh->fp_printf("Invalid RIFF header\n");
 		return RIFF_ERROR_ILLID;
 	}
-	
+
 	int r = riff_readChunkHeader(rh);
 	if(r != RIFF_ERROR_NONE)
 		return r;
@@ -357,7 +357,7 @@ size_t riff_readInChunk(riff_handle *rh, void *to, size_t size){
 	size_t left = rh->c_size - rh->c_pos;
 	if(left < size)
 		size = left;
-	size_t n = rh->fp_read(rh->fh, to, size);
+	size_t n = rh->fp_read(rh, to, size);
 	rh->pos += n;
 	rh->c_pos += n;
 	return n;
@@ -478,7 +478,7 @@ int riff_seekLevelSub(riff_handle *rh){
 	}
 	//read type ID
 	unsigned char type[5] = "\0\0\0\0\0";
-	rh->fp_read(rh->fh, type, 4);
+	rh->fp_read(rh, type, 4);
 	rh->pos += 4;
 	//verify type ID
 	int i;

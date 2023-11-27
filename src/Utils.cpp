@@ -57,12 +57,21 @@ sf::Vector2<T> perpendiculate(sf::Vector2<T>& vector) {
     return sf::Vector2<T>(vector.y, -vector.x);
 }
 
-template <typename T>
-T get_back(std::vector<T>& vector) {
-    if (vector.empty()) return 0;
-    T tempBack = vector.back();
-    vector.pop_back();
-    return tempBack;
+void printByteArray(void * ptr, size_t size, size_t divide = 0) {
+    if (divide == 0) divide = size;
+    size_t repeats = (size_t)((long double)size/(long double)divide);
+    size_t idx = 0;
+    for (size_t i = 0; i < repeats; i++){
+        for (size_t j = 0; j < divide; j++) {
+            printf("%02X ", *((uint8_t *)ptr+(idx+j)));
+        }
+        printf("| ");
+        for (size_t j = 0; j < divide; j++){
+            printf("%c", *((char *)ptr+(idx++)));
+        }
+        printf("\n");
+        fflush(stdout);
+    }
 }
 
 #endif  // __STRCONVERT_INCLUDED__

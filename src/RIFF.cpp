@@ -23,9 +23,9 @@ class RIFFFile {
         ~RIFFFile();
         int open(const char* __filename, const char * __mode);
         inline int open(const std::string& __filename, const char * __mode) 
-            {open(__filename.c_str(), __mode);};
+            {return open(__filename.c_str(), __mode);};
         inline int open(const std::filesystem::path& __filename, const char * __mode)
-            {open(__filename.c_str(), __mode);};
+            {return open(__filename.c_str(), __mode);};
         int open(void * __mem_ptr, uint32_t __size = 0);
 
         void close();

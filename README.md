@@ -19,6 +19,7 @@ Written in C++ with the [SFML framework](https://sfml-dev.org), it is (theoretic
 - The [cmake-incbin wrapper](https://github.com/morswin22/cmake-incbin) of the [incbin utility](https://github.com/graphitemaster/incbin) to include the font
 - The [clip library](https://github.com/dacap/clip) 
 - An unbloated and modified [libriff](https://github.com/murkymark/libriff)
+- [tinyfiledialogs](http://tinyfiledialogs.sourceforge.net)
 
 # FAQ
 Q: Can I use it?  

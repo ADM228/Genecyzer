@@ -122,7 +122,7 @@ Project::Project() {
         For the rest of the chunk types' descriptions, the
         chunk header is omitted.
 
-        "fmt " - tells about the file format:
+        "ver " - tells about the file version:
             8 bytes [08:15] - 
                 the branch of Genecyzer where this file was
                 saved from. Full Genecyzer releases only accept
@@ -211,14 +211,19 @@ Project::Project() {
         
 */
 
-char fileType[5] = "GCZR";
+char fileType   [5]     = "GCZR";
+char software   [10]    = "Genecyzer";
+char mainBranch [9]     = "Release ";
+char thisBranch [9]     = "Dev Main";
 
 int Project::Load(std::vector<uint8_t>& __data) {
     auto file = RIFF::RIFFFile();
     auto errCode = file.open(__data.data());
     if (errCode) return errCode;
     if (strcmp(file.rh->h_type, fileType)) return -1;
-
+    char buffer [20];
+    auto size = file.readInChunk(buffer, 20);
+    printByteArray(buffer, size, 4);
     // auto errdata = file.readChunkData();
     // if (errdata->errorCode) return errdata->errorCode;
     // auto data = *(errdata->data);

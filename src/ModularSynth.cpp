@@ -1,4 +1,5 @@
 #include <SFML/System.hpp>
+#include <cstdint>
 #include <memory>
 
 #include "Bezier.cpp"
@@ -6,11 +7,16 @@
 #ifndef __MODULAR_SYNTH_INCLUDED__
 #define __MODULAR_SYNTH_INCLUDED__
 
+#define MSB_STATE_ALIVE 0x00
+#define MSB_STATE_DEATH 0xFF
+
 class ModSynthBezier : public CubicBezier {
     public:
         void updatePosition(std::array<sf::Vector2f, 2> & position);
         void updatePosition(sf::Vector2f & position, bool end);
         void calculate(float precision, float lineWidth, bool thin);
+
+        uint_fast8_t state;
 
     private:
         std::array<sf::Vector2f, 2> position;
@@ -22,12 +28,14 @@ class ModSynthElement : public sf::Drawable {
 
         void connectOutputBezier(ModSynthBezier & bezier);
 
+        void updateBeziers();
+
     private:
         virtual void draw(sf::RenderTarget &target, sf::RenderStates states) const override; 
 
         virtual void calculate();
 
-        std::vector<std::weak_ptr<ModSynthBezier>> outputs;
+        std::vector<std::shared_ptr<ModSynthBezier>> outputs;
 };
 
 
@@ -124,5 +132,13 @@ void ModSynthElement::connectOutputBezier(ModSynthBezier & bezier) {
     outputs.push_back(std::make_shared<ModSynthBezier>(bezier));
 }
 
+void ModSynthElement::updateBeziers() {
+    for (size_t i = 0; i < outputs.size(); i++) {
+        if (outputs[i]->state == MSB_STATE_DEATH) {
+            std::swap(outputs[i], outputs.back());
+            outputs.pop_back();
+        };
+    }
+}
 
 #endif  // __MODULAR_SYNTH_INCLUDED__

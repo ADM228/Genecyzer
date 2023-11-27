@@ -124,10 +124,10 @@ typedef struct riff_handle {
 	
 	
 	//read bytes; required
-	size_t (*fp_read)(void *fh, void *ptr, size_t size);
+	size_t (*fp_read)(struct riff_handle *rh, void *ptr, size_t size);
 	
 	//seek position relative to start pos; required
-	size_t (*fp_seek)(void *fh, size_t pos);
+	size_t (*fp_seek)(struct riff_handle *rh, size_t pos);
 	
 	//print error; optional;
 	//allocate function maps it to vfprintf(stderr, ...) by default; set to NULL after allocation to disable any printing
