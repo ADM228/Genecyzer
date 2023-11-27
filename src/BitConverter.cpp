@@ -3,7 +3,7 @@
 
 #include <cstdint>
 
-#if not defined(__BIG_ENDIAN_OVERRIDE) && ( \
+#if !defined(__BIG_ENDIAN_OVERRIDE) && ( \
     defined(__BYTE_ORDER) && __BYTE_ORDER == __LITTLE_ENDIAN || \
     defined(__LITTLE_ENDIAN__) || \
     defined(__ARMEL__) || \
