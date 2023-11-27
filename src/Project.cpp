@@ -171,47 +171,42 @@ Project::Project() {
             "col " - Color.
                 Lists the color of the song in the standard
                 24-bit color format.
-            "LIST" chunk of type "patd" - An ordered list of 
-            the song's patterns. Subchunks:
-                "LIST" chunk of type "pat " - a pattern.
-                Subchunks:
-                    "idx " - The pattern indexes themselves,
-                    16-bit words, size is fixed at 8*2 = 16 
-                    bytes.
-                    "bmaj" - The major beats. Variable size.
-                    "bmin" - The minor beats. Variable size.
-            "LIST" chunk of type "ntd " - An ordered list of
-            the song's note data. Subchunks:
-                "note" chunk - a chunk of a "note struct":
-                    4 bytes - the amount of note structs in 
-                    this chunk. Each note struct consists of:
-                        1 byte - the note value:
-                            In range 0..96 for C0..B7, 
-                            253 means to repeat the default 
-                            tracker cell (and no further data
-                            follows after this),
-                            254 means a KEY OFF/stop note,
-                            255 means an empty note cell.
-                        1 byte - the flags for the following
-                        data:
-                            bit 7 - whether the note has attack
-                            enabled,
-                            bit 6 - whether an instrument value
-                            is set,      
-                            bit 5 - whether a volume value
-                            is set,
-                            bit 4 - whether any effects are 
-                            declared,
-                            bit 3 - whether to set this cell as
-                            the default cell.
-                        1 byte (optional) - Instrument value
-                            Only present if bit 6 is set in the
-                            flags byte.
-                        1 byte (optional) - Volume value
-                            Only present if bit 5 is set in the
-                            flags byte.
-                        X bytes (optional) - Effect data
-                            TODO
+            "LIST" chunk of type "pat " - a pattern (the 
+            indexes are assumed to be in order). Subchunks:
+                "idx " - The pattern indexes themselves,
+                16-bit words, size is fixed at 8*2 = 16 bytes.
+                "bmaj" - The major beats. Variable size.
+                "bmin" - The minor beats. Variable size.
+            "note" chunk - a chunk of a "note struct":
+                4 bytes - the amount of note structs in 
+                this chunk. Each note struct consists of:
+                    1 byte - the note value:
+                        In range 0..96 for C0..B7, 
+                        253 means to repeat the default 
+                        tracker cell (and no further data
+                        follows after this),
+                        254 means a KEY OFF/stop note,
+                        255 means an empty note cell.
+                    1 byte - the flags for the following
+                    data:
+                        bit 7 - whether the note has attack
+                        enabled,
+                        bit 6 - whether an instrument value
+                        is set,      
+                        bit 5 - whether a volume value
+                        is set,
+                        bit 4 - whether any effects are 
+                        declared,
+                        bit 3 - whether to set this cell as
+                        the default cell.
+                    1 byte (optional) - Instrument value
+                        Only present if bit 6 is set in the
+                        flags byte.
+                    1 byte (optional) - Volume value
+                        Only present if bit 5 is set in the
+                        flags byte.
+                    X bytes (optional) - Effect data
+                        TODO
 
         
 */
@@ -223,6 +218,7 @@ int Project::Load(std::vector<uint8_t>& __data) {
     auto errCode = file.open(__data.data());
     if (errCode) return errCode;
     if (strcmp(file.rh->h_type, fileType)) return -1;
+
     // auto errdata = file.readChunkData();
     // if (errdata->errorCode) return errdata->errorCode;
     // auto data = *(errdata->data);
