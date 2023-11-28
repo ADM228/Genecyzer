@@ -79,16 +79,14 @@ size_t seek_file(riff_handle *rh, size_t pos){
 int riff_open_file(riff_handle *rh, FILE *f, size_t size){
 	if(rh == NULL)
 		return RIFF_ERROR_INVALID_HANDLE;
-	if(rh != NULL){
-		rh->fh = f;
-		rh->size = size;
-		rh->pos_start = ftell(f); //current file offset of stream considered as start of RIFF file
-		
-		rh->fp_read = &read_file;
-		rh->fp_seek = &seek_file;
-		
-		return riff_readHeader(rh);
-	}
+	rh->fh = f;
+	rh->size = size;
+	rh->pos_start = ftell(f); //current file offset of stream considered as start of RIFF file
+	
+	rh->fp_read = &read_file;
+	rh->fp_seek = &seek_file;
+	
+	return riff_readHeader(rh);
 }
 
 
