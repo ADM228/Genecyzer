@@ -51,7 +51,7 @@ class Project {
         Project ();
 
         // Load project from filestream
-        int Load (std::ifstream file);
+        int Load (std::ifstream & file);
         // Load project from memory
         int Load (std::vector<uint8_t>& data);
 
@@ -71,6 +71,10 @@ class Project {
         std::array<uint8_t, 8> effectColumnAmount; 
 
         std::vector<Instrument> instruments;
+
+    private:
+
+        int loadInternal (RIFF::RIFFFile & file);
 
 
 };
@@ -225,6 +229,23 @@ int Project::Load(std::vector<uint8_t>& __data) {
     auto file = RIFF::RIFFFile();
     auto errCode = file.open(__data.data());
     if (errCode) return errCode;
+    loadInternal(file);
+    // auto errdata = file.readChunkData();
+    // if (errdata->errorCode) return errdata->errorCode;
+    // auto data = *(errdata->data);
+    return 0;
+}
+
+int Project::Load(std::ifstream & __file) {
+    auto file = RIFF::RIFFFile();
+    auto errCode = file.open((std::fstream*) (&__file));
+    if (errCode) return errCode;
+    loadInternal (file);
+
+    return 0;
+}
+
+int Project::loadInternal(RIFF::RIFFFile & file) {
     if (strcmp(file.rh->h_type, fileType)) return -1;
     auto test = file.readChunkData();
     printByteArray(test->data->data(), test->data->size(), 4);
@@ -233,10 +254,7 @@ int Project::Load(std::vector<uint8_t>& __data) {
     if ( !(
         (!memcmp(tmp, mainBranch, 8) && readUint32(tmp+8) <= mainBranchVer) || 
         (!memcmp(tmp, thisBranch, 8) && readUint32(tmp+8) <= thisBranchVer)
-    ) )  printf("File is invalid");
-    // auto errdata = file.readChunkData();
-    // if (errdata->errorCode) return errdata->errorCode;
-    // auto data = *(errdata->data);
+    ) )  { printf("File is invalid"); return -1; }
     return 0;
 }
 

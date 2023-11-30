@@ -21,6 +21,9 @@
 #include <cstdint>
 #include <cstdio>
 #include <chrono>
+#include "tinyfiledialogs.h"
+
+char const * filter[] = {"*.gczr"};
 
 constexpr uint64_t UPDATE_SCALE = 1;
 constexpr uint64_t UPDATE_INST_POS = 2;
@@ -106,6 +109,15 @@ Instance::Instance() {
     lastMousePress.y = 0;
     selectionBounds[0] = 0;
     selectionBounds[1] = 0;
+    
+
+    #ifdef FILETEST
+        auto filename = tinyfd_openFileDialog("Open a Genecyzer project file", NULL, 1, filter, "Genecyzer project file", 0);
+        auto data = std::ifstream();
+        data.open(filename, std::ios_base::binary | std::ios_base::in);
+
+    #else
+
 
     std::vector<uint8_t> data = {
         0x52, 0x49, 0x46, 0x46,         // "RIFF"
@@ -118,6 +130,7 @@ Instance::Instance() {
         0x00, 0x00, 0x00, 0x00          // ver 0
     };
 
+    #endif
 
     activeProject = Project();
     activeProject.Load(data);

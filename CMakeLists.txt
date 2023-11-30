@@ -52,9 +52,15 @@ set (TINYFD_SOURCE_DIR "${SOURCE_DIR}")
 add_executable(Genecyzer src/main.cpp)
 target_compile_features(Genecyzer PRIVATE cxx_std_17)
 
+add_custom_target(GenecyzerFileTest DEPENDS Genecyzer)
+
+if (TARGET GenecyzerFileTest)
+	target_compile_definitions(Genecyzer PRIVATE FILETEST)
+	configure_file("${CMAKE_SOURCE_DIR}/tests/testFile.gczr" "${CMAKE_BINARY_DIR}/testFile.gczr" COPYONLY)
+endif()
+
 set(FONTFILE "tilesetUnicode.chr")
 set(FONTDIR "${SNESFM_SOURCE_DIR}/graphics/")
-
 
 set(BININCLUDEFILE ${CMAKE_BINARY_DIR}/binIncludes.cpp)
 set(MSVCINCLUDEFILE ${CMAKE_BINARY_DIR}/MSVCIncludes.h)
