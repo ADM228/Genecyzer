@@ -226,8 +226,10 @@ size_t read_fstream(riff_handle *rh, void *ptr, size_t size){
 }
 
 size_t seek_fstream(riff_handle *rh, size_t pos){
-    ((std::fstream *)rh->fh)->seekg(pos);
-	return pos;
+    auto tmpstream = ((std::ifstream *)rh->fh);
+    std::fstream * stream = (std::fstream *)tmpstream;
+    stream->seekg(pos);
+	return stream->tellg();
 }
 
 int RIFFFile::open(const char * __filename, std::ios_base::openmode __mode, size_t __size) {

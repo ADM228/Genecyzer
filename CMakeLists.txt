@@ -21,11 +21,25 @@ if (UNIX AND NOT APPLE)
 	set(CLIP_X11_WITH_PNG FALSE)
 endif()
 
+message("* Getting SFML...")
+FetchContent_MakeAvailable(SFML)
+
+message("* Getting incbin...")
+FetchContent_MakeAvailable(incbin)
+
+message("* Getting clip...")
+FetchContent_MakeAvailable(clip)
+
+message("* Libraries acquired")
+
 
 option(SFML_BUILD_SHARED_LIBS "Build shared SFML libraries (normally static just in case)" FALSE)
 set(BUILD_SHARED_LIBS ${SFML_BUILD_SHARED_LIBS})
-
-FetchContent_MakeAvailable(SFML incbin clip)
+set(CLIP_EXAMPLES FALSE)
+set(CLIP_TESTS FALSE)
+if (UNIX AND NOT APPLE)
+	set(CLIP_X11_WITH_PNG FALSE)
+endif()
 
 set(THIRDPARTY "${CMAKE_SOURCE_DIR}/thirdparty/")
 

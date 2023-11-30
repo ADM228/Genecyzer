@@ -372,7 +372,7 @@ int riff_seekInChunk(riff_handle *rh, size_t c_pos){
 	}
 	rh->pos = rh->c_pos_start + RIFF_CHUNK_DATA_OFFSET + c_pos;
 	rh->c_pos = c_pos;
-	size_t r = rh->fp_seek(rh->fh, rh->pos); //seek never fails, but pos might be invalid to read from
+	size_t r = rh->fp_seek(rh, rh->pos); //seek never fails, but pos might be invalid to read from
 	return RIFF_ERROR_NONE;
 }
 
@@ -406,7 +406,7 @@ int riff_seekNextChunk(riff_handle *rh){
 	
 	rh->pos = posnew;
 	rh->c_pos = 0; 
-	rh->fp_seek(rh->fh, posnew);
+	rh->fp_seek(rh, posnew);
 	
 	return riff_readChunkHeader(rh);
 }
@@ -417,7 +417,7 @@ int riff_seekChunkStart(struct riff_handle *rh){
 	//seek data offset 0 in current chunk
 	rh->pos = rh->c_pos_start + RIFF_CHUNK_DATA_OFFSET;
 	rh->c_pos = 0;
-	rh->fp_seek(rh->fh, rh->pos);
+	rh->fp_seek(rh, rh->pos);
 	return RIFF_ERROR_NONE;
 }
 
@@ -441,7 +441,7 @@ int riff_seekLevelStart(struct riff_handle *rh){
 		
 	rh->pos += RIFF_CHUNK_DATA_OFFSET + 4; //pos after type ID of chunk list
 	rh->c_pos = 0;
-	rh->fp_seek(rh->fh, rh->pos);
+	rh->fp_seek(rh, rh->pos);
 
 	//read first chunk header, so we have the right values
 	int r = riff_readChunkHeader(rh);
@@ -470,7 +470,7 @@ int riff_seekLevelSub(riff_handle *rh){
 	
 	//seek to chunk start if not there, required to read type ID
 	if(rh->c_pos > 0) {
-		rh->fp_seek(rh->fh, rh->c_pos_start + RIFF_CHUNK_DATA_OFFSET);
+		rh->fp_seek(rh, rh->c_pos_start + RIFF_CHUNK_DATA_OFFSET);
 		rh->pos = rh->c_pos_start + RIFF_CHUNK_DATA_OFFSET;
 		rh->c_pos = 0;
 	}

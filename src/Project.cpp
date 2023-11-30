@@ -240,9 +240,7 @@ int Project::Load(std::ifstream & __file) {
     auto file = RIFF::RIFFFile();
     auto errCode = file.open((std::fstream*) (&__file));
     if (errCode) return errCode;
-    loadInternal (file);
-
-    return 0;
+    return loadInternal (file);
 }
 
 int Project::loadInternal(RIFF::RIFFFile & file) {
