@@ -2,6 +2,7 @@
 #define __STRCONVERT_INCLUDED__
 
 #include "SFML/System/Vector2.hpp"
+#include <cmath>
 #include <string>
 #include <locale>
 #include <codecvt>
@@ -59,14 +60,14 @@ sf::Vector2<T> perpendiculate(sf::Vector2<T>& vector) {
 
 void printByteArray(void * ptr, size_t size, size_t divide = 0) {
     if (divide == 0) divide = size;
-    size_t repeats = (size_t)((long double)size/(long double)divide);
+    size_t repeats = (size_t)std::ceil((long double)size/(long double)divide);
     size_t idx = 0;
     for (size_t i = 0; i < repeats; i++){
-        for (size_t j = 0; j < divide; j++) {
+        for (size_t j = 0; j < divide && idx+j < size; j++) {
             printf("%02X ", *((uint8_t *)ptr+(idx+j)));
         }
         printf("| ");
-        for (size_t j = 0; j < divide; j++){
+        for (size_t j = 0; j < divide && idx < size; j++){
             printf("%c", *((char *)ptr+(idx++)));
         }
         printf("\n");

@@ -226,8 +226,7 @@ size_t read_fstream(riff_handle *rh, void *ptr, size_t size){
 }
 
 size_t seek_fstream(riff_handle *rh, size_t pos){
-    auto tmpstream = ((std::ifstream *)rh->fh);
-    std::fstream * stream = (std::fstream *)tmpstream;
+    auto stream = ((std::ifstream *)rh->fh);
     stream->seekg(pos);
 	return stream->tellg();
 }

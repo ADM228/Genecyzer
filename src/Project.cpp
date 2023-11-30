@@ -16,6 +16,7 @@
 #include "Tracker.cpp"
 #include "RIFF.cpp"
 #include "BitConverter.cpp"
+#include "Utils.cpp"
 
 struct TrackerPattern {
     std::array<uint32_t, 8> cells;
@@ -244,16 +245,55 @@ int Project::Load(std::ifstream & __file) {
 }
 
 int Project::loadInternal(RIFF::RIFFFile & file) {
-    if (strcmp(file.rh->h_type, fileType)) return -1;
-    auto test = file.readChunkData();
-    printByteArray(test->data->data(), test->data->size(), 4);
-    auto tmp = test->data->data();
-    auto size = test->data->size();
-    if ( !(
-        (!memcmp(tmp, mainBranch, 8) && readUint32(tmp+8) <= mainBranchVer) || 
-        (!memcmp(tmp, thisBranch, 8) && readUint32(tmp+8) <= thisBranchVer)
-    ) )  { printf("File is invalid"); return -1; }
-    return 0;
+    int errCode;
+    // 1. Test file type
+        if (strcmp(file.rh->h_type, fileType)) return -1;
+        auto chunkData = file.readChunkData();
+        errCode = chunkData->errorCode; if (errCode) return errCode;
+        auto data = chunkData->data->data();
+        auto size = chunkData->data->size();
+        printByteArray(data, size, 16);
+        if ( !(
+            (!memcmp(data, mainBranch, 8) && readUint32(data+8) <= mainBranchVer) || 
+            (!memcmp(data, thisBranch, 8) && readUint32(data+8) <= thisBranchVer)
+        ) )  { printf("File version is invalid"); return -1; }
+        errCode = file.seekNextChunk();
+
+    // And now, read the rest of the file
+    while (!errCode) {
+        if (!memcmp(file.rh->c_id, "LIST", 4)){
+            // LIST type, has several subtypes
+            errCode = file.seekLevelSub();
+
+            auto * type = file.rh->ls[file.rh->ls_level-1].c_type;
+
+            if (!memcmp(type, "INFO", 4)){
+                // INFO subchunk
+                while (!errCode) {
+                    chunkData = file.readChunkData();
+                    errCode = chunkData->errorCode;
+
+                    auto id = file.rh->c_id;
+
+                    if (!memcmp (id, "ICMT", 4)){
+                        // Comment subsubchunk, gotta convert 'em 
+                        // record separator chars into newlines
+                        for (auto &c : *chunkData->data) {
+                            if (c == 0x1E) c = 0x0A; // Record Separator -> LineFeed
+                        }
+                    }
+
+                    printByteArray(chunkData->data->data(), chunkData->data->size(), 16);
+
+                    errCode = file.seekNextChunk();
+                }
+            }
+        } 
+
+        errCode = file.seekNextChunk();
+    }
+
+    return errCode == RIFF_ERROR_EOCL ? 0 : errCode;
 }
 
 
