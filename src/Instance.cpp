@@ -113,7 +113,7 @@ Instance::Instance() {
 
     #ifdef FILETEST
         auto filename = tinyfd_openFileDialog("Open a Genecyzer project file", NULL, 1, filter, "Genecyzer project file", 0);
-        auto data = std::ifstream();
+        auto data = std::fstream();
         data.open(filename, std::ios_base::binary | std::ios_base::in);
 
     #else

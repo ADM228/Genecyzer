@@ -2,6 +2,9 @@
 #define __RIFF_WRAPPER_INCLUDED__
 
 #include <cstring>
+#include <iostream>
+#include <iterator>
+#include <streambuf>
 extern "C" {
     #include <stddef.h>
     #include <stdio.h>
@@ -183,7 +186,7 @@ RIFFFile::~RIFFFile() {
 
 #pragma endregion
 
-#pragma region openCfile
+#pragma region open_C_file
 
 int RIFFFile::open (const char* __filename, const char * __mode, size_t __size) {
     auto buffer = std::string(__mode);
@@ -205,7 +208,7 @@ int RIFFFile::open (std::FILE * __file, size_t __size) {
 
 #pragma endregion
 
-#pragma region openMem 
+#pragma region open_mem 
 
 int RIFFFile::open (void * __mem_ptr, size_t __size) {
     file = nullptr;
@@ -215,21 +218,54 @@ int RIFFFile::open (void * __mem_ptr, size_t __size) {
 
 #pragma endregion 
 
-#pragma region fstreamHandling
+#pragma region generic_fstream_functions
+
+/**
+ * @brief Updates std::fstream's G based on the P
+ * The updatep function does the exact opposite
+ * @param stream 
+ */
+inline void updateg (std::fstream *stream) {
+    if (stream->tellg() != stream->tellp()) stream->seekg(stream->tellp());
+}
+
+/**
+ * @brief Updates std::fstream's P based on the G
+ * The updateg function does the exact opposite
+ * @param stream 
+ */
+inline void updatep (std::fstream *stream) {
+    if (stream->tellg() != stream->tellp()) stream->seekp(stream->tellg());
+}
 
 size_t read_fstream(riff_handle *rh, void *ptr, size_t size){
     auto stream = ((std::fstream *)rh->fh);
     size_t oldg = stream->tellg();
     stream->read((char *)ptr, size);
     size_t newg = stream->tellg();
+    updatep(stream);
     return newg-oldg;
 }
 
 size_t seek_fstream(riff_handle *rh, size_t pos){
-    auto stream = ((std::ifstream *)rh->fh);
+    auto stream = ((std::fstream *)rh->fh);
     stream->seekg(pos);
+    updatep(stream);
 	return stream->tellg();
 }
+
+size_t write_fstream(riff_handle *rh, void *ptr, size_t size){
+    auto stream = ((std::fstream *)rh->fh);
+    size_t oldp = stream->tellp();
+    stream->write((char *)ptr, size);
+    size_t newp = stream->tellp();
+    updateg(stream);
+    return newp-oldp;
+}
+
+#pragma endregion
+
+#pragma region RIFFFile_fstream_methods
 
 int RIFFFile::open(const char * __filename, std::ios_base::openmode __mode, size_t __size) {
     // Set type

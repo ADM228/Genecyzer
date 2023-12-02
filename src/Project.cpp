@@ -52,7 +52,7 @@ class Project {
         Project ();
 
         // Load project from filestream
-        int Load (std::ifstream & file);
+        int Load (std::fstream & file);
         // Load project from memory
         int Load (std::vector<uint8_t>& data);
 
@@ -237,7 +237,7 @@ int Project::Load(std::vector<uint8_t>& __data) {
     return 0;
 }
 
-int Project::Load(std::ifstream & __file) {
+int Project::Load(std::fstream & __file) {
     auto file = RIFF::RIFFFile();
     auto errCode = file.open((std::fstream*) (&__file));
     if (errCode) return errCode;
@@ -258,6 +258,9 @@ int Project::loadInternal(RIFF::RIFFFile & file) {
             (!memcmp(data, thisBranch, 8) && readUint32(data+8) <= thisBranchVer)
         ) )  { printf("File version is invalid"); return -1; }
         errCode = file.seekNextChunk();
+
+    // Just debuggin', yknow
+    RIFF::erase_fstream(file.rh, 18);
 
     // And now, read the rest of the file
     while (!errCode) {

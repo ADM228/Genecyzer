@@ -75,6 +75,11 @@ size_t seek_file(riff_handle *rh, size_t pos){
 }
 
 /*****************************************************************************/
+size_t write_file(riff_handle *rh, void * ptr, size_t size){
+	return fwrite(ptr, sizeof(char), size, ((unsigned char*)rh->fh+rh->pos));
+}
+
+/*****************************************************************************/
 //description: see header file
 int riff_open_file(riff_handle *rh, FILE *f, size_t size){
 	if(rh == NULL)
@@ -106,6 +111,12 @@ size_t seek_mem(riff_handle *rh, size_t pos){
 }
 
 /*****************************************************************************/
+size_t write_mem(riff_handle *rh, void * ptr, size_t size){
+	memcpy(((unsigned char*)rh->fh+rh->pos), ptr, size);
+	return size;
+}
+
+/*****************************************************************************/
 //description: see header file
 int riff_open_mem(riff_handle *rh, void *ptr, size_t size){
 	if(rh == NULL)
@@ -125,7 +136,18 @@ int riff_open_mem(riff_handle *rh, void *ptr, size_t size){
 
 // **** internal ****
 
-
+/*****************************************************************************/
+//write 32 bit LE to file
+void writeUInt32LE(riff_handle *rh, unsigned int value) {
+	char buf[4];
+	buf[0] = (value		) & 0xFF;
+	buf[1] = (value >> 8) & 0xFF;
+	buf[2] = (value >>16) & 0xFF;
+	buf[3] = (value >>24) & 0xFF;
+	rh->fp_write(rh, buf, 4);
+	rh->pos += 4;
+	rh->c_pos += 4;
+}
 
 /*****************************************************************************/
 //pass pointer to 32 bit LE value and convert, return in native byte order
@@ -225,6 +247,12 @@ void stack_pop(riff_handle *rh){
 	rh->pad = rh->c_size & 0x1; //pad if chunk sizesize is odd
 	
 	rh->c_pos = rh->pos - rh->c_pos_start - RIFF_CHUNK_DATA_OFFSET;
+
+	// if (written) {
+	// 	// write shit
+	// 	fp->seek(rh, rh->c_pos_start + 4);
+	// 	fp->write(rh, )
+	// }
 }
 
 

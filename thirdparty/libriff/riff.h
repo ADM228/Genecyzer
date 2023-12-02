@@ -117,6 +117,8 @@ typedef struct riff_handle {
 	int ls_level;       //current level, starts at 0
 	
 	void *fh;  //file handle or memory address, only accessed by user FP functions
+
+	// bool written;
 	
 	
 	
@@ -133,6 +135,9 @@ typedef struct riff_handle {
 	//allocate function maps it to vfprintf(stderr, ...) by default; set to NULL after allocation to disable any printing
 	//to be assigned before calling riff_open_...()
 	int (*fp_printf)(const char * format, ... );
+
+	// write bytes; required
+	size_t (*fp_write)(struct riff_handle *rh, void *ptr, size_t size);
 	
 } riff_handle;
 
@@ -170,6 +175,12 @@ int riff_levelParent(struct riff_handle *rh);
 //to check all sub lists you need to define a recursive function
 //file position is changed by function
 int riff_levelValidate(struct riff_handle *rh);
+
+//write current chunk, will update the sizes of all parent chunks before it
+//writes the chunk ID as well
+int riff_writeChunk(riff_handle *rh, void * from, size_t size);
+
+int riff_writeChunkID(riff_handle *rh);
 
 //return string to error code
 //the current position (h->pos) tells you where in the file the problem occured
