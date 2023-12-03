@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
 #include <stdarg.h> //function with variable number of arguments
 
@@ -138,7 +139,7 @@ int riff_open_mem(riff_handle *rh, void *ptr, size_t size){
 
 /*****************************************************************************/
 //write 32 bit LE to file
-void writeUInt32LE(riff_handle *rh, unsigned int value) {
+void writeUInt32LE(riff_writer *rh, unsigned int value) {
 	char buf[4];
 	buf[0] = (value		) & 0xFF;
 	buf[1] = (value >> 8) & 0xFF;
@@ -247,12 +248,6 @@ void stack_pop(riff_handle *rh){
 	rh->pad = rh->c_size & 0x1; //pad if chunk sizesize is odd
 	
 	rh->c_pos = rh->pos - rh->c_pos_start - RIFF_CHUNK_DATA_OFFSET;
-
-	// if (written) {
-	// 	// write shit
-	// 	fp->seek(rh, rh->c_pos_start + 4);
-	// 	fp->write(rh, )
-	// }
 }
 
 
@@ -560,40 +555,6 @@ int riff_levelValidate(struct riff_handle *rh){
 const char *riff_errorToString(int e){
 	//map error to error string
 	//Make sure mapping is correct!
-	switch (e){
-		case RIFF_ERROR_NONE:
-			return riff_es[RIFF_ERROR_NONE];
-			break;
-		case RIFF_ERROR_EOC:
-			return riff_es[RIFF_ERROR_EOC];
-			break;
-		case RIFF_ERROR_EOCL:
-			return riff_es[RIFF_ERROR_EOCL];
-			break;
-		case RIFF_ERROR_EXDAT:
-			return riff_es[RIFF_ERROR_EXDAT];
-			break;
-		
-		case RIFF_ERROR_ILLID:
-			return riff_es[RIFF_ERROR_ILLID];
-			break;
-		case RIFF_ERROR_ICSIZE:
-			return riff_es[RIFF_ERROR_ICSIZE];
-			break;
-		case RIFF_ERROR_EOF:
-			return riff_es[RIFF_ERROR_EOF];
-			break;
-		case RIFF_ERROR_ACCESS:
-			return riff_es[RIFF_ERROR_ACCESS];
-			break;
-		case RIFF_ERROR_INVALID_HANDLE:
-			return riff_es[RIFF_ERROR_INVALID_HANDLE];
-			break;
-		
-		
-		default:
-			return  riff_es[9];
-			break;
-	}
+	return riff_es[e > RIFF_ERROR_UNKNOWN ? RIFF_ERROR_UNKNOWN : e];
 }
 

@@ -23,16 +23,16 @@ struct vecErr {
 
 enum fileTypes : int {
     C_FILE      = 0,
-    FSTREAM,
+    IFSTREAM,
     MEM_PTR     = 0x10,
     MANUAL      = 0x800000, // For manually opened files
     CLOSED      = -1
 };
 
-class RIFFFile {
+class RIFFReader {
     public:
-        RIFFFile();
-        ~RIFFFile();
+        RIFFReader();
+        ~RIFFReader();
         /**
          * @brief Open a RIFF file with the filename and mode provided
          * Uses C's fopen(), so the filename is implementation defined
@@ -59,7 +59,7 @@ class RIFFFile {
 
         /**
          * @brief Open a RIFF file with the filename and mode provided
-         * Uses fstream, and always forces binary mode
+         * Uses ifstream, and always forces binary mode
          * @param filename 
          * @param mode 
          * @return Error code
@@ -76,7 +76,7 @@ class RIFFFile {
          * @return Error code
          */
         int open(std::FILE * __file, size_t __size = 0);
-        int open(std::fstream * __file, size_t __size = 0);
+        int open(std::ifstream * __file, size_t __size = 0);
 
         void close();
 
@@ -169,17 +169,17 @@ class RIFFFile {
     private:
         int type = CLOSED;
 
-        int openFstreamCommon();
-        void setAutomaticfstream();
+        int openIfstreamCommon();
+        void setAutomaticIfstream();
 };
 
 #pragma region condes
 
-RIFFFile::RIFFFile() {
+RIFFReader::RIFFReader() {
     rh = riff_handleAllocate();
 }
 
-RIFFFile::~RIFFFile() {
+RIFFReader::~RIFFReader() {
     riff_handleFree(rh);
     close();
 }
@@ -188,7 +188,7 @@ RIFFFile::~RIFFFile() {
 
 #pragma region open_C_file
 
-int RIFFFile::open (const char* __filename, const char * __mode, size_t __size) {
+int RIFFReader::open (const char* __filename, const char * __mode, size_t __size) {
     auto buffer = std::string(__mode);
     {
         bool hasB = 0;
@@ -200,7 +200,7 @@ int RIFFFile::open (const char* __filename, const char * __mode, size_t __size) 
     return riff_open_file(rh, (std::FILE *)file, __size);
 }
 
-int RIFFFile::open (std::FILE * __file, size_t __size) {
+int RIFFReader::open (std::FILE * __file, size_t __size) {
     file = __file;
     type = C_FILE|MANUAL;
     return riff_open_file(rh, __file, __size);
@@ -210,7 +210,7 @@ int RIFFFile::open (std::FILE * __file, size_t __size) {
 
 #pragma region open_mem 
 
-int RIFFFile::open (void * __mem_ptr, size_t __size) {
+int RIFFReader::open (void * __mem_ptr, size_t __size) {
     file = nullptr;
     type = MEM_PTR;
     return riff_open_mem(rh, __mem_ptr, __size);
@@ -218,89 +218,74 @@ int RIFFFile::open (void * __mem_ptr, size_t __size) {
 
 #pragma endregion 
 
-#pragma region generic_fstream_functions
+#pragma region generic_ifstream_functions
 
-/**
- * @brief Updates std::fstream's G based on the P
- * The updatep function does the exact opposite
- * @param stream 
- */
-inline void updateg (std::fstream *stream) {
-    if (stream->tellg() != stream->tellp()) stream->seekg(stream->tellp());
-}
-
-/**
- * @brief Updates std::fstream's P based on the G
- * The updateg function does the exact opposite
- * @param stream 
- */
-inline void updatep (std::fstream *stream) {
-    if (stream->tellg() != stream->tellp()) stream->seekp(stream->tellg());
-}
-
-size_t read_fstream(riff_handle *rh, void *ptr, size_t size){
-    auto stream = ((std::fstream *)rh->fh);
+size_t read_ifstream(riff_handle *rh, void *ptr, size_t size){
+    auto stream = ((std::ifstream *)rh->fh);
     size_t oldg = stream->tellg();
     stream->read((char *)ptr, size);
     size_t newg = stream->tellg();
-    updatep(stream);
     return newg-oldg;
 }
 
-size_t seek_fstream(riff_handle *rh, size_t pos){
-    auto stream = ((std::fstream *)rh->fh);
+size_t seek_ifstream(riff_handle *rh, size_t pos){
+    auto stream = ((std::ifstream *)rh->fh);
     stream->seekg(pos);
-    updatep(stream);
 	return stream->tellg();
 }
 
-size_t write_fstream(riff_handle *rh, void *ptr, size_t size){
-    auto stream = ((std::fstream *)rh->fh);
+size_t seek_ofstream(riff_writer *rh, size_t pos){
+    auto stream = ((std::ofstream *)rh->fh);
+    stream->seekp(pos);
+	return stream->tellp();
+}
+
+size_t write_ofstream(riff_writer *rh, void *ptr, size_t size){
+    auto stream = ((std::ofstream *)rh->fh);
     size_t oldp = stream->tellp();
     stream->write((char *)ptr, size);
     size_t newp = stream->tellp();
-    updateg(stream);
     return newp-oldp;
 }
 
 #pragma endregion
 
-#pragma region RIFFFile_fstream_methods
+#pragma region RIFFReader_ifstream_methods
 
-int RIFFFile::open(const char * __filename, std::ios_base::openmode __mode, size_t __size) {
+int RIFFReader::open(const char * __filename, std::ios_base::openmode __mode, size_t __size) {
     // Set type
-    setAutomaticfstream();
-    ((std::fstream*)file)->open(__filename, __mode|std::ios_base::binary);
-    return openFstreamCommon();
+    setAutomaticIfstream();
+    ((std::ifstream*)file)->open(__filename, __mode|std::ios_base::binary);
+    return openIfstreamCommon();
 }
 
-int RIFFFile::open(const std::string & __filename, std::ios_base::openmode __mode, size_t __size) {
+int RIFFReader::open(const std::string & __filename, std::ios_base::openmode __mode, size_t __size) {
     // Set type
-    setAutomaticfstream();
-    ((std::fstream*)file)->open(__filename, __mode|std::ios_base::binary);
-    return openFstreamCommon();
+    setAutomaticIfstream();
+    ((std::ifstream*)file)->open(__filename, __mode|std::ios_base::binary);
+    return openIfstreamCommon();
 }
 
-int RIFFFile::open(const std::filesystem::path & __filename, std::ios_base::openmode __mode, size_t __size) {
+int RIFFReader::open(const std::filesystem::path & __filename, std::ios_base::openmode __mode, size_t __size) {
     // Set type
-    setAutomaticfstream();
-    ((std::fstream*)file)->open(__filename, __mode|std::ios_base::binary);
-    return openFstreamCommon();
+    setAutomaticIfstream();
+    ((std::ifstream*)file)->open(__filename, __mode|std::ios_base::binary);
+    return openIfstreamCommon();
 }
 
-void RIFFFile::setAutomaticfstream(){
-    type = FSTREAM;
-    file = new std::fstream;
+void RIFFReader::setAutomaticIfstream(){
+    type = IFSTREAM;
+    file = new std::ifstream;
 }
 
-int RIFFFile::open(std::fstream * __file, size_t __size){
-    type = FSTREAM|MANUAL;
+int RIFFReader::open(std::ifstream * __file, size_t __size){
+    type = IFSTREAM|MANUAL;
     file = __file;
-    return openFstreamCommon();
+    return openIfstreamCommon();
 }
 
-int RIFFFile::openFstreamCommon(){
-    auto stream = (std::fstream*)file;
+int RIFFReader::openIfstreamCommon(){
+    auto stream = (std::ifstream*)file;
     // My own open function lmfao
     if(rh == NULL)
 		return RIFF_ERROR_INVALID_HANDLE;
@@ -308,28 +293,28 @@ int RIFFFile::openFstreamCommon(){
 	rh->size = 0;
 	rh->pos_start = stream->tellg(); //current file offset of stream considered as start of RIFF file
 	
-	rh->fp_read = &read_fstream;
-	rh->fp_seek = &seek_fstream;
+	rh->fp_read = &read_ifstream;
+	rh->fp_seek = &seek_ifstream;
 	
 	return riff_readHeader(rh);
 }
 
 #pragma endregion
 
-void RIFFFile::close () {
+void RIFFReader::close () {
     if (!(type & MANUAL)) { // Must be automatically allocated to close
         if (type == C_FILE) {
             std::fclose((std::FILE *)file);
             free (file);
-        } else if (type == FSTREAM) {
-            ((std::fstream *)file)->close();
+        } else if (type == IFSTREAM) {
+            ((std::ifstream *)file)->close();
             free (file);
         }
     }
     type = CLOSED;
 }
 
-std::string RIFFFile::errorToString (int errorCode) {
+std::string RIFFReader::errorToString (int errorCode) {
     std::string errorString(riff_errorToString(errorCode));
     char buffer[2+2+(2*sizeof(size_t))+1];
     std::snprintf(buffer, 19, "[0x%zX]", rh->pos);
@@ -338,7 +323,7 @@ std::string RIFFFile::errorToString (int errorCode) {
     return outstring;
 }
 
-vecErr * RIFFFile::readChunkData() {
+vecErr * RIFFReader::readChunkData() {
     auto outVE = new vecErr;
     int errCode;
     errCode = seekChunkStart(); 

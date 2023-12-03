@@ -66,6 +66,8 @@ May not work for RIFF files larger than 2GB.
 
 #define RIFF_ERROR_INVALID_HANDLE 8  //riff_handle is not set up or is NULL
 
+#define RIFF_ERROR_UNKNOWN 9
+
 
 /*
 //riff header
@@ -117,8 +119,6 @@ typedef struct riff_handle {
 	int ls_level;       //current level, starts at 0
 	
 	void *fh;  //file handle or memory address, only accessed by user FP functions
-
-	// bool written;
 	
 	
 	
@@ -135,11 +135,49 @@ typedef struct riff_handle {
 	//allocate function maps it to vfprintf(stderr, ...) by default; set to NULL after allocation to disable any printing
 	//to be assigned before calling riff_open_...()
 	int (*fp_printf)(const char * format, ... );
-
-	// write bytes; required
-	size_t (*fp_write)(struct riff_handle *rh, void *ptr, size_t size);
 	
 } riff_handle;
+
+typedef struct riff_writer {
+
+	size_t h_size;
+	char h_type[5];
+
+	size_t pos_start;  //start pos of RIFF file
+
+	size_t size;      //total size of RIFF file, 0 means unspecified
+	size_t pos;       //current position in stream
+
+	size_t c_pos_start; //start pos of current chunk (absolute pos)
+	size_t c_pos;       //position in current chunk (offset in data block)
+	//int c_pos_data;    //position in chunk data (c_pos + 8)
+	char c_id[5];       //id of current chunk + terminator
+	size_t c_size;      //size of current chunk data in bytes (value stored in file), excluding chunk header
+	char pad;           //1 if c_size is odd, else 0 (indicates unused extra byte at end of chunk)
+
+	struct riff_levelStackE *ls;   //level stack, resizes dynamically, to access the parent chunk data: h->ls[h->ls_level-1]
+	size_t ls_size;     //size of stack in num. elements, stack extends automatically if needed
+	int ls_level;       //current level, starts at 0
+	
+	void *fh;  //file handle or memory address, only accessed by user FP functions
+	
+	
+	
+	// ******** For internal use:
+	
+	
+	//read bytes; required
+	size_t (*fp_write)(struct riff_writer *rh, void *ptr, size_t size);
+	
+	//seek position relative to start pos; required
+	size_t (*fp_seek)(struct riff_writer *rh, size_t pos);
+	
+	//print error; optional;
+	//allocate function maps it to vfprintf(stderr, ...) by default; set to NULL after allocation to disable any printing
+	//to be assigned before calling riff_open_...()
+	int (*fp_printf)(const char * format, ... );
+
+} riff_writer;
 
 
 
