@@ -299,6 +299,16 @@ riff_handle *riff_handleAllocate(){
 
 /*****************************************************************************/
 //description: see header file
+riff_writer *riff_writerAllocate(){
+	riff_writer *rw = calloc(1, sizeof(riff_writer));
+	if(rw != NULL){
+		rw->fp_printf = riff_printf;
+	}
+	return rw;
+}
+
+/*****************************************************************************/
+//description: see header file
 //Deallocate riff_handle and contained stack, file source (memory) is not closed or freed
 void riff_handleFree(riff_handle *rh){
 	if(rh == NULL)
@@ -308,6 +318,19 @@ void riff_handleFree(riff_handle *rh){
 		free(rh->ls);
 	//free struct
 	free(rh);
+}
+
+/*****************************************************************************/
+//description: see header file
+//Deallocate riff_writer and contained stack, file source (memory) is not closed or freed
+void riff_writerFree(riff_writer *rw){
+	if(rw == NULL)
+		return;
+	//free stack
+	if(rw->ls != NULL)
+		free(rw->ls);
+	//free struct
+	free(rw);
 }
 
 /*****************************************************************************/

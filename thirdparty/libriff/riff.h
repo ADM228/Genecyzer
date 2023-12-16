@@ -185,9 +185,14 @@ typedef struct riff_writer {
 //Allocate, initialize and return handle;
 riff_handle *riff_handleAllocate();
 
+//Allocate, initialize and return writer;
+riff_writer *riff_writerAllocate();
+
 //Free allocated handle memory
 void riff_handleFree(riff_handle *rh);
 
+//Free allocated writer memory
+void riff_writerFree(riff_writer *rh);
 
 
 //functions to parse a riff file

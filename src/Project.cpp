@@ -77,6 +77,11 @@ class Project {
 
         int loadInternal (RIFF::RIFFReader & file);
 
+        std::string name;
+        std::string composer;
+        std::string copyright;
+        std::string comments;
+
 
 };
 
@@ -159,7 +164,7 @@ Project::Project() {
             "ICOP" - Copyright.
                 Lists the contents of the copyright field.
             "ICRD" - Creation date.
-                Lists the latest time the file has been saved.
+                Lists the first time the file has been saved.
             "INAM" - Name.
                 Lists the title of the project.
             "ISFT" - Software.
@@ -217,11 +222,41 @@ Project::Project() {
         
 */
 
-const char fileType   [5]     = "GCZR";
-const char software   [10]    = "Genecyzer";
+const char fileType     [5]     = "GCZR";
+const char software     [10]    = "Genecyzer";
 
-const char mainBranch [9]     = "Release ";
-const char thisBranch [9]     = "Dev Main";
+const char mainBranch   [9]     = "Release ";
+const char thisBranch   [9]     = "Dev Main";
+
+
+// Chunk IDs
+const char versionId        [5]     = "ver ";
+const char listId           [5]     = "LIST";
+// in "INFO"
+const char artistId         [5]     = "IART";
+const char commentsId       [5]     = "ICMT";
+const char copyrightId      [5]     = "ICOP";
+const char creationDateId   [5]     = "ICRD";
+const char nameId           [5]     = "INAM";
+const char softwareId       [5]     = "ISFT";
+// in "song"
+const char effectColumnId   [5]     = "effc";
+const char * songNameId             = nameId;
+const char colorId          [5]     = "col ";
+const char noteId           [5]     = "note";
+// in "pat"
+const char patternIndexesId [5]     = "idx ";
+const char majorBeatsId     [5]     = "bmaj";
+const char minorBeatsId     [5]     = "bmin";
+
+
+
+// List types
+const char infoListType     [5]     = "INFO";
+const char songListType     [5]     = "song";
+const char patternListType  [5]     = "pat ";
+
+
 
 const uint32_t mainBranchVer = 0;
 const uint32_t thisBranchVer = 0;
@@ -247,7 +282,10 @@ int Project::Load(std::ifstream & __file) {
 int Project::loadInternal(RIFF::RIFFReader & file) {
     int errCode;
     // 1. Test file type
-        if (strcmp(file.rh->h_type, fileType)) return -1;
+        if (memcmp(file.rh->h_type, fileType, 4)){
+            fprintf(stderr, "The file type is not a Genecyzer file. Aborting loading\n");
+            return -1;
+        } 
         auto chunkData = file.readChunkData();
         errCode = chunkData->errorCode; if (errCode) return errCode;
         auto data = chunkData->data->data();
@@ -256,18 +294,21 @@ int Project::loadInternal(RIFF::RIFFReader & file) {
         if ( !(
             (!memcmp(data, mainBranch, 8) && readUint32(data+8) <= mainBranchVer) || 
             (!memcmp(data, thisBranch, 8) && readUint32(data+8) <= thisBranchVer)
-        ) )  { printf("File version is invalid"); return -1; }
+        ) ) { 
+            fprintf(stderr, "File version is invalid. Aborting loading\n");
+            return -1;
+        }
         errCode = file.seekNextChunk();
 
     // And now, read the rest of the file
     while (!errCode) {
-        if (!memcmp(file.rh->c_id, "LIST", 4)){
+        if (!memcmp(file.rh->c_id, listId, 4)){
             // LIST type, has several subtypes
             errCode = file.seekLevelSub();
 
             auto * type = file.rh->ls[file.rh->ls_level-1].c_type;
 
-            if (!memcmp(type, "INFO", 4)){
+            if (!memcmp(type, infoListType, 4)){
                 // INFO subchunk
                 while (!errCode) {
                     chunkData = file.readChunkData();
@@ -275,7 +316,7 @@ int Project::loadInternal(RIFF::RIFFReader & file) {
 
                     auto id = file.rh->c_id;
 
-                    if (!memcmp (id, "ICMT", 4)){
+                    if (!memcmp (id, commentsId, 4)){
                         // Comment subsubchunk, gotta convert 'em 
                         // record separator chars into newlines
                         for (auto &c : *chunkData->data) {
@@ -284,6 +325,25 @@ int Project::loadInternal(RIFF::RIFFReader & file) {
                     }
 
                     printByteArray(chunkData->data->data(), chunkData->data->size(), 16);
+
+                    if (chunkData->data->back() != 0) 
+                        chunkData->data->push_back(0);
+
+                    if (!memcmp (id, nameId, 4))
+                        name = std::string((char *)chunkData->data->data());
+                    else if (!memcmp (id, artistId, 4))
+                        composer = std::string((char *)chunkData->data->data());
+                    else if (!memcmp (id, copyrightId, 4))
+                        copyright = std::string((char *)chunkData->data->data());
+                    else if (!memcmp (id, commentsId, 4))
+                        comments = std::string((char *)chunkData->data->data());
+                    else if (!memcmp (id, softwareId, 4)){
+                        if ( ! (
+                            chunkData->data->size() == 10 &&
+                            !memcmp (chunkData->data->data(), software, 9)
+                        ) )
+                            fprintf(stderr, "The \"Software\" field in the Genecyzer file's metadata is not set to \"Genecyzer\". This indicates a file that has been modified by external software, which could lead to invalid file loading.\n");
+                    }
 
                     errCode = file.seekNextChunk();
                 }
