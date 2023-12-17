@@ -31,7 +31,7 @@ template <typename T> inline uint32_t readUint32 (T * ptr) {return *(uint32_t *)
 // Read a uint16_t from ptr, exists for portability with big-endian systems
 template <typename T> inline uint16_t readUint16 (T * ptr) {return *(uint16_t *) ptr;}
 
-#elif defined(__BIG_ENDIAN_OVERRIDE) ||
+#elif defined(__BIG_ENDIAN_OVERRIDE) || \
     defined(__BYTE_ORDER) && __BYTE_ORDER == __BIG_ENDIAN || \
     defined(__BIG_ENDIAN__) || \
     defined(__ARMEB__) || \
