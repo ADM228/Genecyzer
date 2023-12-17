@@ -17,6 +17,7 @@
 #include "RIFF.cpp"
 #include "BitConverter.cpp"
 #include "Utils.cpp"
+#include "libriff/riff.h"
 
 struct TrackerPattern {
     std::array<uint32_t, 8> cells;
@@ -287,9 +288,9 @@ int Project::loadInternal(RIFF::RIFFReader & file) {
             return -1;
         } 
         auto chunkData = file.readChunkData();
-        errCode = chunkData->errorCode; if (errCode) return errCode;
-        auto data = chunkData->data->data();
-        auto size = chunkData->data->size();
+        if (chunkData == nullptr) return RIFF_ERROR_UNKNOWN;
+        auto data = chunkData->data();
+        auto size = chunkData->size();
         printByteArray(data, size, 16);
         if ( !(
             (!memcmp(data, mainBranch, 8) && readUint32(data+8) <= mainBranchVer) || 
@@ -312,35 +313,34 @@ int Project::loadInternal(RIFF::RIFFReader & file) {
                 // INFO subchunk
                 while (!errCode) {
                     chunkData = file.readChunkData();
-                    errCode = chunkData->errorCode;
 
                     auto id = file.rh->c_id;
 
                     if (!memcmp (id, commentsId, 4)){
                         // Comment subsubchunk, gotta convert 'em 
                         // record separator chars into newlines
-                        for (auto &c : *chunkData->data) {
+                        for (auto &c : *chunkData) {
                             if (c == 0x1E) c = 0x0A; // Record Separator -> LineFeed
                         }
                     }
 
-                    printByteArray(chunkData->data->data(), chunkData->data->size(), 16);
+                    printByteArray(chunkData->data(), chunkData->size(), 16);
 
-                    if (chunkData->data->back() != 0) 
-                        chunkData->data->push_back(0);
+                    if (chunkData->back() != 0) 
+                        chunkData->push_back(0);
 
                     if (!memcmp (id, nameId, 4))
-                        name = std::string((char *)chunkData->data->data());
+                        name = std::string((char *)chunkData->data());
                     else if (!memcmp (id, artistId, 4))
-                        composer = std::string((char *)chunkData->data->data());
+                        composer = std::string((char *)chunkData->data());
                     else if (!memcmp (id, copyrightId, 4))
-                        copyright = std::string((char *)chunkData->data->data());
+                        copyright = std::string((char *)chunkData->data());
                     else if (!memcmp (id, commentsId, 4))
-                        comments = std::string((char *)chunkData->data->data());
+                        comments = std::string((char *)chunkData->data());
                     else if (!memcmp (id, softwareId, 4)){
                         if ( ! (
-                            chunkData->data->size() == 10 &&
-                            !memcmp (chunkData->data->data(), software, 9)
+                            chunkData->size() == 10 &&
+                            !memcmp (chunkData->data(), software, 9)
                         ) )
                             fprintf(stderr, "The \"Software\" field in the Genecyzer file's metadata is not set to \"Genecyzer\". This indicates a file that has been modified by external software, which could lead to invalid file loading.\n");
                     }

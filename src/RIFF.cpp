@@ -16,10 +16,10 @@ extern "C" {
 
 namespace RIFF {
 
-struct vecErr {
-    int errorCode;
-    std::vector<uint8_t> * data;
-};
+// Set the define RIFF_PRINT_ERRORS to 0 to disable printing of errors.
+#ifndef RIFF_PRINT_ERRORS
+#define RIFF_PRINT_ERRORS 1
+#endif
 
 enum fileTypes : int {
     C_FILE      = 0,
@@ -91,11 +91,11 @@ class RIFFReader {
         inline size_t readInChunk (void *to, size_t size) {return riff_readInChunk(rh, to, size);};
         /**
          * @brief Read current chunk's data
-         * @note Returns an error in the vecErr if an error occured
+         * @note Returns nullptr if an error occurred
          * 
-         * @return vecErr* 
+         * @return std::vector<uint8_t> with the data
          */
-        vecErr * readChunkData ();
+        std::vector<uint8_t> * readChunkData ();
         /**
          * @brief Seek in current chunk
          * @note Returns RIFF_ERROR_EOC if end of chunk is reached
@@ -177,6 +177,9 @@ class RIFFReader {
 
 RIFFReader::RIFFReader() {
     rh = riff_handleAllocate();
+    #if !RIFF_PRINT_ERRORS
+        rh->fp_printf = 0;
+    #endif
 }
 
 RIFFReader::~RIFFReader() {
@@ -323,25 +326,28 @@ std::string RIFFReader::errorToString (int errorCode) {
     return outstring;
 }
 
-vecErr * RIFFReader::readChunkData() {
-    auto outVE = new vecErr;
+std::vector<uint8_t> * RIFFReader::readChunkData() {
     int errCode;
     errCode = seekChunkStart(); 
     if (errCode) {
-        outVE->errorCode = errCode;
-        outVE->data = nullptr;
-        return outVE;
+        return nullptr;
+    }
+    if (rh->c_size == 0) {
+        return new std::vector<uint8_t>(0);
     }
     auto outVec = new std::vector<uint8_t>(rh->c_size);
-    outVE->data = outVec;
-    size_t succSize = readInChunk(outVec->data(), rh->c_size);
-    if (succSize == rh->c_size) {
-        outVE->errorCode = 0;
-        return outVE;
-    } else {
-        outVE->errorCode = succSize;
-        return outVE;
+    size_t totalSize = 0;
+    size_t succSize = rh->c_size;
+    while (succSize != 0) {
+        succSize = readInChunk(outVec->data(), rh->c_size);
+        totalSize += succSize;
     }
+#if RIFF_PRINT_ERRORS
+    if (totalSize != rh->c_size) {
+        fprintf(stderr, "Couldn't read the entire chunk for some reason. Successfully read %zu bytes out of %zu\n", totalSize, rh->c_size);
+    } 
+#endif
+    return outVec;
 }
 
 }
