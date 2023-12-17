@@ -32,7 +32,7 @@ After the file is opened we are in the first chunk at list level 0
 If the current junk contains a list of sub level chunks:
  Call riff_seekLevelSub() to be positioned at the first data byte of the first chunk in the sub list level
  Call riff_levelParent() to leave the sub list without changing the file position
-Read members of the riff_handle to get all info about current file position, current chunk, etc.
+Read members of the riff_reader to get all info about current file position, current chunk, etc.
 
 May not work for RIFF files larger than 2GB.
 */
@@ -64,7 +64,7 @@ May not work for RIFF files larger than 2GB.
 #define RIFF_ERROR_EOF       6  //unexpected end of RIFF file, indicates corruption (wrong chunk size field) or a cut off file or the passed size parameter was wrong (too small) upon opening
 #define RIFF_ERROR_ACCESS    7  //access error, indicating that the file is not accessible (permissions, invalid file handle, etc.)
 
-#define RIFF_ERROR_INVALID_HANDLE 8  //riff_handle is not set up or is NULL
+#define RIFF_ERROR_INVALID_HANDLE 8  //riff_reader is not set up or is NULL
 
 #define RIFF_ERROR_UNKNOWN 9
 
@@ -94,10 +94,10 @@ struct riff_levelStackE {
 };
 
 
-//RIFF handle structure
+//RIFF reader structure
 //- Members are public and intended for read access (to avoid a plethora of get-functions)
 //  Be careful with the stack, check "ls_size" first
-typedef struct riff_handle {
+typedef struct riff_reader {
 	//RIFF file header info, available once the file is opened (could have been put)
 	char h_id[5];      //"RIFF" + terminator
 	size_t h_size;     //size value given in header (h_size + 8 == file_size)
@@ -126,17 +126,17 @@ typedef struct riff_handle {
 	
 	
 	//read bytes; required
-	size_t (*fp_read)(struct riff_handle *rh, void *ptr, size_t size);
+	size_t (*fp_read)(struct riff_reader *rr, void *ptr, size_t size);
 	
 	//seek position relative to start pos; required
-	size_t (*fp_seek)(struct riff_handle *rh, size_t pos);
+	size_t (*fp_seek)(struct riff_reader *rr, size_t pos);
 	
 	//print error; optional;
 	//allocate function maps it to vfprintf(stderr, ...) by default; set to NULL after allocation to disable any printing
 	//to be assigned before calling riff_open_...()
 	int (*fp_printf)(const char * format, ... );
 	
-} riff_handle;
+} riff_reader;
 
 typedef struct riff_writer {
 
@@ -167,10 +167,10 @@ typedef struct riff_writer {
 	
 	
 	//read bytes; required
-	size_t (*fp_write)(struct riff_writer *rh, void *ptr, size_t size);
+	size_t (*fp_write)(struct riff_writer *rr, void *ptr, size_t size);
 	
 	//seek position relative to start pos; required
-	size_t (*fp_seek)(struct riff_writer *rh, size_t pos);
+	size_t (*fp_seek)(struct riff_writer *rr, size_t pos);
 	
 	//print error; optional;
 	//allocate function maps it to vfprintf(stderr, ...) by default; set to NULL after allocation to disable any printing
@@ -182,48 +182,54 @@ typedef struct riff_writer {
 
 
 
-//Allocate, initialize and return handle;
-riff_handle *riff_handleAllocate();
+//Allocate, initialize and return reader;
+riff_reader *riff_readerAllocate();
 
+//Free allocated reader memory
+void riff_readerFree(riff_reader *rr);
+
+#ifdef RIFF_WRITE
 //Allocate, initialize and return writer;
 riff_writer *riff_writerAllocate();
 
-//Free allocated handle memory
-void riff_handleFree(riff_handle *rh);
-
 //Free allocated writer memory
-void riff_writerFree(riff_writer *rh);
-
+void riff_writerFree(riff_writer *rw);
+#endif
 
 //functions to parse a riff file
-size_t riff_readInChunk(riff_handle *rh, void *to, size_t size); //read in current chunk, returns RIFF_ERROR_EOC if end of chunk is reached
-int riff_seekInChunk(riff_handle *rh, size_t c_pos);      //seek in current chunk, returns RIFF_ERROR_EOC if end of chunk is reached, pos 0 is first byte after chunk size (chunk offset 8)
+size_t riff_readInChunk(riff_reader *rr, void *to, size_t size); //read in current chunk, returns RIFF_ERROR_EOC if end of chunk is reached
+int riff_readerSeekInChunk(riff_reader *rr, size_t c_pos);      //seek in current chunk, returns RIFF_ERROR_EOC if end of chunk is reached, pos 0 is first byte after chunk size (chunk offset 8)
 
-int riff_seekNextChunk(struct riff_handle *rh);       //seek to start of next chunk within current level, ID and size is read automatically, return
-//int riff_seekNextChunkID(struct riff_handle *rh, char *id);  //find and go to next chunk with id (4 byte) in current level, fails if not found - position is invalid then -> maybe not needed, the user can do it via simple loop
-int riff_seekChunkStart(struct riff_handle *rh);      //seek back to data start of current chunk
-int riff_rewind(struct riff_handle *rh);              //seek back to very first chunk of file at level 0, the position just after opening via riff_open_...()
-int riff_seekLevelStart(struct riff_handle *rh);      //goto start of first data byte of first chunk in current level (seek backward)
+#ifdef RIFF_WRITE
+size_t riff_writeInChunk(riff_writer *rw, void *from, size_t size); // write in current chunk
+int riff_writerSeekInChunk(riff_writer *rw, size_t c_pos);	//seek in current chunk, returns RIFF_ERROR_EOC if end of chunk is reached, pos 0 is first byte after chunk size (chunk offset 8)
+#endif
 
-int riff_seekLevelSub(struct riff_handle *rh);        //goto sub level chunk (auto seek to start of parent chunk if not already there); "LIST" chunk typically contains a list of sub chunks
+int riff_readerSeekNextChunk(struct riff_reader *rr);       //seek to start of next chunk within current level, ID and size is read automatically, return
+//int riff_seekNextChunkID(struct riff_reader *rr, char *id);  //find and go to next chunk with id (4 byte) in current level, fails if not found - position is invalid then -> maybe not needed, the user can do it via simple loop
+int riff_readerSeekChunkStart(struct riff_reader *rr);      //seek back to data start of current chunk
+int riff_readerRewind(struct riff_reader *rr);              //seek back to very first chunk of file at level 0, the position just after opening via riff_open_...()
+int riff_readerSeekLevelStart(struct riff_reader *rr);      //goto start of first data byte of first chunk in current level (seek backward)
+
+int riff_readerSeekLevelSub(struct riff_reader *rr);        //goto sub level chunk (auto seek to start of parent chunk if not already there); "LIST" chunk typically contains a list of sub chunks
 
 //step back from sub list level; position doesn't change and you are still inside the data section of the parent list chunk (not at the beginning of it!)
 //returns != RIFF_ERROR_NONE, if we are at level 0 already and can't go back any further
-int riff_levelParent(struct riff_handle *rh);
+int riff_readerLevelParent(struct riff_reader *rr);
 
-//int riff_seekLevelParent(struct riff_handle *rh);     //go back from sub level to the start of parent chunk (seek backward)
-//int riff_seekLevelParentNext(struct riff_handle *rh); //go back from sub level to the start of the chunk following the parent chunk (seek forward)
+//int riff_seekLevelParent(struct riff_reader *rr);     //go back from sub level to the start of parent chunk (seek backward)
+//int riff_seekLevelParentNext(struct riff_reader *rr); //go back from sub level to the start of the chunk following the parent chunk (seek forward)
 
 //validate chunk level structure, seeks to the first byte of the current level, seeks from chunk header to chunk header
 //to check all sub lists you need to define a recursive function
 //file position is changed by function
-int riff_levelValidate(struct riff_handle *rh);
+int riff_readerLevelValidate(struct riff_reader *rr);
 
 //write current chunk, will update the sizes of all parent chunks before it
 //writes the chunk ID as well
-int riff_writeChunk(riff_handle *rh, void * from, size_t size);
+int riff_writeChunk(riff_reader *rr, void * from, size_t size);
 
-int riff_writeChunkID(riff_handle *rh);
+int riff_writeChunkID(riff_reader *rr);
 
 //return string to error code
 //the current position (h->pos) tells you where in the file the problem occured
@@ -254,31 +260,31 @@ const char *riff_errorToString(int e);
 
 //read RIFF file header, return error code;
 //to be called from user IO functions
-int riff_readHeader(riff_handle *rh);
+int riff_readHeader(riff_reader *rr);
 
 
 
 
 // **** User I/O setup ****
 // Use the following built in open-functions or make your own
-// Only pass a fresh allocated handle
+// Only pass a fresh allocated reader
 
-//create and return initialized RIFF handle, FPs are set up for file access
+//create and return initialized RIFF reader, FPs are set up for file access
 //file position must be at the start of RIFF file, which can be nested in another file (file pos > 0)
 //Since the file was opened by the user, it must be closed by the user.
 //size: must be exact if > 0, pass 0 for unknown size (the correct size helps to identify file corruption)
-int riff_open_file(riff_handle *h, FILE *f, size_t size);
+int riff_open_file(riff_reader *h, FILE *f, size_t size);
 
-//create and return initialized RIFF handle, FPs are set up to default for memory access
+//create and return initialized RIFF reader, FPs are set up to default for memory access
 //If memory was allocated by the user, it must be deallocated by the user after use.
 //size: must be > 0
-int riff_open_mem(riff_handle *h, void *memptr, size_t size);
+int riff_open_mem(riff_reader *h, void *memptr, size_t size);
 
 
-//user open - must handle "riff_handle" allocation and setup
+//user open - must handle "riff_reader" allocation and setup
 // e.g. for file access via network socket
 // see and use "riff_open_file()" definition as template
-// "int open_user(riff_handle *h, FOO, size_t size)";
+// "int open_user(riff_reader *h, FOO, size_t size)";
 
 
 

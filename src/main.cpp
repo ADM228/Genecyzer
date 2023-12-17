@@ -4,6 +4,8 @@
 
 #include <SFML/Graphics.hpp>
 
+#define RIFF_WRITE
+
 #include "binIncludes.cpp"
 #include "Instance.cpp"
 

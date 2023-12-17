@@ -104,47 +104,47 @@ class RIFFReader {
          * @param size Amount of data to skip
          * @return Error code
          */
-        inline int seekInChunk (size_t size) {return riff_seekInChunk(rh, size);};
+        inline int seekInChunk (size_t size) {return riff_readerSeekInChunk(rh, size);};
         /**
          * @brief Seek to start of next chunk within current level
          * @note ID and size are read automatically
          *
          * @return Error code 
          */
-        inline int seekNextChunk () {return riff_seekNextChunk(rh);};
+        inline int seekNextChunk () {return riff_readerSeekNextChunk(rh);};
         /**
          * @brief Seek back to data start of current chunk
          * 
          * @return Error code 
          */
-        inline int seekChunkStart () {return riff_seekChunkStart (rh);};
+        inline int seekChunkStart () {return riff_readerSeekChunkStart (rh);};
         /**
          * @brief Seek back to very first chunk of file at level 0
          * Seek back to very first chunk of file at level 0 aka the position just after opening
          * 
          * @return Error code 
          */
-        inline int rewind () {return riff_rewind(rh);};
+        inline int rewind () {return riff_readerRewind(rh);};
         /**
          * @brief Go to start of first data byte of first chunk in current level
          * 
          * @return Error code  
          */
-        inline int seekLevelStart () {return riff_seekLevelStart (rh);};
+        inline int seekLevelStart () {return riff_readerSeekLevelStart (rh);};
 
         /**
          * @brief Go to sub level chunk
          * Go to sub level chunk (auto seek to start of parent chunk if not already there); "LIST" chunk typically contains a list of sub chunks
          * @return Error code  
          */
-        inline int seekLevelSub () {return riff_seekLevelSub(rh);};
+        inline int seekLevelSub () {return riff_readerSeekLevelSub(rh);};
         /**
          * @brief Step back from sub list level
          * Step back from sub list level; position doesn't change and you are still inside the data section of the parent list chunk (not at the beginning of it!)
          * Returns != RIFF_ERROR_NONE if we are at level 0 already and can't go back any further
          * @return Error code  
          */
-        inline int levelParent () {return riff_levelParent(rh);};
+        inline int levelParent () {return riff_readerLevelParent(rh);};
         /**
          * @brief Validate chunk level structure
          * Validate chunk level structure, seeks to the first byte of the current level, seeks from chunk header to chunk header
@@ -152,7 +152,7 @@ class RIFFReader {
          * File position is changed by function
          * @return Error code  
          */
-        inline int levelValidate () {return riff_levelValidate(rh);};
+        inline int levelValidate () {return riff_readerLevelValidate(rh);};
 
         /**
          * @brief Return string to error code
@@ -163,7 +163,7 @@ class RIFFReader {
         std::string errorToString (int errorCode);
 
 
-        riff_handle * rh;
+        riff_reader * rh;
         void * file;
 
     private:
@@ -176,14 +176,14 @@ class RIFFReader {
 #pragma region condes
 
 RIFFReader::RIFFReader() {
-    rh = riff_handleAllocate();
+    rh = riff_readerAllocate();
     #if !RIFF_PRINT_ERRORS
         rh->fp_printf = NULL;
     #endif
 }
 
 RIFFReader::~RIFFReader() {
-    riff_handleFree(rh);
+    riff_readerFree(rh);
     close();
 }
 
@@ -223,7 +223,7 @@ int RIFFReader::open (void * __mem_ptr, size_t __size) {
 
 #pragma region generic_ifstream_functions
 
-size_t read_ifstream(riff_handle *rh, void *ptr, size_t size){
+size_t read_ifstream(riff_reader *rh, void *ptr, size_t size){
     auto stream = ((std::ifstream *)rh->fh);
     size_t oldg = stream->tellg();
     stream->read((char *)ptr, size);
@@ -231,7 +231,7 @@ size_t read_ifstream(riff_handle *rh, void *ptr, size_t size){
     return newg-oldg;
 }
 
-size_t seek_ifstream(riff_handle *rh, size_t pos){
+size_t seek_ifstream(riff_reader *rh, size_t pos){
     auto stream = ((std::ifstream *)rh->fh);
     stream->seekg(pos);
 	return stream->tellg();
