@@ -262,6 +262,10 @@ const char *riff_errorToString(int e);
 //to be called from user IO functions
 int riff_readHeader(riff_reader *rr);
 
+//read RIFF file header, return error code;
+//to be called from user IO functions
+int riff_writeHeader(riff_writer *rw);
+
 
 
 
@@ -273,18 +277,35 @@ int riff_readHeader(riff_reader *rr);
 //file position must be at the start of RIFF file, which can be nested in another file (file pos > 0)
 //Since the file was opened by the user, it must be closed by the user.
 //size: must be exact if > 0, pass 0 for unknown size (the correct size helps to identify file corruption)
-int riff_open_file(riff_reader *h, FILE *f, size_t size);
+int riff_reader_open_file(riff_reader *rr, FILE *f, size_t size);
 
 //create and return initialized RIFF reader, FPs are set up to default for memory access
 //If memory was allocated by the user, it must be deallocated by the user after use.
 //size: must be > 0
-int riff_open_mem(riff_reader *h, void *memptr, size_t size);
+int riff_reader_open_mem(riff_reader *rr, void *memptr, size_t size);
 
+
+#ifdef RIFF_WRITE
+//create and return initialized RIFF writer, FPs are set up for file access
+//file position must be at the start of RIFF file, which can be nested in another file (file pos > 0)
+//Since the file was opened by the user, it must be closed by the user.
+int riff_writer_open_file(riff_writer *rw, FILE *f);
+
+//create and return initialized RIFF writer, FPs are set up to default for memory access, memory is allocated
+//size: initial size for the file
+int riff_writer_open_mem(riff_writer *rw);
+
+//finish file writing, write sizes and stuff
+void riff_writer_close_file(riff_writer *rw);
+
+//finish memory writing, write sizes, shrink to fit, return mem pointer
+void * riff_writer_close_mem(riff_writer *rw);
+#endif
 
 //user open - must handle "riff_reader" allocation and setup
 // e.g. for file access via network socket
 // see and use "riff_open_file()" definition as template
-// "int open_user(riff_reader *h, FOO, size_t size)";
+// "int open_user(riff_reader *rr, FOO, size_t size)";
 
 
 

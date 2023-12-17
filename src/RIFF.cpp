@@ -200,13 +200,13 @@ int RIFFReader::open (const char* __filename, const char * __mode, size_t __size
     }
     file = std::fopen(buffer.c_str(), __mode);
     type = C_FILE;
-    return riff_open_file(rh, (std::FILE *)file, __size);
+    return riff_reader_open_file(rh, (std::FILE *)file, __size);
 }
 
 int RIFFReader::open (std::FILE * __file, size_t __size) {
     file = __file;
     type = C_FILE|MANUAL;
-    return riff_open_file(rh, __file, __size);
+    return riff_reader_open_file(rh, __file, __size);
 }
 
 #pragma endregion
@@ -216,7 +216,7 @@ int RIFFReader::open (std::FILE * __file, size_t __size) {
 int RIFFReader::open (void * __mem_ptr, size_t __size) {
     file = nullptr;
     type = MEM_PTR;
-    return riff_open_mem(rh, __mem_ptr, __size);
+    return riff_reader_open_mem(rh, __mem_ptr, __size);
 }
 
 #pragma endregion 

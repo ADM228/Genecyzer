@@ -75,14 +75,22 @@ size_t seek_file(riff_reader *rh, size_t pos){
 	return pos;
 }
 
+#ifndef RIFF_WRITE
 /*****************************************************************************/
-size_t write_file(riff_reader *rh, void * ptr, size_t size){
-	return fwrite(ptr, sizeof(char), size, ((unsigned char*)rh->fh+rh->pos));
+size_t seek_writer_file(riff_writer *rw, size_t pos){
+	fseek((FILE*)(rw->fh), pos, SEEK_SET);
+	return pos;
 }
 
 /*****************************************************************************/
+size_t write_file(riff_writer *rw, void * ptr, size_t size){
+	return fwrite(ptr, sizeof(char), size, (FILE*)rw->fh);
+}
+#endif
+
+/*****************************************************************************/
 //description: see header file
-int riff_open_file(riff_reader *rh, FILE *f, size_t size){
+int riff_reader_open_file(riff_reader *rh, FILE *f, size_t size){
 	if(rh == NULL)
 		return RIFF_ERROR_INVALID_HANDLE;
 	rh->fh = f;
@@ -94,6 +102,24 @@ int riff_open_file(riff_reader *rh, FILE *f, size_t size){
 	
 	return riff_readHeader(rh);
 }
+
+#ifdef RIFF_WRITE
+int riff_writer_open_file(riff_writer *rw, FILE *f) {
+	if (rw == NULL)
+		return RIFF_ERROR_INVALID_HANDLE;
+	rw->fh = f;
+	rw->size = size;
+	rw->pos_start = ftell(f); //current file offset of stream considered as start of RIFF file
+	
+	rw->fp_write = &write_file;
+	rw->fp_seek = &seek_writer_file;
+	
+	return riff_writeHeader(rw);
+
+}
+
+void riff_writer_close_file(riff_writer *rw);
+#endif
 
 
 
@@ -121,7 +147,7 @@ size_t write_mem(riff_reader *rh, void * ptr, size_t size){
 
 /*****************************************************************************/
 //description: see header file
-int riff_open_mem(riff_reader *rh, void *ptr, size_t size){
+int riff_reader_open_mem(riff_reader *rh, void *ptr, size_t size){
 	if(rh == NULL)
 		return RIFF_ERROR_INVALID_HANDLE;
 	
@@ -135,22 +161,33 @@ int riff_open_mem(riff_reader *rh, void *ptr, size_t size){
 	return riff_readHeader(rh);
 }
 
+#ifdef RIFF_WRITE
+int riff_writer_open_mem(riff_writer *rw);
+void * riff_writer_close_mem(riff_writer *rw);
+#endif
 
 
 // **** internal ****
+/*****************************************************************************/
+//write 32 bit LE to buffer
+void writeBufUInt32LE(void *p, unsigned int value){
+	unsigned char *buf = (unsigned char*)p;
+	buf[0] = (value		) & 0xFF;
+	buf[1] = (value >> 8) & 0xFF;
+	buf[2] = (value >>16) & 0xFF;
+	buf[3] = (value >>24) & 0xFF;
+}
 
 /*****************************************************************************/
 //write 32 bit LE to file
 void writeUInt32LE(riff_writer *rh, unsigned int value) {
 	char buf[4];
-	buf[0] = (value		) & 0xFF;
-	buf[1] = (value >> 8) & 0xFF;
-	buf[2] = (value >>16) & 0xFF;
-	buf[3] = (value >>24) & 0xFF;
+	writeBufUInt32LE(buf, value);
 	rh->fp_write(rh, buf, 4);
 	rh->pos += 4;
 	rh->c_pos += 4;
 }
+
 
 /*****************************************************************************/
 //pass pointer to 32 bit LE value and convert, return in native byte order
@@ -388,6 +425,34 @@ int riff_readHeader(riff_reader *rh){
 	return RIFF_ERROR_NONE;
 }
 
+/*****************************************************************************/
+//description: see header file
+//shall be called only once by the open-function
+int riff_writeHeader(riff_writer *rw){
+	char buf[RIFF_HEADER_SIZE];
+
+
+	if(rw->fp_write == NULL) {
+		if(rw->fp_printf)
+			rw->fp_printf("I/O function pointer not set\n"); //fatal user error
+		return RIFF_ERROR_INVALID_HANDLE;
+	}
+
+	rw->h_size = convUInt32LE(buf + 4);
+
+	memcpy(buf, "RIFF", 4);
+	// memcpy(rw->h_type, buf + 8, 4); 
+
+	int r = riff_readChunkHeader(rw);
+	if(r != RIFF_ERROR_NONE)
+		return r;
+	
+	int n = rw->fp_write(rw, buf, RIFF_HEADER_SIZE);
+	rw->pos += n;
+
+	return RIFF_ERROR_NONE;
+}
+
 
 
 // **** external ****
@@ -471,7 +536,7 @@ int riff_readerSeekChunkStart(struct riff_reader *rh){
 
 
 /*****************************************************************************/
-int riff_rewind(struct riff_reader *rh){
+int riff_readerRewind(struct riff_reader *rh){
 	//pop stack as much as possible
 	while(rh->ls_level > 0) {
 		stack_pop(rh);
