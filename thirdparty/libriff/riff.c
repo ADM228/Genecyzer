@@ -398,7 +398,7 @@ int riff_readHeader(riff_reader *rh){
 	memcpy(rh->h_type, buf + 8, 4);
 
 
-	if(strcmp(rh->h_id, "RIFF") != 0) {
+	if(strcmp(rh->h_id, "RIFF") != 0 && strcmp(rh->h_id, "BW64") != 0) {
 		if(rh->fp_printf)
 			rh->fp_printf("Invalid RIFF header\n");
 		return RIFF_ERROR_ILLID;
@@ -407,6 +407,22 @@ int riff_readHeader(riff_reader *rh){
 	int r = riff_readChunkHeader(rh);
 	if(r != RIFF_ERROR_NONE)
 		return r;
+
+	if (rh->h_size == 0xFFFFFFFF && !memcmp(rh->c_id, "ds64", 4)) {
+		// It's a 64-bit sized file
+		// Specification can be found at
+		// https://www.itu.int/dms_pubrec/itu-r/rec/bs/R-REC-BS.2088-1-201910-I!!PDF-E.pdf
+		
+		// Buffer already used, so it can be reused
+		size_t r_ = riff_readInChunk(rh, buf, 8);
+		if (r_ != 8) {
+			if (rh->fp_printf) {
+				rh->fp_printf("ds64 chunk too small to contain any meaningful information.\n");
+			}
+			return RIFF_ERROR_ICSIZE;
+		}
+		rh->h_size = ((size_t)convUInt32LE(buf+4) << 32) | convUInt32LE(buf);
+	}
 	
 	//compare with given file size
 	if(rh->size != 0){
@@ -568,7 +584,7 @@ int riff_readerSeekLevelStart(struct riff_reader *rh){
 //description: see header file
 int riff_readerSeekLevelSub(riff_reader *rh){
 	//according to "https://en.wikipedia.org/wiki/Resource_Interchange_File_Format" only RIFF and LIST chunk IDs can contain subchunks
-	if(strcmp(rh->c_id, "LIST") != 0  &&  strcmp(rh->c_id, "RIFF") != 0){
+	if(strcmp(rh->c_id, "LIST") != 0  && strcmp(rh->c_id, "RIFF") != 0 && strcmp(rh->c_id, "BW64") != 0){
 		if(rh->fp_printf)
 			rh->fp_printf("%s() failed for chunk ID \"%s\", only RIFF or LIST chunk can contain subchunks", __func__, rh->c_id);
 		return RIFF_ERROR_ILLID;
