@@ -178,7 +178,7 @@ class RIFFReader {
 RIFFReader::RIFFReader() {
     rh = riff_handleAllocate();
     #if !RIFF_PRINT_ERRORS
-        rh->fp_printf = 0;
+        rh->fp_printf = NULL;
     #endif
 }
 
@@ -336,15 +336,14 @@ std::vector<uint8_t> * RIFFReader::readChunkData() {
         return new std::vector<uint8_t>(0);
     }
     auto outVec = new std::vector<uint8_t>(rh->c_size);
-    size_t totalSize = 0;
-    size_t succSize = rh->c_size;
-    while (succSize != 0) {
-        succSize = readInChunk(outVec->data(), rh->c_size);
+    size_t totalSize = 0, succSize;
+    do {
+        succSize = readInChunk(outVec->data()+totalSize, rh->c_size);
         totalSize += succSize;
-    }
+    } while (succSize != 0);
 #if RIFF_PRINT_ERRORS
-    if (totalSize != rh->c_size) {
-        fprintf(stderr, "Couldn't read the entire chunk for some reason. Successfully read %zu bytes out of %zu\n", totalSize, rh->c_size);
+    if (totalSize != rh->c_size && rh->fp_printf) {
+        rh->fp_printf("Couldn't read the entire chunk for some reason. Successfully read %zu bytes out of %zu\n", totalSize, rh->c_size);
     } 
 #endif
     return outVec;
