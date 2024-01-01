@@ -135,6 +135,11 @@ Instance::Instance() {
     activeProject = Project();
     activeProject.Load(data);
 
+    size_t size = 0;
+    auto ptr = activeProject.Save(&size);
+    printByteArray(ptr, size, 16);
+    free(ptr);
+
 
     
 

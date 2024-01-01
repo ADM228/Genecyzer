@@ -68,7 +68,10 @@ void printByteArray(void * ptr, size_t size, size_t divide = 0) {
         }
         printf("| ");
         for (size_t j = 0; j < divide && idx < size; j++){
-            printf("%c", *((char *)ptr+(idx++)));
+            if (*((char * )ptr+idx) >= 0x20)
+                printf("%c", *((char *)ptr+(idx++)));
+            else 
+                { printf("�"); idx++; }
         }
         printf("\n");
         fflush(stdout);

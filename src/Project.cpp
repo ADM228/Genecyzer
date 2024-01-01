@@ -58,9 +58,9 @@ class Project {
         int Load (std::vector<uint8_t>& data);
 
         // Save project to filestream
-        void save (std::ofstream file);
+        void Save (std::ofstream file);
         // Save project to memory
-        uint8_t * save (size_t * size_out);
+        uint8_t * Save (size_t * size_out);
 
         // Export project's patterns to SNESFM opcode format
         uint8_t * exportSNESFM ();
@@ -223,6 +223,7 @@ Project::Project() {
         
 */
 
+//
 const char fileType     [5]     = "GCZR";
 const char software     [10]    = "Genecyzer";
 
@@ -356,6 +357,19 @@ int Project::loadInternal(RIFF::RIFFReader & file) {
     return errCode == RIFF_ERROR_EOCL ? 0 : errCode;
 }
 
+uint8_t * Project::Save(size_t * size_out) {
+    auto writer = riff_writerAllocate();
+
+    riff_writer_open_mem(writer);
+
+    memcpy(writer->h_type, fileType, 5);
+    
+
+    uint8_t * outMem = (uint8_t *)riff_writer_close_mem(writer);
+    *size_out = writer->size;
+    riff_writerFree(writer);
+    return outMem;
+}
 
 
 #endif

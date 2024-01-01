@@ -183,16 +183,39 @@ int riff_writer_open_mem(riff_writer *rw){
 	if (rw == NULL)
 		return RIFF_ERROR_INVALID_HANDLE;
 	rw->fh = malloc(256);
-	rw->size = 12;
+	rw->size = 256;
+	rw->data_size = RIFF_HEADER_SIZE;
 	rw->pos_start = 0;
 	
 	rw->fp_write = &write_mem;
 	rw->fp_seek = &seek_writer_mem;
+
+	// we are not writing header right now
+	size_t n = rw->fp_seek(rw, RIFF_HEADER_SIZE);
+	rw->pos = n;
 	
 	return RIFF_ERROR_NONE;
 };
 
-void * riff_writer_close_mem(riff_writer *rw);
+void * riff_writer_close_mem(riff_writer *rw){
+
+	if (rw == NULL){
+		if (rw->fp_printf)
+			rw->fp_printf(riff_es[8]);
+		return NULL;
+	}
+
+	int errCode = riff_writeHeader(rw);
+	if (errCode) return NULL;
+
+	if (rw->size > rw->data_size){
+		rw->size = rw->data_size;
+		rw->fh = realloc(rw->fh, rw->size);
+	}
+
+	return rw->fh;
+
+};
 #endif
 
 
@@ -486,10 +509,11 @@ int riff_writeHeader(riff_writer *rw){
 
 
 	memcpy(buf, "RIFF", 4);
-	writeBufUInt32LE(buf + 4, rw->data_size);
+	writeBufUInt32LE(buf + 4, rw->data_size-RIFF_HEADER_SIZE);
 	memcpy(buf + 8, rw->h_type, 4); 
 
-	rw->fp_seek(rw, 0);	
+	rw->pos = 0;
+	rw->fp_seek(rw, rw->pos);	
 	int n = rw->fp_write(rw, buf, RIFF_HEADER_SIZE);
 	rw->pos += n;
 
