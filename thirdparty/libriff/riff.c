@@ -75,7 +75,7 @@ size_t seek_file(riff_reader *rh, size_t pos){
 	return pos;
 }
 
-#ifndef RIFF_WRITE
+#ifdef RIFF_WRITE
 /*****************************************************************************/
 size_t seek_writer_file(riff_writer *rw, size_t pos){
 	fseek((FILE*)(rw->fh), pos, SEEK_SET);
@@ -108,17 +108,24 @@ int riff_writer_open_file(riff_writer *rw, FILE *f) {
 	if (rw == NULL)
 		return RIFF_ERROR_INVALID_HANDLE;
 	rw->fh = f;
-	rw->size = size;
+	rw->size = 12;
 	rw->pos_start = ftell(f); //current file offset of stream considered as start of RIFF file
 	
 	rw->fp_write = &write_file;
 	rw->fp_seek = &seek_writer_file;
 	
-	return riff_writeHeader(rw);
+	return RIFF_ERROR_NONE;
 
 }
 
-void riff_writer_close_file(riff_writer *rw);
+void riff_writer_close_file(riff_writer *rw) {
+	if (rw == NULL)
+		return;
+
+	int errCode = riff_writeHeader(rw); if (errCode) return;
+
+	return;
+}
 #endif
 
 
@@ -139,8 +146,18 @@ size_t seek_mem(riff_reader *rh, size_t pos){
 
 #ifdef RIFF_WRITE
 /*****************************************************************************/
-size_t write_mem(riff_reader *rh, void * ptr, size_t size){
-	memcpy(((unsigned char*)rh->fh+rh->pos), ptr, size);
+size_t seek_writer_mem(riff_writer *rw, size_t pos){
+	return pos; //instant in memory
+}
+/*****************************************************************************/
+size_t write_mem(riff_writer *rw, void * ptr, size_t size){
+	if (rw->pos + size > rw->size) {
+		rw->size = (rw->size>>1)*3 > 256 ? (rw->size>>1)*3 : 256;
+		rw->size = rw->size > rw->pos + size ? rw->size : rw->pos + size; 
+		rw->fh = realloc(rw->fh, rw->size);
+	}
+
+	memcpy(((unsigned char*)rw->fh+rw->pos), ptr, size);
 	return size;
 }
 #endif
@@ -162,7 +179,19 @@ int riff_reader_open_mem(riff_reader *rh, void *ptr, size_t size){
 }
 
 #ifdef RIFF_WRITE
-int riff_writer_open_mem(riff_writer *rw);
+int riff_writer_open_mem(riff_writer *rw){
+	if (rw == NULL)
+		return RIFF_ERROR_INVALID_HANDLE;
+	rw->fh = malloc(256);
+	rw->size = 12;
+	rw->pos_start = 0;
+	
+	rw->fp_write = &write_mem;
+	rw->fp_seek = &seek_writer_mem;
+	
+	return RIFF_ERROR_NONE;
+};
+
 void * riff_writer_close_mem(riff_writer *rw);
 #endif
 
@@ -441,9 +470,10 @@ int riff_readHeader(riff_reader *rh){
 	return RIFF_ERROR_NONE;
 }
 
+#ifdef RIFF_WRITE
 /*****************************************************************************/
 //description: see header file
-//shall be called only once by the open-function
+//shall be called only once by the close function
 int riff_writeHeader(riff_writer *rw){
 	char buf[RIFF_HEADER_SIZE];
 
@@ -454,21 +484,18 @@ int riff_writeHeader(riff_writer *rw){
 		return RIFF_ERROR_INVALID_HANDLE;
 	}
 
-	rw->h_size = convUInt32LE(buf + 4);
 
 	memcpy(buf, "RIFF", 4);
-	// memcpy(rw->h_type, buf + 8, 4); 
+	writeBufUInt32LE(buf + 4, rw->data_size);
+	memcpy(buf + 8, rw->h_type, 4); 
 
-	int r = riff_readChunkHeader(rw);
-	if(r != RIFF_ERROR_NONE)
-		return r;
-	
+	rw->fp_seek(rw, 0);	
 	int n = rw->fp_write(rw, buf, RIFF_HEADER_SIZE);
 	rw->pos += n;
 
 	return RIFF_ERROR_NONE;
 }
-
+#endif
 
 
 // **** external ****

@@ -95,6 +95,9 @@ target_link_libraries(Font PUBLIC incbin)
 add_library(riff STATIC "${THIRDPARTY}/libriff/riff.c")
 add_library(tinyfd STATIC "${TINYFD_SOURCE_DIR}/tinyfiledialogs.c")
 
+target_compile_definitions(riff PUBLIC RIFF_WRITE)
+target_compile_features(riff PRIVATE c_std_99)
+
 if (MSVC)	# Replacement of functions in cmake-incbin wrapper (it does not allow include directories, so fuck it)
 	get_filename_component(BININCLUDEFILE_NAME ${BININCLUDEFILE} NAME)
 	get_filename_component(BININCLUDEFILE_DIR ${BININCLUDEFILE} DIRECTORY)

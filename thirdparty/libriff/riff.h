@@ -43,6 +43,8 @@ May not work for RIFF files larger than 2GB.
 #ifndef _RIFF_H_
 #define _RIFF_H_
 
+#include <stddef.h>
+#include <stdio.h>
 
 
 #define RIFF_HEADER_SIZE  12      //size of RIFF file header and RIFF/LIST chunks that contain subchunks
@@ -140,11 +142,11 @@ typedef struct riff_reader {
 
 typedef struct riff_writer {
 
-	size_t h_size;
 	char h_type[5];
 
 	size_t pos_start;  //start pos of RIFF file
 
+	size_t data_size;
 	size_t size;      //total size of RIFF file, 0 means unspecified
 	size_t pos;       //current position in stream
 
