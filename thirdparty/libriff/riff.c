@@ -707,6 +707,9 @@ int riff_writerNewChunk(struct riff_writer *rw){
 	rw->c_pos_start = rw->pos;
 	rw->pos += n;
 	rw->data_size += n;
+
+	rw->c_size = 0;
+	rw->c_pos = 0;
 	
 	return RIFF_ERROR_NONE;
 }
@@ -727,9 +730,9 @@ int riff_writerFinishChunk(struct riff_writer *rw){
 		rw->fp_write(rw, &tmp, 1);
 		rw->pos++;
 	}
-	rw->pos = rw->c_pos_start + RIFF_CHUNK_DATA_OFFSET + rw->c_size + rw->pad;	
 	return RIFF_ERROR_NONE;
-}      
+}
+
 int riff_writerNewListChunk(struct riff_writer *rw);       //reserve space for new list chunk after the previous one, go to sub level
 
 int riff_writerSeekChunkStart(struct riff_writer *rw){	
