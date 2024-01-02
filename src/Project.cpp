@@ -362,9 +362,16 @@ uint8_t * Project::Save(size_t * size_out) {
 
     riff_writer_open_mem(writer);
 
-    memcpy(writer->h_type, fileType, 5);
+    riff_writerNewChunk(writer);
+    memcpy (writer->c_id, versionId, 5);
     
+    riff_writeInChunk(writer, (void *)thisBranch, 8);
+    char buf[4];
+    writeBytes(thisBranchVer, buf);
+    riff_writeInChunk(writer, buf, 4);
+    riff_writerFinishChunk(writer);    
 
+    memcpy(writer->h_type, fileType, 5);
     uint8_t * outMem = (uint8_t *)riff_writer_close_mem(writer);
     *size_out = writer->size;
     riff_writerFree(writer);

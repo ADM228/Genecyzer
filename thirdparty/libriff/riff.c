@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <tgmath.h>
 
 #include <stdarg.h> //function with variable number of arguments
 
@@ -108,7 +109,7 @@ int riff_writer_open_file(riff_writer *rw, FILE *f) {
 	if (rw == NULL)
 		return RIFF_ERROR_INVALID_HANDLE;
 	rw->fh = f;
-	rw->size = 12;
+	rw->data_size = 12;
 	rw->pos_start = ftell(f); //current file offset of stream considered as start of RIFF file
 	
 	rw->fp_write = &write_file;
@@ -146,14 +147,10 @@ size_t seek_mem(riff_reader *rh, size_t pos){
 
 #ifdef RIFF_WRITE
 /*****************************************************************************/
-size_t seek_writer_mem(riff_writer *rw, size_t pos){
-	return pos; //instant in memory
-}
-/*****************************************************************************/
 size_t write_mem(riff_writer *rw, void * ptr, size_t size){
 	if (rw->pos + size > rw->size) {
-		rw->size = (rw->size>>1)*3 > 256 ? (rw->size>>1)*3 : 256;
-		rw->size = rw->size > rw->pos + size ? rw->size : rw->pos + size; 
+		rw->size = fmax((rw->size>>1)*3, 256);
+		rw->size = fmax(rw->size, rw->pos + size); 
 		rw->fh = realloc(rw->fh, rw->size);
 	}
 
@@ -188,7 +185,7 @@ int riff_writer_open_mem(riff_writer *rw){
 	rw->pos_start = 0;
 	
 	rw->fp_write = &write_mem;
-	rw->fp_seek = &seek_writer_mem;
+	rw->fp_seek = (size_t (*) (struct riff_writer *, size_t))&seek_mem;
 
 	// we are not writing header right now
 	size_t n = rw->fp_seek(rw, RIFF_HEADER_SIZE);
@@ -238,6 +235,7 @@ void writeUInt32LE(riff_writer *rh, unsigned int value) {
 	rh->fp_write(rh, buf, 4);
 	rh->pos += 4;
 	rh->c_pos += 4;
+	rh->size += 4;
 }
 
 
@@ -556,6 +554,29 @@ int riff_readerSeekInChunk(riff_reader *rh, size_t c_pos){
 	return RIFF_ERROR_NONE;
 }
 
+#ifdef RIFF_WRITE
+// write in current chunk
+size_t riff_writeInChunk(riff_writer *rw, void *from, size_t size){
+	size_t n = rw->fp_write(rw, from, size);
+	rw->pos += n;
+	rw->c_pos += n;
+	rw->data_size = fmax(rw->data_size, rw->pos);
+	rw->c_size = fmax(rw->c_size, rw->c_pos);
+	return n;
+}
+//seek in current chunk, returns RIFF_ERROR_EOC if end of chunk is reached, pos 0 is first byte after chunk size (chunk offset 8)
+int riff_writerSeekInChunk(riff_writer *rw, size_t c_pos){
+	//seeking behind last byte is valid, next read at that pos will fail
+	if(c_pos < 0  ||  c_pos > rw->c_size){
+		return RIFF_ERROR_EOC;
+	}
+	rw->pos = rw->c_pos_start + RIFF_CHUNK_DATA_OFFSET + c_pos;
+	rw->c_pos = c_pos;
+	size_t r = rw->fp_seek(rw, rw->pos); //seek never fails, but pos might be invalid to read from
+	return RIFF_ERROR_NONE;
+}
+#endif
+
 
 /*****************************************************************************/
 //description: see header file
@@ -675,6 +696,54 @@ int riff_readerSeekLevelSub(riff_reader *rh){
 	return riff_readChunkHeader(rh);
 }
 
+
+#ifdef RIFF_WRITE
+int riff_writerNewChunk(struct riff_writer *rw){
+	// Assumes that it is in freespace, after a finished chunk
+	char buf[8];
+	
+	int n = rw->fp_write(rw, buf, 8);
+	
+	rw->c_pos_start = rw->pos;
+	rw->pos += n;
+	rw->data_size += n;
+	
+	return RIFF_ERROR_NONE;
+}
+
+int riff_writerFinishChunk(struct riff_writer *rw){
+	//write size, id, and seek to the first byte after this chunk
+	rw->fp_seek(rw, rw->c_pos_start);
+	rw->pos = rw->c_pos_start;
+	size_t n = rw->fp_write(rw, rw->c_id, 4);
+	rw->pos += n;
+	writeUInt32LE(rw, rw->c_size);
+
+	rw->pos = rw->c_pos_start + RIFF_CHUNK_DATA_OFFSET + rw->c_size;
+	rw->fp_seek(rw, rw->c_pos_start + RIFF_CHUNK_DATA_OFFSET + rw->c_size);
+	rw->pad = rw->c_size & 0x1; //pad byte present if size is odd
+	if (rw->pad) {
+		char tmp = 0;
+		rw->fp_write(rw, &tmp, 1);
+		rw->pos++;
+	}
+	rw->pos = rw->c_pos_start + RIFF_CHUNK_DATA_OFFSET + rw->c_size + rw->pad;	
+	return RIFF_ERROR_NONE;
+}      
+int riff_writerNewListChunk(struct riff_writer *rw);       //reserve space for new list chunk after the previous one, go to sub level
+
+int riff_writerSeekChunkStart(struct riff_writer *rw){	
+	//seek data offset 0 in current chunk
+	rw->pos = rw->c_pos_start + RIFF_CHUNK_DATA_OFFSET;
+	rw->c_pos = 0;
+	rw->fp_seek(rw, rw->pos);
+	return RIFF_ERROR_NONE;
+}
+
+int riff_writerRewind(struct riff_writer *rw);              //seek back to very first chunk of file at level 0, the position just after opening via riff_open_...()
+int riff_writerSeekLevelStart(struct riff_writer *rw);      //goto start of first data byte of first chunk in current level (seek backward)
+int riff_writerSeekLevelSub(struct riff_writer *rw);        //goto sub level chunk (auto seek to start of parent chunk if not already there); "LIST" chunk typically contains a list of sub chunks
+#endif
 
 /*****************************************************************************/
 //description: see header file
