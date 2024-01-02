@@ -212,12 +212,29 @@ int riff_readerSeekNextChunk(struct riff_reader *rr);       //seek to start of n
 int riff_readerSeekChunkStart(struct riff_reader *rr);      //seek back to data start of current chunk
 int riff_readerRewind(struct riff_reader *rr);              //seek back to very first chunk of file at level 0, the position just after opening via riff_open_...()
 int riff_readerSeekLevelStart(struct riff_reader *rr);      //goto start of first data byte of first chunk in current level (seek backward)
-
 int riff_readerSeekLevelSub(struct riff_reader *rr);        //goto sub level chunk (auto seek to start of parent chunk if not already there); "LIST" chunk typically contains a list of sub chunks
+
+#ifdef RIFF_WRITE
+int riff_writerNewChunk(struct riff_writer *rw);       //reserve space for new chunk after the previous one
+int riff_writerFinishChunk(struct riff_writer *rw);       //write size, id, and seek to the first byte after this chunk
+int riff_writerNewListChunk(struct riff_writer *rw);       //reserve space for new list chunk after the previous one, go to sub level
+
+
+int riff_writerSeekChunkStart(struct riff_writer *rw);      //seek back to data start of current chunk
+int riff_writerRewind(struct riff_writer *rw);              //seek back to very first chunk of file at level 0, the position just after opening via riff_open_...()
+int riff_writerSeekLevelStart(struct riff_writer *rw);      //goto start of first data byte of first chunk in current level (seek backward)
+int riff_writerSeekLevelSub(struct riff_writer *rw);        //goto sub level chunk (auto seek to start of parent chunk if not already there); "LIST" chunk typically contains a list of sub chunks
+#endif
 
 //step back from sub list level; position doesn't change and you are still inside the data section of the parent list chunk (not at the beginning of it!)
 //returns != RIFF_ERROR_NONE, if we are at level 0 already and can't go back any further
 int riff_readerLevelParent(struct riff_reader *rr);
+
+#ifdef RIFF_WRITE
+//step back from sub list level; position changes to after this list chunk, just like riff_writerFinishChunk
+//returns != RIFF_ERROR_NONE, if we are at level 0 already and can't go back any further
+int riff_writerFinishListChunk(struct riff_writer *rw);
+#endif
 
 //int riff_seekLevelParent(struct riff_reader *rr);     //go back from sub level to the start of parent chunk (seek backward)
 //int riff_seekLevelParentNext(struct riff_reader *rr); //go back from sub level to the start of the chunk following the parent chunk (seek forward)
@@ -226,12 +243,6 @@ int riff_readerLevelParent(struct riff_reader *rr);
 //to check all sub lists you need to define a recursive function
 //file position is changed by function
 int riff_readerLevelValidate(struct riff_reader *rr);
-
-//write current chunk, will update the sizes of all parent chunks before it
-//writes the chunk ID as well
-int riff_writeChunk(riff_reader *rr, void * from, size_t size);
-
-int riff_writeChunkID(riff_reader *rr);
 
 //return string to error code
 //the current position (h->pos) tells you where in the file the problem occured
@@ -264,11 +275,13 @@ const char *riff_errorToString(int e);
 //to be called from user IO functions
 int riff_readHeader(riff_reader *rr);
 
+#ifdef RIFF_WRITE
+
 //read RIFF file header, return error code;
 //to be called from user IO functions
 int riff_writeHeader(riff_writer *rw);
 
-
+#endif
 
 
 // **** User I/O setup ****
