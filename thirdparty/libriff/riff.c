@@ -324,7 +324,7 @@ int riff_readChunkHeader(riff_reader *rh){
 /*****************************************************************************/
 //pop from level stack
 //when returning we are positioned inside the parent chunk ()
-void stack_pop(riff_reader *rh){
+void reader_stack_pop(riff_reader *rh){
 	if(rh->ls_level <= 0)
 		return;
 	
@@ -342,7 +342,7 @@ void stack_pop(riff_reader *rh){
 
 /*****************************************************************************/
 //push to level stack
-void stack_push(riff_reader *rh, char *type){
+void reader_stack_push(riff_reader *rh, void *type){
 	//need to enlarge stack?
 	if(rh->ls_size < rh->ls_level + 1){
 		size_t ls_size_new = rh->ls_size * 2; //double size
@@ -365,12 +365,67 @@ void stack_push(riff_reader *rh, char *type){
 	
 	struct riff_levelStackE *ls = rh->ls + rh->ls_level;
 	ls->c_pos_start = rh->c_pos_start;
-	strcpy(ls->c_id, rh->c_id);
+	memcpy(ls->c_id, rh->c_id, 4);
 	ls->c_size = rh->c_size;
 	//printf("list size %d\n", (rh->ls[rh->ls_level].size));
-	strcpy(ls->c_type, type);
+	memcpy(ls->c_type, type, 4);
 	rh->ls_level++;
 }
+
+#ifdef RIFF_WRITE
+/*****************************************************************************/
+//pop from level stack
+//when returning we are positioned inside the parent chunk ()
+void writer_stack_pop(riff_writer *rw){
+	if(rw->ls_level <= 0)
+		return;
+	
+	rw->ls_level--;
+	struct riff_levelStackE *ls = rw->ls + rw->ls_level;
+	
+	rw->c_pos_start = ls->c_pos_start;
+	memcpy(rw->c_id, ls->c_id, 4);
+	memcpy(rw->h_type, ls->c_type, 4);
+	rw->data_size = ls->c_size;
+	rw->pad = rw->c_size & 0x1; //pad if chunk sizesize is odd
+	
+	rw->c_pos = rw->pos - rw->c_pos_start - RIFF_CHUNK_DATA_OFFSET;
+}
+
+
+/*****************************************************************************/
+//push to level stack
+void writer_stack_push(riff_writer *rw){
+	//need to enlarge stack?
+	if(rw->ls_size < rw->ls_level + 1){
+		size_t ls_size_new = rw->ls_size * 2; //double size
+		if(ls_size_new == 0)
+			ls_size_new = RIFF_LEVEL_ALLOC; //default stack allocation
+		
+		struct riff_levelStackE *lsnew = malloc(ls_size_new * sizeof(struct riff_levelStackE));
+		rw->ls_size = ls_size_new;
+		
+		//need to copy?
+		if(rw->ls_level > 0){
+			memcpy(lsnew, rw->ls, rw->ls_level * sizeof(struct riff_levelStackE));
+		}
+		
+		//free old
+		if(rw->ls != NULL)
+			free(rw->ls);
+		rw->ls = lsnew;
+	}
+	
+	struct riff_levelStackE *ls = rw->ls + rw->ls_level;
+	ls->c_pos_start = rw->c_pos_start;
+	memcpy(ls->c_id, rw->c_id, 4);
+	ls->c_size = rw->data_size;	// data size is what's being incremented
+	//printf("list size %d\n", (rw->ls[rw->ls_level].size));
+	memcpy(ls->c_type, rw->h_type, 4);
+	rw->ls_level++;
+}
+
+#endif
 
 
 //**** user access ****
@@ -388,16 +443,6 @@ riff_reader *riff_readerAllocate(){
 
 /*****************************************************************************/
 //description: see header file
-riff_writer *riff_writerAllocate(){
-	riff_writer *rw = calloc(1, sizeof(riff_writer));
-	if(rw != NULL){
-		rw->fp_printf = riff_printf;
-	}
-	return rw;
-}
-
-/*****************************************************************************/
-//description: see header file
 //Deallocate riff_reader and contained stack, file source (memory) is not closed or freed
 void riff_readerFree(riff_reader *rh){
 	if(rh == NULL)
@@ -407,6 +452,18 @@ void riff_readerFree(riff_reader *rh){
 		free(rh->ls);
 	//free struct
 	free(rh);
+}
+
+#ifdef RIFF_WRITE
+
+/*****************************************************************************/
+//description: see header file
+riff_writer *riff_writerAllocate(){
+	riff_writer *rw = calloc(1, sizeof(riff_writer));
+	if(rw != NULL){
+		rw->fp_printf = riff_printf;
+	}
+	return rw;
 }
 
 /*****************************************************************************/
@@ -421,6 +478,8 @@ void riff_writerFree(riff_writer *rw){
 	//free struct
 	free(rw);
 }
+
+#endif
 
 /*****************************************************************************/
 //description: see header file
@@ -627,7 +686,7 @@ int riff_readerSeekChunkStart(struct riff_reader *rh){
 int riff_readerRewind(struct riff_reader *rh){
 	//pop stack as much as possible
 	while(rh->ls_level > 0) {
-		stack_pop(rh);
+		reader_stack_pop(rh);
 	}
 	return riff_readerSeekLevelStart(rh);
 }
@@ -691,7 +750,7 @@ int riff_readerSeekLevelSub(riff_reader *rh){
 	
 	//add parent chunk data to stack
 	//push
-	stack_push(rh, type);
+	reader_stack_push(rh, type);
 	
 	return riff_readChunkHeader(rh);
 }
@@ -706,7 +765,7 @@ int riff_writerNewChunk(struct riff_writer *rw){
 	
 	rw->c_pos_start = rw->pos;
 	rw->pos += n;
-	rw->data_size += n;
+	rw->data_size = fmax(rw->data_size, rw->pos);
 
 	rw->c_size = 0;
 	rw->c_pos = 0;
@@ -733,7 +792,36 @@ int riff_writerFinishChunk(struct riff_writer *rw){
 	return RIFF_ERROR_NONE;
 }
 
-int riff_writerNewListChunk(struct riff_writer *rw);       //reserve space for new list chunk after the previous one, go to sub level
+int riff_writerNewListChunk(struct riff_writer *rw){
+	rw->c_pos_start = rw->pos;
+	// ID automatically set to LIST since it's the only one allowed
+	size_t n = rw->fp_write(rw, "LIST", 4);
+	rw->pos += n;
+	
+	//reserve 8 other bytes
+	n = rw->fp_write(rw, "\0\0\0\0\0\0\0\0", 8);
+	rw->pos += n;
+	rw->data_size = fmax(rw->data_size, rw->pos);
+	rw->c_pos = rw->c_pos - rw->c_pos_start - RIFF_CHUNK_DATA_OFFSET;
+		
+	//add parent chunk data to stack
+	//push
+	writer_stack_push(rw);
+
+	rw->data_size = RIFF_HEADER_SIZE;
+	
+	return riff_readChunkHeader(rw);
+}       //reserve space for new list chunk after the previous one, go to sub level
+
+//step back from sub list level; position changes to after this list chunk, just like riff_writerFinishChunk
+//returns != RIFF_ERROR_NONE, if we are at level 0 already and can't go back any further
+int riff_writerFinishListChunk(struct riff_writer *rw){
+	if(rw->ls_level <= 0)
+		return -1;  //not critical error, we don't have or need a macro for that
+	writer_stack_pop(rw);
+	return RIFF_ERROR_NONE;
+}
+
 
 int riff_writerSeekChunkStart(struct riff_writer *rw){	
 	//seek data offset 0 in current chunk
@@ -746,6 +834,8 @@ int riff_writerSeekChunkStart(struct riff_writer *rw){
 int riff_writerRewind(struct riff_writer *rw);              //seek back to very first chunk of file at level 0, the position just after opening via riff_open_...()
 int riff_writerSeekLevelStart(struct riff_writer *rw);      //goto start of first data byte of first chunk in current level (seek backward)
 int riff_writerSeekLevelSub(struct riff_writer *rw);        //goto sub level chunk (auto seek to start of parent chunk if not already there); "LIST" chunk typically contains a list of sub chunks
+
+
 #endif
 
 /*****************************************************************************/
@@ -753,7 +843,7 @@ int riff_writerSeekLevelSub(struct riff_writer *rw);        //goto sub level chu
 int riff_readerLevelParent(struct riff_reader *rh){
 	if(rh->ls_level <= 0)
 		return -1;  //not critical error, we don't have or need a macro for that
-	stack_pop(rh);
+	reader_stack_pop(rh);
 	return RIFF_ERROR_NONE;
 }
 
