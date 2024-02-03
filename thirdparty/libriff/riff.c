@@ -109,8 +109,12 @@ int riff_writer_open_file(riff_writer *rw, FILE *f) {
 	if (rw == NULL)
 		return RIFF_ERROR_INVALID_HANDLE;
 	rw->fh = f;
-	rw->data_size = 12;
+	rw->data_size = RIFF_HEADER_SIZE;
 	rw->pos_start = ftell(f); //current file offset of stream considered as start of RIFF file
+	
+	// we are not writing header right now
+	size_t n = rw->fp_seek(rw, RIFF_HEADER_SIZE);
+	rw->pos = n+rw->pos_start;
 	
 	rw->fp_write = &write_file;
 	rw->fp_seek = &seek_writer_file;
@@ -229,13 +233,12 @@ void writeBufUInt32LE(void *p, unsigned int value){
 
 /*****************************************************************************/
 //write 32 bit LE to file
-void writeUInt32LE(riff_writer *rh, unsigned int value) {
+void writeUInt32LE(riff_writer *rw, unsigned int value) {
 	char buf[4];
 	writeBufUInt32LE(buf, value);
-	rh->fp_write(rh, buf, 4);
-	rh->pos += 4;
-	rh->c_pos += 4;
-	rh->size += 4;
+	int n = rw->fp_write(rw, buf, 4);
+	rw->pos += n;
+	rw->c_pos += n;
 }
 
 
@@ -383,10 +386,10 @@ void writer_stack_pop(riff_writer *rw){
 	rw->ls_level--;
 	struct riff_levelStackE *ls = rw->ls + rw->ls_level;
 	
-	rw->c_pos_start = ls->c_pos_start;
+	rw->pos_start = ls->c_pos_start;
 	memcpy(rw->c_id, ls->c_id, 4);
 	memcpy(rw->h_type, ls->c_type, 4);
-	rw->data_size = ls->c_size;
+	rw->data_size = fmax(ls->c_size+rw->data_size, rw->pos-rw->pos_start);
 	rw->pad = rw->c_size & 0x1; //pad if chunk sizesize is odd
 	
 	rw->c_pos = rw->pos - rw->c_pos_start - RIFF_CHUNK_DATA_OFFSET;
@@ -417,7 +420,7 @@ void writer_stack_push(riff_writer *rw){
 	}
 	
 	struct riff_levelStackE *ls = rw->ls + rw->ls_level;
-	ls->c_pos_start = rw->c_pos_start;
+	ls->c_pos_start = rw->pos_start;
 	memcpy(ls->c_id, rw->c_id, 4);
 	ls->c_size = rw->data_size;	// data size is what's being incremented
 	//printf("list size %d\n", (rw->ls[rw->ls_level].size));
@@ -566,10 +569,10 @@ int riff_writeHeader(riff_writer *rw){
 
 
 	memcpy(buf, "RIFF", 4);
-	writeBufUInt32LE(buf + 4, rw->data_size-RIFF_HEADER_SIZE);
+	writeBufUInt32LE(buf + 4, rw->data_size-RIFF_CHUNK_DATA_OFFSET);
 	memcpy(buf + 8, rw->h_type, 4); 
 
-	rw->pos = 0;
+	rw->pos = rw->pos_start;
 	rw->fp_seek(rw, rw->pos);	
 	int n = rw->fp_write(rw, buf, RIFF_HEADER_SIZE);
 	rw->pos += n;
@@ -619,7 +622,7 @@ size_t riff_writeInChunk(riff_writer *rw, void *from, size_t size){
 	size_t n = rw->fp_write(rw, from, size);
 	rw->pos += n;
 	rw->c_pos += n;
-	rw->data_size = fmax(rw->data_size, rw->pos);
+	rw->data_size = fmax(rw->data_size, rw->pos-rw->pos_start);
 	rw->c_size = fmax(rw->c_size, rw->c_pos);
 	return n;
 }
@@ -759,13 +762,12 @@ int riff_readerSeekLevelSub(riff_reader *rh){
 #ifdef RIFF_WRITE
 int riff_writerNewChunk(struct riff_writer *rw){
 	// Assumes that it is in freespace, after a finished chunk
-	char buf[8];
-	
-	int n = rw->fp_write(rw, buf, 8);
-	
 	rw->c_pos_start = rw->pos;
+	
+	// Reserve bytes for header
+	int n = rw->fp_write(rw, "\0\0\0\0\0\0\0\0", 8);
 	rw->pos += n;
-	rw->data_size = fmax(rw->data_size, rw->pos);
+	rw->data_size = fmax(rw->data_size, rw->pos-rw->pos_start);
 
 	rw->c_size = 0;
 	rw->c_pos = 0;
@@ -774,26 +776,36 @@ int riff_writerNewChunk(struct riff_writer *rw){
 }
 
 int riff_writerFinishChunk(struct riff_writer *rw){
-	//write size, id, and seek to the first byte after this chunk
+	// Overall gist: 
+	// write size, id, and seek to the first byte after this chunk
+
+	// Write ID
 	rw->fp_seek(rw, rw->c_pos_start);
 	rw->pos = rw->c_pos_start;
 	size_t n = rw->fp_write(rw, rw->c_id, 4);
+	// Write size
 	rw->pos += n;
 	writeUInt32LE(rw, rw->c_size);
 
+	// Seek to start of chunk
 	rw->pos = rw->c_pos_start + RIFF_CHUNK_DATA_OFFSET + rw->c_size;
 	rw->fp_seek(rw, rw->c_pos_start + RIFF_CHUNK_DATA_OFFSET + rw->c_size);
+
+	// Adjust for possible pad byte
 	rw->pad = rw->c_size & 0x1; //pad byte present if size is odd
 	if (rw->pad) {
 		char tmp = 0;
 		rw->fp_write(rw, &tmp, 1);
 		rw->pos++;
+		rw->data_size = fmax(rw->data_size, rw->pos-rw->pos_start);
 	}
 	return RIFF_ERROR_NONE;
 }
 
 int riff_writerNewListChunk(struct riff_writer *rw){
-	rw->c_pos_start = rw->pos;
+	writer_stack_push(rw);
+
+	rw->pos_start = rw->pos;
 	// ID automatically set to LIST since it's the only one allowed
 	size_t n = rw->fp_write(rw, "LIST", 4);
 	rw->pos += n;
@@ -801,16 +813,14 @@ int riff_writerNewListChunk(struct riff_writer *rw){
 	//reserve 8 other bytes
 	n = rw->fp_write(rw, "\0\0\0\0\0\0\0\0", 8);
 	rw->pos += n;
-	rw->data_size = fmax(rw->data_size, rw->pos);
-	rw->c_pos = rw->c_pos - rw->c_pos_start - RIFF_CHUNK_DATA_OFFSET;
+	// rw->c_pos = rw->pos - rw->pos_start - RIFF_CHUNK_DATA_OFFSET;
 		
 	//add parent chunk data to stack
 	//push
-	writer_stack_push(rw);
 
 	rw->data_size = RIFF_HEADER_SIZE;
 	
-	return riff_readChunkHeader(rw);
+	return RIFF_ERROR_NONE;
 }       //reserve space for new list chunk after the previous one, go to sub level
 
 //step back from sub list level; position changes to after this list chunk, just like riff_writerFinishChunk
@@ -818,6 +828,28 @@ int riff_writerNewListChunk(struct riff_writer *rw){
 int riff_writerFinishListChunk(struct riff_writer *rw){
 	if(rw->ls_level <= 0)
 		return -1;  //not critical error, we don't have or need a macro for that
+
+	// Write chunk data
+	rw->fp_seek (rw, rw->pos_start+4);	// Go to beginning of data to change
+	rw->pos = rw->pos_start+4;
+
+	// Write length
+	writeUInt32LE(rw, rw->data_size-RIFF_HEADER_SIZE);
+	// pos automatically updated
+
+	// Write type
+	int n = rw->fp_write (rw, rw->h_type, 4);
+	rw->pos += n;
+
+	// Adjust for possible pad byte
+	rw->pad = rw->data_size & 0x1; //pad byte present if size is odd
+	if (rw->pad) {
+		char tmp = 0;
+		rw->fp_write(rw, &tmp, 1);
+		rw->pos++;
+	}
+
+	// Pop the parent level data off the stack (WHY IS THIS SEPARATE???)
 	writer_stack_pop(rw);
 	return RIFF_ERROR_NONE;
 }

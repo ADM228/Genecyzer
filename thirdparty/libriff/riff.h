@@ -144,14 +144,14 @@ typedef struct riff_writer {
 
 	char h_type[5];
 
-	size_t pos_start;  //start pos of RIFF file
+	size_t pos_start;  //start pos of RIFF file / current LIST chunk
 
 	size_t data_size;
 	size_t size;      //total size of RIFF file, 0 means unspecified
-	size_t pos;       //current position in stream
+	size_t pos;       //current position in stream, relative to very start
 
 	size_t c_pos_start; //start pos of current chunk (absolute pos)
-	size_t c_pos;       //position in current chunk (offset in data block)
+	size_t c_pos;       //position in current chunk (offset inside data block)
 	//int c_pos_data;    //position in chunk data (c_pos + 8)
 	char c_id[5];       //id of current chunk + terminator
 	size_t c_size;      //size of current chunk data in bytes (value stored in file), excluding chunk header

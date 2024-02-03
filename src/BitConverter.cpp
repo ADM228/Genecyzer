@@ -16,7 +16,7 @@
 // Write a uint64_t to ptr, exists for portability with big-endian systems
 template <typename T> inline void writeBytes (uint64_t input, T * ptr) { *(uint64_t *)ptr = input; }
 
-// Write a uint32_t to ptr, existautos for portability with big-endian systems
+// Write a uint32_t to ptr, exists for portability with big-endian systems
 template <typename T> inline void writeBytes (uint32_t input, T * ptr) { *(uint32_t *)ptr = input; }
 
 // Write a uint16_t to ptr, exists for portability with big-endian systems
