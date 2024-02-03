@@ -19,7 +19,7 @@
 
 //table to translate Error code to string
 //shall correspond to RIFF_ERROR_... macros
-static const char *riff_es[] = {
+static const char *riff_reader_es[] = {
 	//0
 	"No error",
 	//1
@@ -46,6 +46,41 @@ static const char *riff_es[] = {
 	"Unknown RIFF error"  
 };
 
+#ifdef RIFF_WRITE
+
+static const char *riff_writer_es[] = {
+	//0
+	"No error",
+	//1
+	"Not currently in chunk",
+	//2
+	"Not currently in chunk list",
+	//3
+	"",
+	
+	//4
+	"Illegal four character id",
+	//5
+	"",
+	//6
+	"",
+	//7
+	"File access failed",
+	//8
+	"Invalid riff_writer",
+	
+	
+	//9
+	//all other
+	"Unknown RIFF error"  
+};
+
+#define checkHandle() if (rw == NULL) return RIFF_ERROR_INVALID_HANDLE
+
+#define RIFFWriterStateNotInChunk 0x00
+#define RIFFWriterStateInChunk 0x01
+
+#endif
 
 
 
@@ -194,6 +229,8 @@ int riff_writer_open_mem(riff_writer *rw){
 	// we are not writing header right now
 	size_t n = rw->fp_seek(rw, RIFF_HEADER_SIZE);
 	rw->pos = n;
+
+	rw->state = RIFFWriterStateNotInChunk;
 	
 	return RIFF_ERROR_NONE;
 };
@@ -202,7 +239,7 @@ void * riff_writer_close_mem(riff_writer *rw){
 
 	if (rw == NULL){
 		if (rw->fp_printf)
-			rw->fp_printf(riff_es[8]);
+			rw->fp_printf(riff_reader_errorToString(RIFF_ERROR_INVALID_HANDLE));
 		return NULL;
 	}
 
@@ -308,7 +345,7 @@ int riff_readChunkHeader(riff_reader *rh){
 	
 	if(cposend > listend){
 		if(rh->fp_printf)
-			rh->fp_printf("Chunk size exceeds list size! At least one size value must be corrupt!");
+			rh->fp_printf("Chunk size exceeds list size! At least one size value must be corrupt!\n");
 		//chunk data must be considered as cut off, better skip this chunk
 		return RIFF_ERROR_ICSIZE;
 	}
@@ -316,7 +353,7 @@ int riff_readChunkHeader(riff_reader *rh){
 	//check chunk size against file size
 	if((rh->size > 0)  &&  (cposend > rh->size)){
 		if(rh->fp_printf)
-			rh->fp_printf("Chunk size exceeds file size! At least one size value must be corrupt!");
+			rh->fp_printf("Chunk size exceeds file size! At least one size value must be corrupt!\n");
 		return RIFF_ERROR_EOF; //Or better RIFF_ERROR_ICSIZE?
 	}
 	
@@ -619,6 +656,7 @@ int riff_readerSeekInChunk(riff_reader *rh, size_t c_pos){
 #ifdef RIFF_WRITE
 // write in current chunk
 size_t riff_writeInChunk(riff_writer *rw, void *from, size_t size){
+	if (rw->state == RIFFWriterStateNotInChunk) return RIFF_WRITER_ERROR_NOTCHUNK;
 	size_t n = rw->fp_write(rw, from, size);
 	rw->pos += n;
 	rw->c_pos += n;
@@ -628,6 +666,7 @@ size_t riff_writeInChunk(riff_writer *rw, void *from, size_t size){
 }
 //seek in current chunk, returns RIFF_ERROR_EOC if end of chunk is reached, pos 0 is first byte after chunk size (chunk offset 8)
 int riff_writerSeekInChunk(riff_writer *rw, size_t c_pos){
+	if (rw->state == RIFFWriterStateNotInChunk) return RIFF_WRITER_ERROR_NOTCHUNK;
 	//seeking behind last byte is valid, next read at that pos will fail
 	if(c_pos < 0  ||  c_pos > rw->c_size){
 		return RIFF_ERROR_EOC;
@@ -720,7 +759,7 @@ int riff_readerSeekLevelSub(riff_reader *rh){
 	//according to "https://en.wikipedia.org/wiki/Resource_Interchange_File_Format" only RIFF and LIST chunk IDs can contain subchunks
 	if(strcmp(rh->c_id, "LIST") != 0  && strcmp(rh->c_id, "RIFF") != 0 && strcmp(rh->c_id, "BW64") != 0){
 		if(rh->fp_printf)
-			rh->fp_printf("%s() failed for chunk ID \"%s\", only RIFF or LIST chunk can contain subchunks", __func__, rh->c_id);
+			rh->fp_printf("%s() failed for chunk ID \"%s\", only RIFF or LIST chunk can contain subchunks\n", __func__, rh->c_id);
 		return RIFF_ERROR_ILLID;
 	}
 	
@@ -761,6 +800,10 @@ int riff_readerSeekLevelSub(riff_reader *rh){
 
 #ifdef RIFF_WRITE
 int riff_writerNewChunk(struct riff_writer *rw){
+	if (rw->state == RIFFWriterStateInChunk) {
+		if (rw->fp_printf) rw->fp_printf("Currently in chunk, cannot start new chunk\n"); 
+		return -1;
+	}
 	// Assumes that it is in freespace, after a finished chunk
 	rw->c_pos_start = rw->pos;
 	
@@ -771,11 +814,14 @@ int riff_writerNewChunk(struct riff_writer *rw){
 
 	rw->c_size = 0;
 	rw->c_pos = 0;
+
+	rw->state = RIFFWriterStateInChunk;
 	
 	return RIFF_ERROR_NONE;
 }
 
 int riff_writerFinishChunk(struct riff_writer *rw){
+	if (rw->state == RIFFWriterStateNotInChunk) return RIFF_WRITER_ERROR_NOTCHUNK;
 	// Overall gist: 
 	// write size, id, and seek to the first byte after this chunk
 
@@ -799,10 +845,17 @@ int riff_writerFinishChunk(struct riff_writer *rw){
 		rw->pos++;
 		rw->data_size = fmax(rw->data_size, rw->pos-rw->pos_start);
 	}
+
+	rw->state = RIFFWriterStateNotInChunk;
+
 	return RIFF_ERROR_NONE;
 }
 
 int riff_writerNewListChunk(struct riff_writer *rw){
+	if (rw->state == RIFFWriterStateInChunk) {
+		if (rw->fp_printf) rw->fp_printf("Currently in chunk, cannot start chunk list\n"); 
+		return -1;
+	}
 	writer_stack_push(rw);
 
 	rw->pos_start = rw->pos;
@@ -826,8 +879,10 @@ int riff_writerNewListChunk(struct riff_writer *rw){
 //step back from sub list level; position changes to after this list chunk, just like riff_writerFinishChunk
 //returns != RIFF_ERROR_NONE, if we are at level 0 already and can't go back any further
 int riff_writerFinishListChunk(struct riff_writer *rw){
-	if(rw->ls_level <= 0)
+	if(rw->ls_level <= 0){
+		if (rw->fp_printf) rw->fp_printf("Currently at the top level, no list chunks to finish; did you mean to close the file?\n"); 
 		return -1;  //not critical error, we don't have or need a macro for that
+	}
 
 	// Write chunk data
 	rw->fp_seek (rw, rw->pos_start+4);	// Go to beginning of data to change
@@ -903,9 +958,19 @@ int riff_readerLevelValidate(struct riff_reader *rh){
 
 /*****************************************************************************/
 //description: see header file
-const char *riff_errorToString(int e){
+const char *riff_reader_errorToString(int e){
 	//map error to error string
 	//Make sure mapping is correct!
-	return riff_es[e > RIFF_ERROR_UNKNOWN ? RIFF_ERROR_UNKNOWN : e];
+	return riff_reader_es[e > RIFF_ERROR_UNKNOWN ? RIFF_ERROR_UNKNOWN : e];
 }
 
+#ifdef RIFF_WRITE
+
+//description: see header file
+const char *riff_writer_errorToString(int e){
+	//map error to error string
+	//Make sure mapping is correct!
+	return riff_writer_es[e > RIFF_ERROR_UNKNOWN ? RIFF_ERROR_UNKNOWN : e];
+}
+
+#endif

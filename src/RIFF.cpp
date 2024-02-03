@@ -318,7 +318,7 @@ void RIFFReader::close () {
 }
 
 std::string RIFFReader::errorToString (int errorCode) {
-    std::string errorString(riff_errorToString(errorCode));
+    std::string errorString(riff_reader_errorToString(errorCode));
     char buffer[2+2+(2*sizeof(size_t))+1];
     std::snprintf(buffer, 19, "[0x%zX]", rh->pos);
     std::string outstring (buffer);

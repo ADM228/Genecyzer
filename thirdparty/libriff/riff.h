@@ -58,6 +58,9 @@ May not work for RIFF files larger than 2GB.
 #define RIFF_ERROR_EOCL   2  //end of chunk list, if you are already at the last chunk in the current list level, occures when trying to seek the next chunk
 #define RIFF_ERROR_EXDAT  3  //excess bytes at end of chunk list level, not critical, the rest is simply ignored (1-7 bytes inside list, otherwise a following chunk is expected - more at file level possible), should never occur
 
+#define RIFF_WRITER_ERROR_NOTCHUNK	1	// Not currently writin in a chunk, cannot finish
+#define RIFF_WRITER_ERROR_NOTLIST	2	// Not currently writin in a chunk list, cannot finish
+
 //critical errors
 #define RIFF_ERROR_CRITICAL  4  //first critical error code ( >= RIFF_ERROR_CRITICAL is always critical error)
 
@@ -141,6 +144,8 @@ typedef struct riff_reader {
 } riff_reader;
 
 typedef struct riff_writer {
+
+	char state;			// For internal use
 
 	char h_type[5];
 
@@ -246,9 +251,10 @@ int riff_readerLevelValidate(struct riff_reader *rr);
 
 //return string to error code
 //the current position (h->pos) tells you where in the file the problem occured
-const char *riff_errorToString(int e);
+const char *riff_reader_errorToString(int e);
 
-
+//return string to error code (for writer)
+const char *riff_writer_errorToString(int e);
 
 
 //TODO:
