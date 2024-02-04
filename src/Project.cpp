@@ -284,7 +284,7 @@ int Project::Load(std::ifstream & __file) {
 int Project::loadInternal(RIFF::RIFFReader & file) {
     int errCode;
     // 1. Test file type
-        if (memcmp(file.rh->h_type, fileType, 4)){
+        if (memcmp(file.rr->h_type, fileType, 4)){
             fprintf(stderr, "The file type is not a Genecyzer file. Aborting loading\n");
             return -1;
         } 
@@ -304,18 +304,18 @@ int Project::loadInternal(RIFF::RIFFReader & file) {
 
     // And now, read the rest of the file
     while (!errCode) {
-        if (!memcmp(file.rh->c_id, listId, 4)){
+        if (!memcmp(file.rr->c_id, listId, 4)){
             // LIST type, has several subtypes
             errCode = file.seekLevelSub();
 
-            auto * type = file.rh->ls[file.rh->ls_level-1].c_type;
+            auto * type = file.rr->ls[file.rr->ls_level-1].c_type;
 
             if (!memcmp(type, infoListType, 4)){
                 // INFO subchunk
                 while (!errCode) {
                     chunkData = file.readChunkData();
 
-                    auto id = file.rh->c_id;
+                    auto id = file.rr->c_id;
 
                     if (!memcmp (id, commentsId, 4)){
                         // Comment subsubchunk, gotta convert 'em 
@@ -358,47 +358,46 @@ int Project::loadInternal(RIFF::RIFFReader & file) {
 }
 
 uint8_t * Project::Save(size_t * size_out) {
-    auto writer = riff_writerAllocate();
+    RIFF::RIFFWriter writer;
 
-    riff_writer_open_mem(writer);
+    writer.openMem();
 
-    riff_writerNewChunk(writer);
-    memcpy (writer->c_id, versionId, 5);
-    riff_writeInChunk(writer, (void *)thisBranch, 8);
+    writer.newChunk();
+    writer.writeInChunk((void *)thisBranch, 8);
     char buf[4];
     writeBytes(thisBranchVer, buf);
-    riff_writeInChunk(writer, buf, 4);
-    riff_writerFinishChunk(writer);    
+    writer.writeInChunk(buf, 4);
+    writer.finishChunk((char *)versionId);    
 
-    riff_writerNewListChunk(writer);
-    memcpy(writer->h_type, infoListType, 5);
+    writer.newListChunk((char *)infoListType);
 
-        riff_writerNewChunk(writer);
-        memcpy(writer->c_id, softwareId, 5);
-        riff_writeInChunk(writer, (void*)software, sizeof(software));
-        riff_writerFinishChunk(writer);
-        
-        riff_writerNewChunk(writer);
-        memcpy(writer->c_id, artistId, 5);
-        riff_writeInChunk(writer, (void*)"alexmush", 9);
-        riff_writerFinishChunk(writer);
+        writer.writeNewChunk((void*)software, sizeof(software), (char *)softwareId);
+        writer.writeNewChunk((void*)"alexmush", 9, (char *)artistId);
 
-    riff_writerFinishListChunk(writer);
+    writer.finishListChunk();
 
-    riff_writerNewListChunk(writer);
-    memcpy(writer->h_type, songListType, 5);
+    writer.newListChunk((char *)songListType);
 
-        riff_writerNewChunk(writer);
-        memcpy(writer->c_id, effectColumnId, 5);
-        riff_writeInChunk(writer, (void *)&effectColumnAmount, 8);
-        riff_writerFinishChunk(writer);
+        writer.writeNewChunk(&effectColumnAmount, 8, (char *)effectColumnId);
 
-    riff_writerFinishListChunk(writer);
+    writer.finishListChunk();
 
-    memcpy(writer->h_type, fileType, 5);
-    uint8_t * outMem = (uint8_t *)riff_writer_close_mem(writer);
-    *size_out = writer->size;
-    riff_writerFree(writer);
+    writer.rewind();
+    char buf2[8];
+    writer.rw->fp_read((riff_reader *)writer.rw, buf2, 8);
+    printByteArray(buf2, 8);
+    writer.seekNextChunk();
+    writer.rw->fp_read((riff_reader *)writer.rw, buf2, 8);
+    printByteArray(buf2, 8);
+    writer.seekNextChunk();
+    writer.rw->fp_read((riff_reader *)writer.rw, buf2, 8);
+    printByteArray(buf2, 8);
+    writer.seekNextChunk();
+
+    writer.setFileType((char *)fileType);
+    writer.close();
+    *size_out = writer.rw->size;
+    uint8_t * outMem = (uint8_t *)writer.file;
     return outMem;
 }
 

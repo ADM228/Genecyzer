@@ -58,7 +58,7 @@ sf::Vector2<T> perpendiculate(sf::Vector2<T>& vector) {
     return sf::Vector2<T>(vector.y, -vector.x);
 }
 
-void printByteArray(void * ptr, size_t size, size_t divide = 0) {
+void printByteArray(void * ptr, size_t size, size_t divide = 16) {
     if (divide == 0) divide = size;
     size_t repeats = (size_t)std::ceil((long double)size/(long double)divide);
     size_t idx = 0;
@@ -77,8 +77,8 @@ void printByteArray(void * ptr, size_t size, size_t divide = 0) {
                 { printf("�"); idx++; }
         }
         printf("\n");
-        fflush(stdout);
     }
+    fflush(stdout);
 }
 
 #endif  // __STRCONVERT_INCLUDED__

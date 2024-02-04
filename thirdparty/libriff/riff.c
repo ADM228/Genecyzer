@@ -122,12 +122,6 @@ size_t seek_file(riff_reader *rr, size_t pos){
 
 #ifdef RIFF_WRITE
 /*****************************************************************************/
-size_t seek_writer_file(riff_writer *rw, size_t pos){
-	fseek((FILE*)(rw->fh), pos, SEEK_SET);
-	return pos;
-}
-
-/*****************************************************************************/
 size_t write_file(riff_writer *rw, void * ptr, size_t size){
 	return fwrite(ptr, sizeof(char), size, (FILE*)rw->fh);
 }
@@ -160,7 +154,10 @@ int riff_writer_open_file(riff_writer *rw, FILE *f) {
 	rw->pos = rw->fp_seek(rw, RIFF_HEADER_SIZE+rw->pos_start);
 	
 	rw->fp_write = &write_file;
-	rw->fp_seek = &seek_writer_file;
+	// This conversion works due to the needed variables being stored
+	// At the same offsets in both the reader and writer
+	rw->fp_seek = (size_t (*) (struct riff_writer *, size_t))&seek_file;
+	rw->fp_read = &read_file;
 	
 	return RIFF_ERROR_NONE;
 
@@ -170,7 +167,11 @@ void riff_writer_close_file(riff_writer *rw) {
 	if (rw == NULL)
 		return;
 
-	int errCode = riff_writeHeader(rw); if (errCode) return;
+	int errCode = riff_writeHeader(rw); 
+	if (errCode) {
+		if (rw->fp_printf)
+			rw->fp_printf(riff_writer_errorToString(errCode));
+	}
 
 	return;
 }
@@ -233,6 +234,7 @@ int riff_writer_open_mem(riff_writer *rw){
 	
 	rw->fp_write = &write_mem;
 	rw->fp_seek = (size_t (*) (struct riff_writer *, size_t))&seek_mem;
+	rw->fp_read = &read_mem;
 
 	// we are not writing header right now, skip past it
 	rw->pos = rw->fp_seek(rw, RIFF_HEADER_SIZE);
@@ -610,7 +612,6 @@ int riff_writeHeader(riff_writer *rw){
 		if (rw->fp_printf) rw->fp_printf("Currently in chunk, please finish chunk before closing the file\n"); 
 		return -1;
 	}
-
 	if (rw->ls_level > 0) {
 		if (rw->fp_printf) rw->fp_printf("Currently in chunk list, please finish chunk list before closing the file\n"); 
 		return -1;
@@ -944,6 +945,41 @@ int riff_writerFinishListChunk(struct riff_writer *rw){
 	return RIFF_ERROR_NONE;
 }
 
+int riff_writerSeekNextChunk(struct riff_writer *rw){
+	if (rw->state == RIFFWriterStateInChunk) {
+		if (rw->fp_printf) rw->fp_printf("Currently in chunk, cannot seek past it\n"); 
+		return -1;
+	}
+
+	if (rw->fp_read == NULL) {
+		if(rw->fp_printf)
+			rw->fp_printf("I/O function pointer not set\n"); //fatal user error
+		return RIFF_ERROR_INVALID_HANDLE;
+	}
+
+	rw->pos = rw->c_pos_start+4;
+	seekToPosW(rw);
+
+	int chunkSize = readUInt32LE((riff_reader *)rw);
+
+	size_t posnew = rw->c_pos_start + RIFF_CHUNK_DATA_OFFSET + chunkSize + (chunkSize&1); //expected pos of following chunk
+	
+	size_t listend = rw->pos_start + rw->data_size;
+	
+	//printf("listend %d  posnew %d\n", listend, posnew);  //debug
+	
+	//if no more chunks in the current sub list level
+	if(listend < posnew + RIFF_CHUNK_DATA_OFFSET){
+		return RIFF_ERROR_EOCL;
+	}
+	
+	rw->pos = posnew;
+	rw->c_pos_start = posnew;
+	rw->c_pos = 0; 
+	seekToPosW(rw);
+	
+	return RIFF_ERROR_NONE;
+}
 
 int riff_writerSeekChunkStart(struct riff_writer *rw){	
 	//seek data offset 0 in current chunk
@@ -953,8 +989,35 @@ int riff_writerSeekChunkStart(struct riff_writer *rw){
 	return RIFF_ERROR_NONE;
 }
 
-int riff_writerRewind(struct riff_writer *rw);              //seek back to very first chunk of file at level 0, the position just after opening via riff_open_...()
-int riff_writerSeekLevelStart(struct riff_writer *rw);      //goto start of first data byte of first chunk in current level (seek backward)
+int riff_writerSeekLevelStart(struct riff_writer *rw){
+	if (rw->state == RIFFWriterStateInChunk) {
+		if (rw->fp_printf) rw->fp_printf("Currently in chunk, please finish chunk before seeking back to start of the level\n"); 
+		return -1;
+	}
+	rw->pos = rw->pos_start + RIFF_HEADER_SIZE; //pos after type ID of chunk list
+	rw->c_pos_start = rw->pos;
+	rw->c_pos = 0;
+	seekToPosW(rw);
+	
+	//check possible?
+	return RIFF_ERROR_NONE;
+}
+
+int riff_writerRewind(struct riff_writer *rw){
+	//seek back to very first chunk of file at level 0, the position just after opening via riff_open_...()
+
+	// Only do it if not currently writing chunk
+	if (rw->state == RIFFWriterStateInChunk) {
+		if (rw->fp_printf) rw->fp_printf("Currently in chunk, please finish chunk before rewinding\n"); 
+		return -1;
+	}
+	if (rw->ls_level > 0) {
+		if (rw->fp_printf) rw->fp_printf("Currently in chunk list, please finish chunk list before rewinding\n"); 
+		return -1;
+	}
+
+	return riff_writerSeekLevelStart(rw);
+}              
 
 
 #endif

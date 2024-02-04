@@ -103,30 +103,6 @@ struct riff_levelStackE {
 //- Members are public and intended for read access (to avoid a plethora of get-functions)
 //  Be careful with the stack, check "ls_size" first
 typedef struct riff_reader {
-	//RIFF file header info, available once the file is opened (could have been put)
-	char h_id[5];      //"RIFF" + terminator
-	size_t h_size;     //size value given in header (h_size + 8 == file_size)
-	char h_type[5];    //type of file FOURCC + terminator
-	size_t pos_start;  //start pos of RIFF file
-
-	size_t size;      //total size of RIFF file, 0 means unspecified
-	size_t pos;       //current position in stream
-	
-	size_t c_pos_start; //start pos of current chunk (absolute pos)
-	size_t c_pos;       //position in current chunk (offset in data block)
-	//int c_pos_data;    //position in chunk data (c_pos + 8)
-	char c_id[5];       //id of current chunk + terminator
-	size_t c_size;      //size of current chunk data in bytes (value stored in file), excluding chunk header
-	char pad;           //1 if c_size is odd, else 0 (indicates unused extra byte at end of chunk)
-
-	struct riff_levelStackE *ls;   //level stack, resizes dynamically, to access the parent chunk data: h->ls[h->ls_level-1]
-	size_t ls_size;     //size of stack in num. elements, stack extends automatically if needed
-	int ls_level;       //current level, starts at 0
-	
-	void *fh;  //file handle or memory address, only accessed by user FP functions
-	
-	
-	
 	// ******** For internal use:
 	
 	
@@ -140,41 +116,48 @@ typedef struct riff_reader {
 	//allocate function maps it to vfprintf(stderr, ...) by default; set to NULL after allocation to disable any printing
 	//to be assigned before calling riff_open_...()
 	int (*fp_printf)(const char * format, ... );
-	
-} riff_reader;
 
-typedef struct riff_writer {
+	// ******** For user use:
 
-	char state;			// For internal use
+	void *fh;  //file handle or memory address, only accessed by user FP functions
 
-	char h_type[5];
+	struct riff_levelStackE *ls;   //level stack, resizes dynamically, to access the parent chunk data: h->ls[h->ls_level-1]
+	size_t ls_size;     //size of stack in num. elements, stack extends automatically if needed
+	int ls_level;       //current level, starts at 0
 
-	size_t pos_start;  //start pos of RIFF file / current LIST chunk
-
-	size_t data_size;
-	size_t size;      //total size of RIFF file, 0 means unspecified
-	size_t pos;       //current position in stream, relative to very start
 
 	size_t c_pos_start; //start pos of current chunk (absolute pos)
-	size_t c_pos;       //position in current chunk (offset inside data block)
+	size_t c_pos;       //position in current chunk (offset in data block)
 	//int c_pos_data;    //position in chunk data (c_pos + 8)
 	char c_id[5];       //id of current chunk + terminator
 	size_t c_size;      //size of current chunk data in bytes (value stored in file), excluding chunk header
 	char pad;           //1 if c_size is odd, else 0 (indicates unused extra byte at end of chunk)
 
-	struct riff_levelStackE *ls;   //level stack, resizes dynamically, to access the parent chunk data: h->ls[h->ls_level-1]
-	size_t ls_size;     //size of stack in num. elements, stack extends automatically if needed
-	int ls_level;       //current level, starts at 0
+	size_t size;      //total size of RIFF file, 0 means unspecified
+	size_t pos;       //current position in stream
+
+	//RIFF file header info, available once the file is opened (could have been put)
+	size_t pos_start;  //start pos of RIFF file
+	char h_type[5];    //type of file FOURCC + terminator
+	// * Up to this point the contents of riff_reader and riff_writer match
+
+	size_t h_size;     //size value given in header (h_size + 8 == file_size)
+	char h_id[5];      //"RIFF" + terminator
+
 	
-	void *fh;  //file handle or memory address, only accessed by user FP functions
+
 	
 	
 	
+	
+	
+} riff_reader;
+
+typedef struct riff_writer {
 	// ******** For internal use:
-	
-	
-	//read bytes; required
-	size_t (*fp_write)(struct riff_writer *rw, void *ptr, size_t size);
+		
+	//read bytes; required to seek to next chunk
+	size_t (*fp_read)(struct riff_reader *rr, void *ptr, size_t size);
 	
 	//seek position relative to start pos; required
 	size_t (*fp_seek)(struct riff_writer *rw, size_t pos);
@@ -183,6 +166,37 @@ typedef struct riff_writer {
 	//allocate function maps it to vfprintf(stderr, ...) by default; set to NULL after allocation to disable any printing
 	//to be assigned before calling riff_open_...()
 	int (*fp_printf)(const char * format, ... );
+
+	// ******** For user use:
+
+	void *fh;  //file handle or memory address, only accessed by user FP functions
+
+	struct riff_levelStackE *ls;   //level stack, resizes dynamically, to access the parent chunk data: h->ls[h->ls_level-1]
+	size_t ls_size;     //size of stack in num. elements, stack extends automatically if needed
+	int ls_level;       //current level, starts at 0
+
+	size_t c_pos_start; //start pos of current chunk (absolute pos)
+	size_t c_pos;       //position in current chunk (offset inside data block)
+	//int c_pos_data;    //position in chunk data (c_pos + 8)
+	char c_id[5];       //id of current chunk + terminator
+	size_t c_size;      //size of current chunk data in bytes (value stored in file), excluding chunk header
+	char pad;           //1 if c_size is odd, else 0 (indicates unused extra byte at end of chunk)
+
+	size_t size;      //total size of RIFF file, 0 means unspecified
+	size_t pos;       //current position in stream, relative to very start
+
+	size_t pos_start;  //start pos of RIFF file / current LIST chunk
+	char h_type[5];
+	// * Up to this point the contents of riff_reader and riff_writer match
+
+	size_t data_size;
+
+	char state;			// For internal use
+
+	// ******** For internal use
+	//write bytes; required
+	size_t (*fp_write)(struct riff_writer *rw, void *ptr, size_t size);
+	
 
 } riff_writer;
 
@@ -223,23 +237,20 @@ int riff_readerSeekLevelSub(struct riff_reader *rr);        //goto sub level chu
 int riff_writerNewChunk(struct riff_writer *rw);       //reserve space for new chunk after the previous one
 int riff_writerFinishChunk(struct riff_writer *rw);       //write size, id, and seek to the first byte after this chunk
 int riff_writerNewListChunk(struct riff_writer *rw);       //reserve space for new list chunk after the previous one, go to sub level
+//step back from sub list level; position changes to after this list chunk, just like riff_writerFinishChunk
+//returns != RIFF_ERROR_NONE, if we are at level 0 already and can't go back any further
+int riff_writerFinishListChunk(struct riff_writer *rw);
 
 
+int riff_writerSeekNextChunk(struct riff_writer *rw);       //seek to after this chunk, return
 int riff_writerSeekChunkStart(struct riff_writer *rw);      //seek back to data start of current chunk
 int riff_writerRewind(struct riff_writer *rw);              //seek back to very first chunk of file at level 0, the position just after opening via riff_open_...()
 int riff_writerSeekLevelStart(struct riff_writer *rw);      //goto start of first data byte of first chunk in current level (seek backward)
-int riff_writerSeekLevelSub(struct riff_writer *rw);        //goto sub level chunk (auto seek to start of parent chunk if not already there); "LIST" chunk typically contains a list of sub chunks
 #endif
 
 //step back from sub list level; position doesn't change and you are still inside the data section of the parent list chunk (not at the beginning of it!)
 //returns != RIFF_ERROR_NONE, if we are at level 0 already and can't go back any further
 int riff_readerLevelParent(struct riff_reader *rr);
-
-#ifdef RIFF_WRITE
-//step back from sub list level; position changes to after this list chunk, just like riff_writerFinishChunk
-//returns != RIFF_ERROR_NONE, if we are at level 0 already and can't go back any further
-int riff_writerFinishListChunk(struct riff_writer *rw);
-#endif
 
 //int riff_seekLevelParent(struct riff_reader *rr);     //go back from sub level to the start of parent chunk (seek backward)
 //int riff_seekLevelParentNext(struct riff_reader *rr); //go back from sub level to the start of the chunk following the parent chunk (seek forward)
