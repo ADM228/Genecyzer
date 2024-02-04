@@ -246,12 +246,16 @@ void * riff_writer_close_mem(riff_writer *rw){
 
 	if (rw == NULL){
 		if (rw->fp_printf)
-			rw->fp_printf(riff_reader_errorToString(RIFF_ERROR_INVALID_HANDLE));
+			rw->fp_printf(riff_writer_errorToString(RIFF_ERROR_INVALID_HANDLE));
 		return NULL;
 	}
 
 	int errCode = riff_writeHeader(rw);
-	if (errCode) return NULL;
+	if (errCode) {
+		if (rw->fp_printf)
+			rw->fp_printf(riff_writer_errorToString(errCode));
+		return NULL;
+	}
 
 	if (rw->size > rw->data_size){
 		rw->size = rw->data_size;
@@ -602,8 +606,15 @@ int riff_readHeader(riff_reader *rr){
 //description: see header file
 //shall be called only once by the close function
 int riff_writeHeader(riff_writer *rw){
-	char buf[RIFF_HEADER_SIZE];
+	if (rw->state == RIFFWriterStateInChunk) {
+		if (rw->fp_printf) rw->fp_printf("Currently in chunk, please finish chunk before closing the file\n"); 
+		return -1;
+	}
 
+	if (rw->ls_level > 0) {
+		if (rw->fp_printf) rw->fp_printf("Currently in chunk list, please finish chunk list before closing the file\n"); 
+		return -1;
+	}
 
 	if(rw->fp_write == NULL) {
 		if(rw->fp_printf)
@@ -611,6 +622,7 @@ int riff_writeHeader(riff_writer *rw){
 		return RIFF_ERROR_INVALID_HANDLE;
 	}
 
+	char buf[RIFF_HEADER_SIZE];
 
 	memcpy(buf, "RIFF", 4);
 	writeBufUInt32LE(buf + 4, rw->data_size-RIFF_CHUNK_DATA_OFFSET);
@@ -943,7 +955,6 @@ int riff_writerSeekChunkStart(struct riff_writer *rw){
 
 int riff_writerRewind(struct riff_writer *rw);              //seek back to very first chunk of file at level 0, the position just after opening via riff_open_...()
 int riff_writerSeekLevelStart(struct riff_writer *rw);      //goto start of first data byte of first chunk in current level (seek backward)
-int riff_writerSeekLevelSub(struct riff_writer *rw);        //goto sub level chunk (auto seek to start of parent chunk if not already there); "LIST" chunk typically contains a list of sub chunks
 
 
 #endif
