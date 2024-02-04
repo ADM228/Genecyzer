@@ -362,6 +362,7 @@ uint8_t * Project::Save(size_t * size_out) {
 
     writer.openMem();
 
+    // Write the version chunk
     writer.newChunk();
     writer.writeInChunk((void *)thisBranch, 8);
     char buf[4];
@@ -369,11 +370,24 @@ uint8_t * Project::Save(size_t * size_out) {
     writer.writeInChunk(buf, 4);
     writer.finishChunk((char *)versionId);    
 
+    // Write the INFO LIST chunk
     writer.newListChunk((char *)infoListType);
-
         writer.writeNewChunk((void*)software, sizeof(software), (char *)softwareId);
-        writer.writeNewChunk((void*)"alexmush", 9, (char *)artistId);
-
+        if (composer.length())
+            writer.writeNewChunk((void *)composer.c_str(), composer.length(), (char *)artistId);
+        if (comments.length()) {
+            char * chunkData = new char[comments.length()];
+            std::strncpy(chunkData, comments.c_str(), comments.length());
+            for (size_t i = 0; i < comments.length(); i++) {
+                if (chunkData[i] == 0x0A) chunkData[i] = 0x1E; // LineFeed -> Record Separator
+            }
+            writer.writeNewChunk(chunkData, comments.length(), (char *)commentsId);
+            delete[] chunkData;
+        }
+        if (copyright.length())
+            writer.writeNewChunk((void *)copyright.c_str(), copyright.length(), (char *)copyrightId);
+        if (name.length())
+            writer.writeNewChunk((void *)name.c_str(), name.length(), (char *)nameId);
     writer.finishListChunk();
 
     writer.newListChunk((char *)songListType);
@@ -381,18 +395,6 @@ uint8_t * Project::Save(size_t * size_out) {
         writer.writeNewChunk(&effectColumnAmount, 8, (char *)effectColumnId);
 
     writer.finishListChunk();
-
-    writer.rewind();
-    char buf2[8];
-    writer.rw->fp_read((riff_reader *)writer.rw, buf2, 8);
-    printByteArray(buf2, 8);
-    writer.seekNextChunk();
-    writer.rw->fp_read((riff_reader *)writer.rw, buf2, 8);
-    printByteArray(buf2, 8);
-    writer.seekNextChunk();
-    writer.rw->fp_read((riff_reader *)writer.rw, buf2, 8);
-    printByteArray(buf2, 8);
-    writer.seekNextChunk();
 
     writer.setFileType((char *)fileType);
     writer.close();

@@ -304,7 +304,7 @@ class RIFFWriter {
          * 
          * @param id The list type
          */
-        inline void setListType(char * type) {memcpy (rw->c_id, type, 4);};
+        inline void setListType(char * type) {memcpy (rw->h_type, type, 4);};
         inline void setFileType(char * type) {setListType(type);};
 
         /**
