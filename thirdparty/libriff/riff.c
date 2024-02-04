@@ -1,5 +1,5 @@
-// take care: whenever we call rh->fp_read() or rh->fp_seek()
-//   we must adjust rh->c_pos and rh->pos
+// take care: whenever we call rr->fp_read() or rr->fp_seek()
+//   we must adjust rr->c_pos and rr->pos
 //   => to simplify user wrappers we update the positions outside
 
 
@@ -96,18 +96,27 @@ int riff_printf(const char *format, ... ){
 	return r;
 }
 
+/*****************************************************************************/
+//seek to pos
+int seekToPosR(riff_reader * rr) {
+	return rr->fp_seek(rr, rr->pos);
+}
+
+int seekToPosW(riff_writer * rw) {
+	return rw->fp_seek(rw, rw->pos);
+}
 
 //** FILE **
 
 
 /*****************************************************************************/
-size_t read_file(riff_reader *rh, void *ptr, size_t size){
-	return fread(ptr, 1, size, (FILE*)(rh->fh));
+size_t read_file(riff_reader *rr, void *ptr, size_t size){
+	return fread(ptr, 1, size, (FILE*)(rr->fh));
 }
 
 /*****************************************************************************/
-size_t seek_file(riff_reader *rh, size_t pos){
-	fseek((FILE*)(rh->fh), pos, SEEK_SET);
+size_t seek_file(riff_reader *rr, size_t pos){
+	fseek((FILE*)(rr->fh), pos, SEEK_SET);
 	return pos;
 }
 
@@ -126,17 +135,17 @@ size_t write_file(riff_writer *rw, void * ptr, size_t size){
 
 /*****************************************************************************/
 //description: see header file
-int riff_reader_open_file(riff_reader *rh, FILE *f, size_t size){
-	if(rh == NULL)
+int riff_reader_open_file(riff_reader *rr, FILE *f, size_t size){
+	if(rr == NULL)
 		return RIFF_ERROR_INVALID_HANDLE;
-	rh->fh = f;
-	rh->size = size;
-	rh->pos_start = ftell(f); //current file offset of stream considered as start of RIFF file
+	rr->fh = f;
+	rr->size = size;
+	rr->pos_start = ftell(f); //current file offset of stream considered as start of RIFF file
 	
-	rh->fp_read = &read_file;
-	rh->fp_seek = &seek_file;
+	rr->fp_read = &read_file;
+	rr->fp_seek = &seek_file;
 	
-	return riff_readHeader(rh);
+	return riff_readHeader(rr);
 }
 
 #ifdef RIFF_WRITE
@@ -148,8 +157,7 @@ int riff_writer_open_file(riff_writer *rw, FILE *f) {
 	rw->pos_start = ftell(f); //current file offset of stream considered as start of RIFF file
 	
 	// we are not writing header right now
-	size_t n = rw->fp_seek(rw, RIFF_HEADER_SIZE);
-	rw->pos = n+rw->pos_start;
+	rw->pos = rw->fp_seek(rw, RIFF_HEADER_SIZE+rw->pos_start);
 	
 	rw->fp_write = &write_file;
 	rw->fp_seek = &seek_writer_file;
@@ -174,13 +182,13 @@ void riff_writer_close_file(riff_writer *rw) {
 
 
 /*****************************************************************************/
-size_t read_mem(riff_reader *rh, void *ptr, size_t size){
-	memcpy(ptr, ((unsigned char*)rh->fh+rh->pos), size);
+size_t read_mem(riff_reader *rr, void *ptr, size_t size){
+	memcpy(ptr, ((unsigned char*)rr->fh+rr->pos), size);
 	return size;
 }
 
 /*****************************************************************************/
-size_t seek_mem(riff_reader *rh, size_t pos){
+size_t seek_mem(riff_reader *rr, size_t pos){
 	return pos; //instant in memory
 }
 
@@ -200,18 +208,18 @@ size_t write_mem(riff_writer *rw, void * ptr, size_t size){
 
 /*****************************************************************************/
 //description: see header file
-int riff_reader_open_mem(riff_reader *rh, void *ptr, size_t size){
-	if(rh == NULL)
+int riff_reader_open_mem(riff_reader *rr, void *ptr, size_t size){
+	if(rr == NULL)
 		return RIFF_ERROR_INVALID_HANDLE;
 	
-	rh->fh = ptr;
-	rh->size = size;
-	//rh->pos_start = 0 //redundant -> passed memory pointer is always expected to point to start of riff file
+	rr->fh = ptr;
+	rr->size = size;
+	//rr->pos_start = 0 //redundant -> passed memory pointer is always expected to point to start of riff file
 	
-	rh->fp_read = &read_mem;
-	rh->fp_seek = &seek_mem;
+	rr->fp_read = &read_mem;
+	rr->fp_seek = &seek_mem;
 	
-	return riff_readHeader(rh);
+	return riff_readHeader(rr);
 }
 
 #ifdef RIFF_WRITE
@@ -226,9 +234,8 @@ int riff_writer_open_mem(riff_writer *rw){
 	rw->fp_write = &write_mem;
 	rw->fp_seek = (size_t (*) (struct riff_writer *, size_t))&seek_mem;
 
-	// we are not writing header right now
-	size_t n = rw->fp_seek(rw, RIFF_HEADER_SIZE);
-	rw->pos = n;
+	// we are not writing header right now, skip past it
+	rw->pos = rw->fp_seek(rw, RIFF_HEADER_SIZE);
 
 	rw->state = RIFFWriterStateNotInChunk;
 	
@@ -289,11 +296,11 @@ unsigned int convUInt32LE(void *p){
 
 /*****************************************************************************/
 //read 32 bit LE from file via FP and return as native
-unsigned int readUInt32LE(riff_reader *rh){
+unsigned int readUInt32LE(riff_reader *rr){
 	char buf[4] = {0};
-	rh->fp_read(rh, buf, 4);
-	rh->pos += 4;
-	rh->c_pos += 4;
+	rr->fp_read(rr, buf, 4);
+	rr->pos += 4;
+	rr->c_pos += 4;
 	return convUInt32LE(buf);
 }
 
@@ -301,59 +308,59 @@ unsigned int readUInt32LE(riff_reader *rh){
 /*****************************************************************************/
 //read chunk header
 //return error code
-int riff_readChunkHeader(riff_reader *rh){
+int riff_readChunkHeader(riff_reader *rr){
 	char buf[8];
 	
-	int n = rh->fp_read(rh, buf, 8);
+	int n = rr->fp_read(rr, buf, 8);
 	
 	if(n != 8){
-		if(rh->fp_printf)
-			rh->fp_printf("Failed to read header, %d of %d bytes read!\n", n, 8);
+		if(rr->fp_printf)
+			rr->fp_printf("Failed to read header, %d of %d bytes read!\n", n, 8);
 		return RIFF_ERROR_EOF; //return error code
 	}
 	
-	rh->c_pos_start = rh->pos;
-	rh->pos += n;
+	rr->c_pos_start = rr->pos;
+	rr->pos += n;
 	
-	memcpy(rh->c_id, buf, 4);
-	rh->c_size = convUInt32LE(buf + 4);
-	rh->pad = rh->c_size & 0x1; //pad byte present if size is odd
-	rh->c_pos = 0;
+	memcpy(rr->c_id, buf, 4);
+	rr->c_size = convUInt32LE(buf + 4);
+	rr->pad = rr->c_size & 0x1; //pad byte present if size is odd
+	rr->c_pos = 0;
 	
 	
 	//verify valid chunk ID, must contain only printable ASCII chars
 	int i;
 	for(i = 0; i < 4; i++) {
-		if(rh->c_id[i] < 0x20  ||  rh->c_id[i] > 0x7e) {
-			if(rh->fp_printf)
-				rh->fp_printf("Invalid chunk ID (FOURCC) of chunk at file pos %d: 0x%02x,0x%02x,0x%02x,0x%02x\n", rh->c_pos_start, rh->c_id[0], rh->c_id[1], rh->c_id[2], rh->c_id[3]);
+		if(rr->c_id[i] < 0x20  ||  rr->c_id[i] > 0x7e) {
+			if(rr->fp_printf)
+				rr->fp_printf("Invalid chunk ID (FOURCC) of chunk at file pos %d: 0x%02x,0x%02x,0x%02x,0x%02x\n", rr->c_pos_start, rr->c_id[0], rr->c_id[1], rr->c_id[2], rr->c_id[3]);
 			return RIFF_ERROR_ILLID;
 		}
 	}
 	
 	
 	//check if chunk fits into current list level and file, value could be corrupt
-	size_t cposend = rh->c_pos_start + RIFF_CHUNK_DATA_OFFSET + rh->c_size + rh->pad;
+	size_t cposend = rr->c_pos_start + RIFF_CHUNK_DATA_OFFSET + rr->c_size + rr->pad;
 	
 	size_t listend;
-	if(rh->ls_level > 0){
-		struct riff_levelStackE *ls = rh->ls + (rh->ls_level - 1);
+	if(rr->ls_level > 0){
+		struct riff_levelStackE *ls = rr->ls + (rr->ls_level - 1);
 		listend = ls->c_pos_start + RIFF_CHUNK_DATA_OFFSET + ls->c_size; //end of current list level without pad byte
 	}
 	else
-		listend = rh->pos_start + RIFF_CHUNK_DATA_OFFSET + rh->h_size;
+		listend = rr->pos_start + RIFF_CHUNK_DATA_OFFSET + rr->h_size;
 	
 	if(cposend > listend){
-		if(rh->fp_printf)
-			rh->fp_printf("Chunk size exceeds list size! At least one size value must be corrupt!\n");
+		if(rr->fp_printf)
+			rr->fp_printf("Chunk size exceeds list size! At least one size value must be corrupt!\n");
 		//chunk data must be considered as cut off, better skip this chunk
 		return RIFF_ERROR_ICSIZE;
 	}
 	
 	//check chunk size against file size
-	if((rh->size > 0)  &&  (cposend > rh->size)){
-		if(rh->fp_printf)
-			rh->fp_printf("Chunk size exceeds file size! At least one size value must be corrupt!\n");
+	if((rr->size > 0)  &&  (cposend > rr->size)){
+		if(rr->fp_printf)
+			rr->fp_printf("Chunk size exceeds file size! At least one size value must be corrupt!\n");
 		return RIFF_ERROR_EOF; //Or better RIFF_ERROR_ICSIZE?
 	}
 	
@@ -364,52 +371,52 @@ int riff_readChunkHeader(riff_reader *rh){
 /*****************************************************************************/
 //pop from level stack
 //when returning we are positioned inside the parent chunk ()
-void reader_stack_pop(riff_reader *rh){
-	if(rh->ls_level <= 0)
+void reader_stack_pop(riff_reader *rr){
+	if(rr->ls_level <= 0)
 		return;
 	
-	rh->ls_level--;
-	struct riff_levelStackE *ls = rh->ls + rh->ls_level;
+	rr->ls_level--;
+	struct riff_levelStackE *ls = rr->ls + rr->ls_level;
 	
-	rh->c_pos_start = ls->c_pos_start;
-	memcpy(rh->c_id, ls->c_id, 4);
-	rh->c_size = ls->c_size;
-	rh->pad = rh->c_size & 0x1; //pad if chunk sizesize is odd
+	rr->c_pos_start = ls->c_pos_start;
+	memcpy(rr->c_id, ls->c_id, 4);
+	rr->c_size = ls->c_size;
+	rr->pad = rr->c_size & 0x1; //pad if chunk sizesize is odd
 	
-	rh->c_pos = rh->pos - rh->c_pos_start - RIFF_CHUNK_DATA_OFFSET;
+	rr->c_pos = rr->pos - rr->c_pos_start - RIFF_CHUNK_DATA_OFFSET;
 }
 
 
 /*****************************************************************************/
 //push to level stack
-void reader_stack_push(riff_reader *rh, void *type){
+void reader_stack_push(riff_reader *rr, void *type){
 	//need to enlarge stack?
-	if(rh->ls_size < rh->ls_level + 1){
-		size_t ls_size_new = rh->ls_size * 2; //double size
+	if(rr->ls_size < rr->ls_level + 1){
+		size_t ls_size_new = rr->ls_size * 2; //double size
 		if(ls_size_new == 0)
 			ls_size_new = RIFF_LEVEL_ALLOC; //default stack allocation
 		
 		struct riff_levelStackE *lsnew = malloc(ls_size_new * sizeof(struct riff_levelStackE));
-		rh->ls_size = ls_size_new;
+		rr->ls_size = ls_size_new;
 		
 		//need to copy?
-		if(rh->ls_level > 0){
-			memcpy(lsnew, rh->ls, rh->ls_level * sizeof(struct riff_levelStackE));
+		if(rr->ls_level > 0){
+			memcpy(lsnew, rr->ls, rr->ls_level * sizeof(struct riff_levelStackE));
 		}
 		
 		//free old
-		if(rh->ls != NULL)
-			free(rh->ls);
-		rh->ls = lsnew;
+		if(rr->ls != NULL)
+			free(rr->ls);
+		rr->ls = lsnew;
 	}
 	
-	struct riff_levelStackE *ls = rh->ls + rh->ls_level;
-	ls->c_pos_start = rh->c_pos_start;
-	memcpy(ls->c_id, rh->c_id, 4);
-	ls->c_size = rh->c_size;
-	//printf("list size %d\n", (rh->ls[rh->ls_level].size));
+	struct riff_levelStackE *ls = rr->ls + rr->ls_level;
+	ls->c_pos_start = rr->c_pos_start;
+	memcpy(ls->c_id, rr->c_id, 4);
+	ls->c_size = rr->c_size;
+	//printf("list size %d\n", (rr->ls[rr->ls_level].size));
 	memcpy(ls->c_type, type, 4);
-	rh->ls_level++;
+	rr->ls_level++;
 }
 
 #ifdef RIFF_WRITE
@@ -474,24 +481,24 @@ void writer_stack_push(riff_writer *rw){
 /*****************************************************************************/
 //description: see header file
 riff_reader *riff_readerAllocate(){
-	riff_reader *rh = calloc(1, sizeof(riff_reader));
-	if(rh != NULL){
-		rh->fp_printf = riff_printf;
+	riff_reader *rr = calloc(1, sizeof(riff_reader));
+	if(rr != NULL){
+		rr->fp_printf = riff_printf;
 	}
-	return rh;
+	return rr;
 }
 
 /*****************************************************************************/
 //description: see header file
 //Deallocate riff_reader and contained stack, file source (memory) is not closed or freed
-void riff_readerFree(riff_reader *rh){
-	if(rh == NULL)
+void riff_readerFree(riff_reader *rr){
+	if(rr == NULL)
 		return;
 	//free stack
-	if(rh->ls != NULL)
-		free(rh->ls);
+	if(rr->ls != NULL)
+		free(rr->ls);
 	//free struct
-	free(rh);
+	free(rr);
 }
 
 #ifdef RIFF_WRITE
@@ -524,61 +531,61 @@ void riff_writerFree(riff_writer *rw){
 /*****************************************************************************/
 //description: see header file
 //shall be called only once by the open-function
-int riff_readHeader(riff_reader *rh){
+int riff_readHeader(riff_reader *rr){
 	char buf[RIFF_HEADER_SIZE];
 	
-	if(rh->fp_read == NULL) {
-		if(rh->fp_printf)
-			rh->fp_printf("I/O function pointer not set\n"); //fatal user error
+	if(rr->fp_read == NULL) {
+		if(rr->fp_printf)
+			rr->fp_printf("I/O function pointer not set\n"); //fatal user error
 		return RIFF_ERROR_INVALID_HANDLE;
 	}
 	
-	int n = rh->fp_read(rh, buf, RIFF_HEADER_SIZE);
-	rh->pos += n;
+	int n = rr->fp_read(rr, buf, RIFF_HEADER_SIZE);
+	rr->pos += n;
 	
 	if(n != RIFF_HEADER_SIZE){
-		if(rh->fp_printf)
-			rh->fp_printf("Read error, failed to read RIFF header\n");
+		if(rr->fp_printf)
+			rr->fp_printf("Read error, failed to read RIFF header\n");
 		//printf("%d", n);
 		return RIFF_ERROR_EOF; //return error code
 	}
-	memcpy(rh->h_id, buf, 4);
-	rh->h_size = convUInt32LE(buf + 4);
-	memcpy(rh->h_type, buf + 8, 4);
+	memcpy(rr->h_id, buf, 4);
+	rr->h_size = convUInt32LE(buf + 4);
+	memcpy(rr->h_type, buf + 8, 4);
 
 
-	if(strcmp(rh->h_id, "RIFF") != 0 && strcmp(rh->h_id, "BW64") != 0) {
-		if(rh->fp_printf)
-			rh->fp_printf("Invalid RIFF header\n");
+	if(strcmp(rr->h_id, "RIFF") != 0 && strcmp(rr->h_id, "BW64") != 0) {
+		if(rr->fp_printf)
+			rr->fp_printf("Invalid RIFF header\n");
 		return RIFF_ERROR_ILLID;
 	}
 
-	int r = riff_readChunkHeader(rh);
+	int r = riff_readChunkHeader(rr);
 	if(r != RIFF_ERROR_NONE)
 		return r;
 
-	if (rh->h_size == 0xFFFFFFFF && !memcmp(rh->c_id, "ds64", 4)) {
+	if (rr->h_size == 0xFFFFFFFF && !memcmp(rr->c_id, "ds64", 4)) {
 		// It's a 64-bit sized file
 		// Specification can be found at
 		// https://www.itu.int/dms_pubrec/itu-r/rec/bs/R-REC-BS.2088-1-201910-I!!PDF-E.pdf
 		
 		// Buffer already used, so it can be reused
-		size_t r_ = riff_readInChunk(rh, buf, 8);
+		size_t r_ = riff_readInChunk(rr, buf, 8);
 		if (r_ != 8) {
-			if (rh->fp_printf) {
-				rh->fp_printf("ds64 chunk too small to contain any meaningful information.\n");
+			if (rr->fp_printf) {
+				rr->fp_printf("ds64 chunk too small to contain any meaningful information.\n");
 			}
 			return RIFF_ERROR_ICSIZE;
 		}
-		rh->h_size = ((size_t)convUInt32LE(buf+4) << 32) | convUInt32LE(buf);
+		rr->h_size = ((size_t)convUInt32LE(buf+4) << 32) | convUInt32LE(buf);
 	}
 	
 	//compare with given file size
-	if(rh->size != 0){
-		if(rh->size != rh->h_size + RIFF_CHUNK_DATA_OFFSET){
-			if(rh->fp_printf)
-				rh->fp_printf("RIFF header chunk size %d doesn't match file size %d!\n", rh->h_size + RIFF_CHUNK_DATA_OFFSET, rh->size);
-			if(rh->size >= rh->h_size + RIFF_CHUNK_DATA_OFFSET)
+	if(rr->size != 0){
+		if(rr->size != rr->h_size + RIFF_CHUNK_DATA_OFFSET){
+			if(rr->fp_printf)
+				rr->fp_printf("RIFF header chunk size %d doesn't match file size %d!\n", rr->h_size + RIFF_CHUNK_DATA_OFFSET, rr->size);
+			if(rr->size >= rr->h_size + RIFF_CHUNK_DATA_OFFSET)
 				return RIFF_ERROR_EXDAT;
 			else
 				//end isn't reached yet and you can parse further
@@ -610,7 +617,7 @@ int riff_writeHeader(riff_writer *rw){
 	memcpy(buf + 8, rw->h_type, 4); 
 
 	rw->pos = rw->pos_start;
-	rw->fp_seek(rw, rw->pos);	
+	seekToPosW(rw);
 	int n = rw->fp_write(rw, buf, RIFF_HEADER_SIZE);
 	rw->pos += n;
 
@@ -628,13 +635,13 @@ int riff_writeHeader(riff_writer *rw){
 /*****************************************************************************/
 //read to memory block, returns number of successfully read bytes
 //keep track of position, do not read beyond end of chunk, pad byte is not read
-size_t riff_readInChunk(riff_reader *rh, void *to, size_t size){
-	size_t left = rh->c_size - rh->c_pos;
+size_t riff_readInChunk(riff_reader *rr, void *to, size_t size){
+	size_t left = rr->c_size - rr->c_pos;
 	if(left < size)
 		size = left;
-	size_t n = rh->fp_read(rh, to, size);
-	rh->pos += n;
-	rh->c_pos += n;
+	size_t n = rr->fp_read(rr, to, size);
+	rr->pos += n;
+	rr->c_pos += n;
 	return n;
 }
 
@@ -642,14 +649,14 @@ size_t riff_readInChunk(riff_reader *rh, void *to, size_t size){
 //seek byte position in current chunk data from start of chunk data, return error on failure
 //keep track of position
 //c_pos: relative offset from chunk data start
-int riff_readerSeekInChunk(riff_reader *rh, size_t c_pos){
+int riff_readerSeekInChunk(riff_reader *rr, size_t c_pos){
 	//seeking behind last byte is valid, next read at that pos will fail
-	if(c_pos < 0  ||  c_pos > rh->c_size){
+	if(c_pos < 0  ||  c_pos > rr->c_size){
 		return RIFF_ERROR_EOC;
 	}
-	rh->pos = rh->c_pos_start + RIFF_CHUNK_DATA_OFFSET + c_pos;
-	rh->c_pos = c_pos;
-	size_t r = rh->fp_seek(rh, rh->pos); //seek never fails, but pos might be invalid to read from
+	rr->pos = rr->c_pos_start + RIFF_CHUNK_DATA_OFFSET + c_pos;
+	rr->c_pos = c_pos;
+	size_t r = seekToPosR(rr); //seek never fails, but pos might be invalid to read from
 	return RIFF_ERROR_NONE;
 }
 
@@ -673,7 +680,7 @@ int riff_writerSeekInChunk(riff_writer *rw, size_t c_pos){
 	}
 	rw->pos = rw->c_pos_start + RIFF_CHUNK_DATA_OFFSET + c_pos;
 	rw->c_pos = c_pos;
-	size_t r = rw->fp_seek(rw, rw->pos); //seek never fails, but pos might be invalid to read from
+	size_t r = seekToPosW(rw); //seek never fails, but pos might be invalid to read from
 	return RIFF_ERROR_NONE;
 }
 #endif
@@ -681,16 +688,16 @@ int riff_writerSeekInChunk(riff_writer *rw, size_t c_pos){
 
 /*****************************************************************************/
 //description: see header file
-int riff_readerSeekNextChunk(riff_reader *rh){
-	size_t posnew = rh->c_pos_start + RIFF_CHUNK_DATA_OFFSET + rh->c_size + rh->pad; //expected pos of following chunk
+int riff_readerSeekNextChunk(riff_reader *rr){
+	size_t posnew = rr->c_pos_start + RIFF_CHUNK_DATA_OFFSET + rr->c_size + rr->pad; //expected pos of following chunk
 	
 	size_t listend;
-	if(rh->ls_level > 0){
-		struct riff_levelStackE *ls = rh->ls + (rh->ls_level - 1);
+	if(rr->ls_level > 0){
+		struct riff_levelStackE *ls = rr->ls + (rr->ls_level - 1);
 		listend = ls->c_pos_start + RIFF_CHUNK_DATA_OFFSET + ls->c_size; //end of current list level without pad byte
 	}
 	else
-		listend = rh->pos_start + RIFF_CHUNK_DATA_OFFSET + rh->h_size; //at level 0
+		listend = rr->pos_start + RIFF_CHUNK_DATA_OFFSET + rr->h_size; //at level 0
 	
 	//printf("listend %d  posnew %d\n", listend, posnew);  //debug
 	
@@ -699,54 +706,54 @@ int riff_readerSeekNextChunk(riff_reader *rh){
 		//there shouldn't be any pad bytes at the list end, since the containing chunks should be padded to even number of bytes already
 		//we consider excess bytes as non critical file structure error
 		if(listend > posnew){
-			if(rh->fp_printf)
-				rh->fp_printf("%d excess bytes at pos %d at end of chunk list!\n", listend - posnew, posnew);
+			if(rr->fp_printf)
+				rr->fp_printf("%d excess bytes at pos %d at end of chunk list!\n", listend - posnew, posnew);
 			return RIFF_ERROR_EXDAT;
 		}
 		return RIFF_ERROR_EOCL;
 	}
 	
-	rh->pos = posnew;
-	rh->c_pos = 0; 
-	rh->fp_seek(rh, posnew);
+	rr->pos = posnew;
+	rr->c_pos = 0; 
+	seekToPosR(rr);
 	
-	return riff_readChunkHeader(rh);
+	return riff_readChunkHeader(rr);
 }
 
 
 /*****************************************************************************/
-int riff_readerSeekChunkStart(struct riff_reader *rh){
+int riff_readerSeekChunkStart(struct riff_reader *rr){
 	//seek data offset 0 in current chunk
-	rh->pos = rh->c_pos_start + RIFF_CHUNK_DATA_OFFSET;
-	rh->c_pos = 0;
-	rh->fp_seek(rh, rh->pos);
+	rr->pos = rr->c_pos_start + RIFF_CHUNK_DATA_OFFSET;
+	rr->c_pos = 0;
+	seekToPosR(rr);
 	return RIFF_ERROR_NONE;
 }
 
 
 /*****************************************************************************/
-int riff_readerRewind(struct riff_reader *rh){
+int riff_readerRewind(struct riff_reader *rr){
 	//pop stack as much as possible
-	while(rh->ls_level > 0) {
-		reader_stack_pop(rh);
+	while(rr->ls_level > 0) {
+		reader_stack_pop(rr);
 	}
-	return riff_readerSeekLevelStart(rh);
+	return riff_readerSeekLevelStart(rr);
 }
 
 /*****************************************************************************/
-int riff_readerSeekLevelStart(struct riff_reader *rh){
+int riff_readerSeekLevelStart(struct riff_reader *rr){
 	//if in sub list level
-	if(rh->ls_level > 0)
-		rh->pos = rh->ls[rh->ls_level - 1].c_pos_start;
+	if(rr->ls_level > 0)
+		rr->pos = rr->ls[rr->ls_level - 1].c_pos_start;
 	else
-		rh->pos = rh->pos_start;
+		rr->pos = rr->pos_start;
 		
-	rh->pos += RIFF_CHUNK_DATA_OFFSET + 4; //pos after type ID of chunk list
-	rh->c_pos = 0;
-	rh->fp_seek(rh, rh->pos);
+	rr->pos += RIFF_CHUNK_DATA_OFFSET + 4; //pos after type ID of chunk list
+	rr->c_pos = 0;
+	seekToPosR(rr);
 
 	//read first chunk header, so we have the right values
-	int r = riff_readChunkHeader(rh);
+	int r = riff_readChunkHeader(rr);
 	
 	//check possible?
 	return r;
@@ -755,46 +762,46 @@ int riff_readerSeekLevelStart(struct riff_reader *rh){
 
 /*****************************************************************************/
 //description: see header file
-int riff_readerSeekLevelSub(riff_reader *rh){
+int riff_readerSeekLevelSub(riff_reader *rr){
 	//according to "https://en.wikipedia.org/wiki/Resource_Interchange_File_Format" only RIFF and LIST chunk IDs can contain subchunks
-	if(strcmp(rh->c_id, "LIST") != 0  && strcmp(rh->c_id, "RIFF") != 0 && strcmp(rh->c_id, "BW64") != 0){
-		if(rh->fp_printf)
-			rh->fp_printf("%s() failed for chunk ID \"%s\", only RIFF or LIST chunk can contain subchunks\n", __func__, rh->c_id);
+	if(strcmp(rr->c_id, "LIST") != 0  && strcmp(rr->c_id, "RIFF") != 0 && strcmp(rr->c_id, "BW64") != 0){
+		if(rr->fp_printf)
+			rr->fp_printf("%s() failed for chunk ID \"%s\", only RIFF or LIST chunk can contain subchunks\n", __func__, rr->c_id);
 		return RIFF_ERROR_ILLID;
 	}
 	
 	//check size of parent chunk data, must be at least 4 for type ID (is empty list allowed?)
-	if(rh->c_size < 4){
-		if(rh->fp_printf)
-			rh->fp_printf("Chunk too small to contain sub level chunks\n");
+	if(rr->c_size < 4){
+		if(rr->fp_printf)
+			rr->fp_printf("Chunk too small to contain sub level chunks\n");
 		return RIFF_ERROR_ICSIZE;
 	}
 	
 	//seek to chunk start if not there, required to read type ID
-	if(rh->c_pos > 0) {
-		rh->fp_seek(rh, rh->c_pos_start + RIFF_CHUNK_DATA_OFFSET);
-		rh->pos = rh->c_pos_start + RIFF_CHUNK_DATA_OFFSET;
-		rh->c_pos = 0;
+	if(rr->c_pos > 0) {
+		rr->pos = rr->c_pos_start + RIFF_CHUNK_DATA_OFFSET;
+		seekToPosR(rr);
+		rr->c_pos = 0;
 	}
 	//read type ID
 	unsigned char type[5] = "\0\0\0\0\0";
-	rh->fp_read(rh, type, 4);
-	rh->pos += 4;
+	rr->fp_read(rr, type, 4);
+	rr->pos += 4;
 	//verify type ID
 	int i;
 	for(i = 0; i < 4; i++) {
 		if(type[i] < 0x20  ||  type[i] > 0x7e) {
-			if(rh->fp_printf)
-				rh->fp_printf("Invalid chunk type ID (FOURCC) of chunk at file pos %d: 0x%02x,0x%02x,0x%02x,0x%02x\n", rh->c_pos_start, type[0], type[1], type[2], type[3]);
+			if(rr->fp_printf)
+				rr->fp_printf("Invalid chunk type ID (FOURCC) of chunk at file pos %d: 0x%02x,0x%02x,0x%02x,0x%02x\n", rr->c_pos_start, type[0], type[1], type[2], type[3]);
 			return RIFF_ERROR_ILLID;
 		}
 	}
 	
 	//add parent chunk data to stack
 	//push
-	reader_stack_push(rh, type);
+	reader_stack_push(rr, type);
 	
-	return riff_readChunkHeader(rh);
+	return riff_readChunkHeader(rr);
 }
 
 
@@ -808,7 +815,8 @@ int riff_writerNewChunk(struct riff_writer *rw){
 	rw->c_pos_start = rw->pos;
 	
 	// Reserve bytes for header
-	int n = rw->fp_write(rw, "\0\0\0\0\0\0\0\0", 8);
+	char tmp[8];
+	int n = rw->fp_write(rw, tmp, RIFF_CHUNK_DATA_OFFSET);
 	rw->pos += n;
 	rw->data_size = fmax(rw->data_size, rw->pos-rw->pos_start);
 
@@ -822,20 +830,30 @@ int riff_writerNewChunk(struct riff_writer *rw){
 
 int riff_writerFinishChunk(struct riff_writer *rw){
 	if (rw->state == RIFFWriterStateNotInChunk) return RIFF_WRITER_ERROR_NOTCHUNK;
+	for(int i = 0; i < 4; i++) {
+		if(rw->c_id[i] < 0x20  ||  rw->c_id[i] > 0x7e) {
+			if(rw->fp_printf)
+				rw->fp_printf("Invalid chunk type ID (FOURCC): 0x%02x,0x%02x,0x%02x,0x%02x\n", rw->c_id[0], rw->c_id[1], rw->c_id[2], rw->c_id[3]);
+			return RIFF_ERROR_ILLID;
+		}
+	}
+
 	// Overall gist: 
 	// write size, id, and seek to the first byte after this chunk
 
-	// Write ID
-	rw->fp_seek(rw, rw->c_pos_start);
+	// Seek to start of chunk
 	rw->pos = rw->c_pos_start;
+	seekToPosW(rw);
+
+	// Write ID
 	size_t n = rw->fp_write(rw, rw->c_id, 4);
-	// Write size
 	rw->pos += n;
+	// Write size
 	writeUInt32LE(rw, rw->c_size);
 
 	// Seek to start of chunk
 	rw->pos = rw->c_pos_start + RIFF_CHUNK_DATA_OFFSET + rw->c_size;
-	rw->fp_seek(rw, rw->c_pos_start + RIFF_CHUNK_DATA_OFFSET + rw->c_size);
+	seekToPosW(rw);
 
 	// Adjust for possible pad byte
 	rw->pad = rw->c_size & 0x1; //pad byte present if size is odd
@@ -864,7 +882,8 @@ int riff_writerNewListChunk(struct riff_writer *rw){
 	rw->pos += n;
 	
 	//reserve 8 other bytes
-	n = rw->fp_write(rw, "\0\0\0\0\0\0\0\0", 8);
+	char tmp[8];
+	n = rw->fp_write(rw, tmp, 8);
 	rw->pos += n;
 	// rw->c_pos = rw->pos - rw->pos_start - RIFF_CHUNK_DATA_OFFSET;
 		
@@ -885,16 +904,20 @@ int riff_writerFinishListChunk(struct riff_writer *rw){
 	}
 
 	// Write chunk data
-	rw->fp_seek (rw, rw->pos_start+4);	// Go to beginning of data to change
 	rw->pos = rw->pos_start+4;
+	seekToPosW(rw);	// Go to beginning of data to change
 
 	// Write length
-	writeUInt32LE(rw, rw->data_size-RIFF_HEADER_SIZE);
+	writeUInt32LE(rw, rw->data_size-RIFF_CHUNK_DATA_OFFSET);
 	// pos automatically updated
 
 	// Write type
 	int n = rw->fp_write (rw, rw->h_type, 4);
 	rw->pos += n;
+
+	// Seek to start of chunk
+	rw->pos = rw->pos_start + rw->data_size;
+	seekToPosW(rw);
 
 	// Adjust for possible pad byte
 	rw->pad = rw->data_size & 0x1; //pad byte present if size is odd
@@ -914,7 +937,7 @@ int riff_writerSeekChunkStart(struct riff_writer *rw){
 	//seek data offset 0 in current chunk
 	rw->pos = rw->c_pos_start + RIFF_CHUNK_DATA_OFFSET;
 	rw->c_pos = 0;
-	rw->fp_seek(rw, rw->pos);
+	seekToPosW(rw);
 	return RIFF_ERROR_NONE;
 }
 
@@ -927,24 +950,24 @@ int riff_writerSeekLevelSub(struct riff_writer *rw);        //goto sub level chu
 
 /*****************************************************************************/
 //description: see header file
-int riff_readerLevelParent(struct riff_reader *rh){
-	if(rh->ls_level <= 0)
+int riff_readerLevelParent(struct riff_reader *rr){
+	if(rr->ls_level <= 0)
 		return -1;  //not critical error, we don't have or need a macro for that
-	reader_stack_pop(rh);
+	reader_stack_pop(rr);
 	return RIFF_ERROR_NONE;
 }
 
 
 /*****************************************************************************/
-int riff_readerLevelValidate(struct riff_reader *rh){
+int riff_readerLevelValidate(struct riff_reader *rr){
 	int r;
 	//seek to start of current list
-	if((r = riff_readerSeekLevelStart(rh))  !=  RIFF_ERROR_NONE)
+	if((r = riff_readerSeekLevelStart(rr))  !=  RIFF_ERROR_NONE)
 		return r;
 	
 	//seek all chunks of current list level
 	while(1){
-		r = riff_readerSeekNextChunk(rh);
+		r = riff_readerSeekNextChunk(rr);
 		if(r != RIFF_ERROR_NONE){
 			if(r == RIFF_ERROR_EOCL) //just end of list
 				break;

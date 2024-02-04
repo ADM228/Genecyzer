@@ -370,11 +370,6 @@ uint8_t * Project::Save(size_t * size_out) {
     riff_writeInChunk(writer, buf, 4);
     riff_writerFinishChunk(writer);    
 
-    riff_writerNewChunk(writer);
-    memcpy(writer->c_id, effectColumnId, 5);
-    riff_writeInChunk(writer, (void *)&effectColumnAmount, 8);
-    riff_writerFinishChunk(writer);
-
     riff_writerNewListChunk(writer);
     memcpy(writer->h_type, infoListType, 5);
 
@@ -386,6 +381,16 @@ uint8_t * Project::Save(size_t * size_out) {
         riff_writerNewChunk(writer);
         memcpy(writer->c_id, artistId, 5);
         riff_writeInChunk(writer, (void*)"alexmush", 9);
+        riff_writerFinishChunk(writer);
+
+    riff_writerFinishListChunk(writer);
+
+    riff_writerNewListChunk(writer);
+    memcpy(writer->h_type, songListType, 5);
+
+        riff_writerNewChunk(writer);
+        memcpy(writer->c_id, effectColumnId, 5);
+        riff_writeInChunk(writer, (void *)&effectColumnAmount, 8);
         riff_writerFinishChunk(writer);
 
     riff_writerFinishListChunk(writer);

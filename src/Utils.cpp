@@ -63,8 +63,11 @@ void printByteArray(void * ptr, size_t size, size_t divide = 0) {
     size_t repeats = (size_t)std::ceil((long double)size/(long double)divide);
     size_t idx = 0;
     for (size_t i = 0; i < repeats; i++){
-        for (size_t j = 0; j < divide && idx+j < size; j++) {
-            printf("%02X ", *((uint8_t *)ptr+(idx+j)));
+        for (size_t j = 0; j < divide; j++) {
+            if (idx+j < size)
+                printf("%02X ", *((uint8_t *)ptr+(idx+j)));
+            else
+                printf("-- ");
         }
         printf("| ");
         for (size_t j = 0; j < divide && idx < size; j++){
