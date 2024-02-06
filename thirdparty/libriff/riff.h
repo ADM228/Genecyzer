@@ -1,11 +1,11 @@
 /*
 libriff
 
-Author/copyright: Markus Wolf
+Author/copyright: Markus Wolf, alexmush
 License: zlib (https://opensource.org/licenses/Zlib)
 
 
-To read any RIFF files.
+To read or write any RIFF files.
 Not specialized to specific types like AVI or WAV.
 Special chunks (e.g. "LIST") can contain a nested sub list of chunks
 
@@ -22,17 +22,36 @@ chunk list start ("RIFF") - ID,size,type
   chunk block - level 0
 
 
-Usage:
+Reader usage:
 Use a default open-function (file, mem) or create your own
   The required function pointers for reading and seeking are set here
   When creating your own open-function, take a look at the default function code as template
 After the file is opened we are in the first chunk at list level 0
- You can freely read and seek within the data of the current junk
- Use riff_nextChunk() to go to the first data byte of the next junk (chunk header is read already then)
-If the current junk contains a list of sub level chunks:
- Call riff_seekLevelSub() to be positioned at the first data byte of the first chunk in the sub list level
- Call riff_levelParent() to leave the sub list without changing the file position
+ You can freely read and seek within the data of the current chunk
+ Use riff_readerSeekNextChunk() to go to the first data byte of the next chunk (chunk header is read already then)
+If the current chunk contains a list of sub level chunks:
+ Call riff_readerSeekLevelSub() to be positioned at the first data byte of the first chunk in the sub list level
+ Call riff_readerLevelParent() to leave the sub list without changing the file position
 Read members of the riff_reader to get all info about current file position, current chunk, etc.
+
+Writer usage:
+Define RIFF_WRITE to make the writing functions available (this is to reduce bloat in projects that do not need writing). 
+Use a default open-function (file, mem) or create your own
+  The required function pointers for reading, seeking and writing are set here
+  When creating your own open-function, take a look at the default function code as template
+After the file is opened we are in freespace, where we can create a chunk with riff_writerNewChunk()
+  After creating a chunk you can fill it with data
+  Make sure to set the chunk ID via memcpy() or str(n)cpy() into c_id
+  After writing, make sure to finish the chunk with riff_writerFinishChunk() to write the header
+LIST Chunks can also be created with riff_writerNewListChunk(), they automatically descend you into the sublevel
+  Create chunks (or LIST chunks, it can be multilevel!) within there
+  Make sure to set the list type via memcpy() or str(n)cpy() into h_type
+  After you're done with the sublevel, you can exit the sublevel by finishing the LIST with riff_writerFinishListChunk()
+Set the file type via memcpy() or str(n)cpy() into h_type.
+After you're done writing the file, *close the file* to write the file header. The object that riff_writer wrote to is not deallocated on closing, you need to do that yourself.
+
+You can overwrite existing data, and navigate thru it; the file size will never shrink however.
+When writing to memory, the pointer is allocated automatically and is kept inside; you get the pointer at the very end from calling riff_writer_close_mem(), the pointer is also accessible from fh; its size can be obtained from size. Use free() to free the memory after its use to avoid memory leaks.
 
 May not work for RIFF files larger than 2GB.
 */
@@ -241,7 +260,7 @@ int riff_writerNewListChunk(struct riff_writer *rw);       //reserve space for n
 //returns != RIFF_ERROR_NONE, if we are at level 0 already and can't go back any further
 int riff_writerFinishListChunk(struct riff_writer *rw);
 
-
+// writer navigation functions
 int riff_writerSeekNextChunk(struct riff_writer *rw);       //seek to after this chunk, return
 int riff_writerSeekChunkStart(struct riff_writer *rw);      //seek back to data start of current chunk
 int riff_writerRewind(struct riff_writer *rw);              //seek back to very first chunk of file at level 0, the position just after opening via riff_open_...()

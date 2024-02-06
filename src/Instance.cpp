@@ -62,6 +62,7 @@ class Instance {
         void renderBeatsTexture();
 
     private:
+        uint32_t currentSong = 0;
         uint8_t instSelected = 0;
         uint8_t scale = 1;
         uint8_t upperHalfMode = 0;
@@ -374,7 +375,7 @@ void Instance::renderInstList () {
     #define INST_WIDTH  512
     #define INST_HEIGHT 8
 
-    auto instruments = &activeProject.instruments;
+    auto & instruments = activeProject.globalInstruments;    // TODO: global + local, accomodate here
 
     if (instrumentsToUpdate.size() == 0){   // Update the entire list
 
@@ -388,12 +389,12 @@ void Instance::renderInstList () {
             instNumber = i>>1;
             for (int j = 0; j < INST_HEIGHT; j++){
                 std::string output;
-                if (instNumber < instruments->size()){
+                if (instNumber < instruments.size()){
                     char numchar[5];
                     std::snprintf(numchar, 5, "%02X:", instNumber);
                     std::string num(numchar);
-                    output = num + (*instruments)[instNumber].getName() + " ";
-                    palette = (*instruments)[instNumber].getPalette();
+                    output = num + instruments[instNumber].getName() + " ";
+                    palette = instruments[instNumber].getPalette();
                     if (palette == 0) palette = 7;
                 } else { 
                     char numchar[17];
@@ -423,12 +424,12 @@ void Instance::renderInstList () {
             instrumentsToUpdate.pop_back();
             uint8_t palette;
             std::string output;
-            if (instNumber < instruments->size()){
+            if (instNumber < instruments.size()){
                 char numchar[5];
                 std::snprintf(numchar, 5, "%02X:", instNumber);
                 std::string num(numchar);
-                output = num + (*instruments)[instNumber].getName() + " ";
-                palette = (*instruments)[instNumber].getPalette();
+                output = num + instruments[instNumber].getName() + " ";
+                palette = instruments[instNumber].getPalette();
                 if (palette == 0) palette = 7;
             } else { 
                 char numchar[17];
@@ -459,10 +460,11 @@ void Instance::renderTracker () {
 
     #define TRACKER_ROW_WIDTH(effectColumns) trackerNoteWidth+1+2+(1+3)*effectColumns
 
+    Song & activeSong = activeProject.songs[currentSong];
     uint8_t trackerNoteWidth = ((uint8_t)!singleTileTrackerRender)+2;
     size_t widthInTiles = std::ceil((window.getSize().x/scale)/TILE_SIZE);
     size_t heightInTiles = std::ceil((window.getSize().y/scale)/TILE_SIZE);
-    size_t rows = activeProject.patterns[0].rows;
+    size_t rows = activeSong.patterns[0].rows;
     #pragma region header
     TileMatrix header = TileMatrix(widthInTiles, HEADER_HEIGHT, 0x20);
     header.fillRow(0, ROW_SEPARATOR);
@@ -476,7 +478,7 @@ void Instance::renderTracker () {
 
     size_t widthOfTracker = 3;
 
-    for (auto & column : activeProject.effectColumnAmount) {
+    for (auto & column : activeSong.effectColumnAmount) {
         widthOfTracker += TRACKER_ROW_WIDTH(column) + 1;
     }
 
@@ -496,15 +498,15 @@ void Instance::renderTracker () {
         int tileCounter = 4;
         for (int i = 0; i < 8; i++) {
 
-            auto* patternData = &activeProject.patternData[activeProject.patterns[0].cells[i]]; 
+            auto & patternData = activeSong.patternData[activeSong.patterns[0].cells[i]]; 
 
             for (int j = 0; j < rows && j < textHeight; j++) {
-                auto row = (*patternData)[j].render(activeProject.effectColumnAmount[i], singleTileTrackerRender);
-                text.copyRect(tileCounter, j, TRACKER_ROW_WIDTH(activeProject.effectColumnAmount[i]), 1, &row, 0, 0);
+                auto row = patternData[j].render(activeSong.effectColumnAmount[i], singleTileTrackerRender);
+                text.copyRect(tileCounter, j, TRACKER_ROW_WIDTH(activeSong.effectColumnAmount[i]), 1, &row, 0, 0);
             }
 
             tracker_separator_columns.push_back(tileCounter-1); 
-            tileCounter += TRACKER_ROW_WIDTH(activeProject.effectColumnAmount[i]) + 1;
+            tileCounter += TRACKER_ROW_WIDTH(activeSong.effectColumnAmount[i]) + 1;
         }
 
         for (auto column : tracker_separator_columns) {
@@ -548,6 +550,7 @@ void Instance::updateTrackerPos () {
 void Instance::updateTrackerSelection () {
     int tileX = 3;
     uint8_t trackerNoteWidth = ((uint8_t)!singleTileTrackerRender)+2;
+    auto & effectColumnAmount = activeProject.songs[currentSong].effectColumnAmount;
 
     int x1 = selectionBounds[0], x2 = selectionBounds[2];
     int y1 = selectionBounds[1], y2 = selectionBounds[3];
@@ -566,9 +569,9 @@ void Instance::updateTrackerSelection () {
             // Begins at instrument tile
             x1 = tileX+trackerNoteWidth+1+1;
             break;
-        } else if (beginX >= tileX+trackerNoteWidth+4 && beginX <= tileX+TRACKER_ROW_WIDTH(activeProject.effectColumnAmount[i])) {
+        } else if (beginX >= tileX+trackerNoteWidth+4 && beginX <= tileX+TRACKER_ROW_WIDTH(effectColumnAmount[i])) {
             // Begins at an effect tile
-            for (int j = 0; j < std::max((int)activeProject.effectColumnAmount[i], 1); j++) {
+            for (int j = 0; j < std::max((int)effectColumnAmount[i], 1); j++) {
                 if (beginX >= tileX+trackerNoteWidth+4+4*j && beginX <= tileX+trackerNoteWidth+4+4+4*j) { 
                     x1 = tileX+trackerNoteWidth+1+4+4*j;
                     break;
@@ -576,7 +579,7 @@ void Instance::updateTrackerSelection () {
             }
             break;
         }
-        tileX += TRACKER_ROW_WIDTH(activeProject.effectColumnAmount[i])+1;
+        tileX += TRACKER_ROW_WIDTH(effectColumnAmount[i])+1;
     }
 
     tileX = 3;
@@ -589,9 +592,9 @@ void Instance::updateTrackerSelection () {
             // Ends at instrument tile
             x2 = tileX+trackerNoteWidth+1+3;
             break;
-        } else if (endX > tileX+trackerNoteWidth+4 && endX <= tileX+TRACKER_ROW_WIDTH(activeProject.effectColumnAmount[i])+1) {
+        } else if (endX > tileX+trackerNoteWidth+4 && endX <= tileX+TRACKER_ROW_WIDTH(effectColumnAmount[i])+1) {
             // Ends at an effect tile
-            for (int j = 0; j < std::max((int)activeProject.effectColumnAmount[i], 1); j++) {
+            for (int j = 0; j < std::max((int)effectColumnAmount[i], 1); j++) {
                 if (endX > tileX+trackerNoteWidth+4+4*j && endX <= tileX+trackerNoteWidth+1+4+4+4*j) { 
                     x2 = tileX+trackerNoteWidth+4+4+4*j;
                     break;
@@ -599,7 +602,7 @@ void Instance::updateTrackerSelection () {
             }
             break;
         }
-        tileX += TRACKER_ROW_WIDTH(activeProject.effectColumnAmount[i])+1;
+        tileX += TRACKER_ROW_WIDTH(effectColumnAmount[i])+1;
     }
 
     trackerMatrix.fillInvert(false);
@@ -613,23 +616,23 @@ void Instance::updateTrackerSelection () {
 }
 
 void Instance::renderBeatsTexture() {
-    int rows = std::min(activeProject.patterns[0].rows, (size_t)trackerMatrix.getHeight()-5);
+    auto & pattern = activeProject.songs[currentSong].patterns[0];
+    int rows = std::min(pattern.rows, (size_t)trackerMatrix.getHeight()-5);
     if (!(trackerMatrix.getWidth() && rows)) return;
-    auto * maj_beats = &activeProject.patterns[0].beats_major;
-    auto * min_beats = &activeProject.patterns[0].beats_minor;
+    auto & maj_beats = pattern.beats_major;
+    auto & min_beats = pattern.beats_minor;
     auto colors = new uint8_t[rows]();
     auto pixels = new uint8_t[rows*trackerMatrix.getWidth()*TILE_SIZE/2*sizeof(sf::Color)](); // automatically zeroes out alpha value
     for (int i = 0; i < rows;) {
-        for (int j = 0; j < min_beats->size() && i < rows; j++) {
-
+        for (int j = 0; j < min_beats.size() && i < rows; j++) {
             colors[i] = 1;
-            i += (*min_beats)[j];
+            i += min_beats[j];
         }
     }
     for (int i = 0; i < rows;) {
-        for (int j = 0; j < maj_beats->size() && i < rows; j++) {
+        for (int j = 0; j < maj_beats.size() && i < rows; j++) {
             colors[i] = 2;
-            i += (*maj_beats)[j];
+            i += maj_beats[j];
         }
     }
 
