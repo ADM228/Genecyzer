@@ -7,6 +7,7 @@
 #include <cstring>
 #include <exception>
 #include <fstream>
+#include <ios>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -58,7 +59,7 @@ class Project {
         int Load (std::vector<uint8_t>& data);
 
         // Save project to filestream
-        void Save (std::ofstream file);
+        void Save (std::ofstream & file);
         // Save project to memory
         uint8_t * Save (size_t * size_out);
 
@@ -77,6 +78,7 @@ class Project {
     private:
 
         int loadInternal (RIFF::RIFFReader & file);
+        int saveInternal (RIFF::RIFFWriter & file);
 
         std::string name;
         std::string composer;
@@ -276,7 +278,7 @@ int Project::Load(std::vector<uint8_t>& __data) {
 
 int Project::Load(std::ifstream & __file) {
     auto file = RIFF::RIFFReader();
-    auto errCode = file.open(&__file);
+    auto errCode = file.open(__file);
     if (errCode) return errCode;
     return loadInternal (file);
 }
@@ -343,7 +345,7 @@ int Project::loadInternal(RIFF::RIFFReader & file) {
                             chunkData->size() == 10 &&
                             !memcmp (chunkData->data(), software, 9)
                         ) )
-                            fprintf(stderr, "The \"Software\" field in the Genecyzer file's metadata is not set to \"Genecyzer\". This indicates a file that has been modified by external software, which could lead to invalid file loading.\n");
+                            fprintf(stderr, "The \"Software\" field in the Genecyzer file's metadata is not set to \"Genecyzer\". This indicates a file that has been created or modified by external software, which could lead to invalid file loading.\n");
                     }
 
                     errCode = file.seekNextChunk();
@@ -354,7 +356,19 @@ int Project::loadInternal(RIFF::RIFFReader & file) {
         errCode = file.seekNextChunk();
     }
 
+    printf("Name: %s\nComposer: %s\nCopyright:\n----\n%s\n----\nComments:\n----\n%s\n----\n", name.c_str(), composer.c_str(), copyright.c_str(), comments.c_str());
+
     return errCode == RIFF_ERROR_EOCL ? 0 : errCode;
+}
+
+void Project::Save (std::ofstream & file) {
+    RIFF::RIFFWriter writer;
+
+    writer.open(file);
+
+    saveInternal(writer);
+
+    writer.close();
 }
 
 uint8_t * Project::Save(size_t * size_out) {
@@ -362,45 +376,52 @@ uint8_t * Project::Save(size_t * size_out) {
 
     writer.openMem();
 
+    saveInternal(writer);
+
+    writer.close();
+    *size_out = writer.rw->size;
+    uint8_t * outMem = (uint8_t *)writer.file;
+    return outMem;
+}
+
+int Project::saveInternal(RIFF::RIFFWriter & file) {
     // Write the version chunk
-    writer.newChunk();
-    writer.writeInChunk((void *)thisBranch, 8);
+    file.newChunk();
+    file.writeInChunk((void *)thisBranch, 8);
     char buf[4];
     writeBytes(thisBranchVer, buf);
-    writer.writeInChunk(buf, 4);
-    writer.finishChunk((char *)versionId);    
+    file.writeInChunk(buf, 4);
+    file.finishChunk((char *)versionId);    
 
     // Write the INFO LIST chunk
-    writer.newListChunk((char *)infoListType);
-        writer.writeNewChunk((void*)software, sizeof(software), (char *)softwareId);
+    file.newListChunk((char *)infoListType);
+        file.writeNewChunk((void*)software, sizeof(software), (char *)softwareId);
         if (composer.length())
-            writer.writeNewChunk((void *)composer.c_str(), composer.length(), (char *)artistId);
+            file.writeNewChunk((void *)composer.c_str(), composer.length(), (char *)artistId);
         if (comments.length()) {
             char * chunkData = new char[comments.length()];
             std::strncpy(chunkData, comments.c_str(), comments.length());
             for (size_t i = 0; i < comments.length(); i++) {
                 if (chunkData[i] == 0x0A) chunkData[i] = 0x1E; // LineFeed -> Record Separator
             }
-            writer.writeNewChunk(chunkData, comments.length(), (char *)commentsId);
+            file.writeNewChunk(chunkData, comments.length(), (char *)commentsId);
             delete[] chunkData;
         }
         if (copyright.length())
-            writer.writeNewChunk((void *)copyright.c_str(), copyright.length(), (char *)copyrightId);
+            file.writeNewChunk((void *)copyright.c_str(), copyright.length(), (char *)copyrightId);
         if (name.length())
-            writer.writeNewChunk((void *)name.c_str(), name.length(), (char *)nameId);
-    writer.finishListChunk();
+            file.writeNewChunk((void *)name.c_str(), name.length(), (char *)nameId);
+    file.finishListChunk();
 
-    writer.newListChunk((char *)songListType);
+    file.newListChunk((char *)songListType);
 
-        writer.writeNewChunk(&effectColumnAmount, 8, (char *)effectColumnId);
+        file.writeNewChunk(&effectColumnAmount, 8, (char *)effectColumnId);
 
-    writer.finishListChunk();
+    file.finishListChunk();
 
-    writer.setFileType((char *)fileType);
-    writer.close();
-    *size_out = writer.rw->size;
-    uint8_t * outMem = (uint8_t *)writer.file;
-    return outMem;
+    file.setFileType((char *)fileType);
+
+    return 0;
 }
 
 

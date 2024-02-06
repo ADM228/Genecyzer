@@ -21,6 +21,8 @@
 #include <cstdint>
 #include <cstdio>
 #include <chrono>
+#include <fstream>
+#include <ios>
 #include "tinyfiledialogs.h"
 
 char const * filter[] = {"*.gczr"};
@@ -135,12 +137,29 @@ Instance::Instance() {
     activeProject = Project();
     activeProject.Load(data);
 
-    size_t size = 0;
-    auto ptr = activeProject.Save(&size);
-    printByteArray(ptr, size, 16);
-    free(ptr);
+    #ifdef FILETEST
 
+        size_t size = 0;
+        auto ptr = activeProject.Save(&size);
+        printByteArray(ptr, size, 16);
+        free(ptr);
 
+        auto outFilename = tinyfd_saveFileDialog("Save the file", "outTest.gczr", 1, filter, "Genecyzer project file");
+		{ 
+			auto outData = std::ofstream(outFilename, std::ios_base::out | std::ios_base::binary);
+			activeProject.Save(outData);
+			outData.close();
+		}
+		{
+			auto outData = std::ifstream(outFilename, std::ios_base::binary | std::ios_base::in);
+			char tmp[256];
+			outData.read(tmp, 256);
+			printByteArray(tmp, 256);
+		}
+		// printf("hex dump\n\n\n");		//	LMFAO I CAN HEX DUMP MY RAM
+		// printByteArray(this, -1);
+
+    #endif
     
 
     // TODO: convert into raw data

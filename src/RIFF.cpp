@@ -3,8 +3,6 @@
 
 #include <cstring>
 #include <iostream>
-#include <iterator>
-#include <streambuf>
 extern "C" {
     #include <stddef.h>
     #include <stdio.h>
@@ -75,8 +73,8 @@ class RIFFReader {
          * @param size The expected size of the file, leave blank if unknown
          * @return Error code
          */
-        int open(std::FILE * __file, size_t __size = 0);
-        int open(std::ifstream * __file, size_t __size = 0);
+        int open(std::FILE & __file, size_t __size = 0);
+        int open(std::ifstream & __file, size_t __size = 0);
 
         void close();
 
@@ -220,8 +218,8 @@ class RIFFWriter {
          * @param size The expected size of the file, leave blank if unknown
          * @return Error code
          */
-        int open(std::FILE * __file);
-        int open(std::ofstream * __file);
+        int open(std::FILE & __file);
+        int open(std::ofstream & __file);
 
         void close();
         void close(char * filetype);
@@ -387,10 +385,10 @@ int RIFFReader::open (const char* __filename, const char * __mode, size_t __size
     return riff_reader_open_file(rr, (std::FILE *)file, __size);
 }
 
-int RIFFReader::open (std::FILE * __file, size_t __size) {
-    file = __file;
+int RIFFReader::open (std::FILE & __file, size_t __size) {
+    file = &__file;
     type = C_FILE|MANUAL;
-    return riff_reader_open_file(rr, __file, __size);
+    return riff_reader_open_file(rr, &__file, __size);
 }
 
 #pragma endregion
@@ -451,9 +449,9 @@ void RIFFReader::setAutomaticIfstream(){
     file = new std::ifstream;
 }
 
-int RIFFReader::open(std::ifstream * __file, size_t __size){
+int RIFFReader::open(std::ifstream & __file, size_t __size){
     type = FSTREAM|MANUAL;
-    file = __file;
+    file = &__file;
     return openIfstreamCommon();
 }
 
@@ -556,10 +554,10 @@ int RIFFWriter::open (const char* __filename, const char * __mode) {
     return riff_writer_open_file(rw, (std::FILE *)file);
 }
 
-int RIFFWriter::open (std::FILE * __file) {
-    file = __file;
+int RIFFWriter::open (std::FILE & __file) {
+    file = &__file;
     type = C_FILE|MANUAL;
-    return riff_writer_open_file(rw, __file);
+    return riff_writer_open_file(rw, &__file);
 }
 
 #pragma endregion
@@ -620,9 +618,9 @@ void RIFFWriter::setAutomaticOfstream(){
     file = new std::fstream;
 }
 
-int RIFFWriter::open(std::ofstream * __file){
+int RIFFWriter::open(std::ofstream & __file){
     type = FSTREAM|MANUAL;
-    file = __file;
+    file = &__file;
     return openOfstreamCommon();
 }
 
@@ -635,14 +633,15 @@ int RIFFWriter::openOfstreamCommon(){
 	rw->data_size = RIFF_HEADER_SIZE;
 	rw->pos_start = stream->tellp(); //current file offset of stream considered as start of RIFF file
 	
-	// we are not writing header right now
-	rw->pos = rw->fp_seek(rw, RIFF_HEADER_SIZE+rw->pos_start);
-	
 	rw->fp_write = &write_ofstream;
 	// This conversion works due to the needed variables being stored
 	// At the same offsets in both the reader and writer
 	rw->fp_seek = &seek_ofstream;
 	rw->fp_read = &read_ifstream;
+
+	// we are not writing header right now
+	rw->pos = rw->fp_seek(rw, RIFF_HEADER_SIZE+rw->pos_start);
+	
 	
 	return RIFF_ERROR_NONE;
 }
@@ -676,9 +675,9 @@ void RIFFWriter::close () {
             file = riff_writer_close_mem(rw);   // Must read from file afterwards
         }
     } else {
-        if (type == C_FILE)
+        if ((type & ~MANUAL) == C_FILE)
             riff_writer_close_file(rw);
-        else if (type == FSTREAM)
+        else if ((type & ~MANUAL) == FSTREAM)
             closeOfstream();
     }
     type = CLOSED;

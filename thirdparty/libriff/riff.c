@@ -150,14 +150,15 @@ int riff_writer_open_file(riff_writer *rw, FILE *f) {
 	rw->data_size = RIFF_HEADER_SIZE;
 	rw->pos_start = ftell(f); //current file offset of stream considered as start of RIFF file
 	
-	// we are not writing header right now
-	rw->pos = rw->fp_seek(rw, RIFF_HEADER_SIZE+rw->pos_start);
-	
 	rw->fp_write = &write_file;
 	// This conversion works due to the needed variables being stored
 	// At the same offsets in both the reader and writer
 	rw->fp_seek = (size_t (*) (struct riff_writer *, size_t))&seek_file;
 	rw->fp_read = &read_file;
+	
+	// we are not writing header right now
+	rw->pos = rw->fp_seek(rw, RIFF_HEADER_SIZE+rw->pos_start);
+	
 	
 	return RIFF_ERROR_NONE;
 
@@ -925,8 +926,7 @@ int riff_writerFinishListChunk(struct riff_writer *rw){
 	// pos automatically updated
 
 	// Write type
-	int n = rw->fp_write (rw, rw->h_type, 4);
-	rw->pos += n;
+	rw->fp_write (rw, rw->h_type, 4);
 
 	// Seek to start of chunk
 	rw->pos = rw->pos_start + rw->data_size;
