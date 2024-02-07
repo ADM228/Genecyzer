@@ -1,7 +1,6 @@
 #ifndef __INSTANCE_INCLUDED__
 #define __INSTANCE_INCLUDED__
 
-#include "SFML/Window/Mouse.hpp"
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 #include <SFML/System.hpp>
@@ -15,6 +14,7 @@
 #include "Effect.cpp"
 #include "Project.cpp"
 #include "ModularSynth.cpp"
+#include "RIFFLoader.cpp"
 
 #include <algorithm>
 #include <cmath>
@@ -118,7 +118,9 @@ Instance::Instance() {
         auto filename = tinyfd_openFileDialog("Open a Genecyzer project file", NULL, 1, filter, "Genecyzer project file", 0);
         auto data = std::ifstream();
         data.open(filename, std::ios_base::binary | std::ios_base::in);
-
+        auto file = RIFF::RIFFReader();
+        file.open(data);
+        loadRIFFFile(file, activeProject);
     #else
 
 
@@ -135,20 +137,26 @@ Instance::Instance() {
 
     #endif
 
-    activeProject = Project();
-    activeProject.Load(data);
 
     #ifdef FILETEST
 
         size_t size = 0;
-        auto ptr = activeProject.Save(&size);
+        RIFF::RIFFWriter tmp; tmp.openMem();
+        saveRIFFFile(tmp, activeProject);
+        auto ptr = tmp.rw->fh; size = tmp.rw->size; tmp.close();
         printByteArray(ptr, size, 16);
         free(ptr);
 
         auto outFilename = tinyfd_saveFileDialog("Save the file", "outTest.gczr", 1, filter, "Genecyzer project file");
 		{ 
 			auto outData = std::ofstream(outFilename, std::ios_base::out | std::ios_base::binary);
-			activeProject.Save(outData);
+            RIFF::RIFFWriter writer;
+
+            writer.open(outData);
+
+            // saveInternal(writer);
+            saveRIFFFile(writer, activeProject);
+            writer.close();
 			outData.close();
 		}
 		{

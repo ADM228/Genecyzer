@@ -112,9 +112,9 @@ typedef struct riff_header
 //header info of parent
 struct riff_levelStackE {
 	size_t c_pos_start;        //absolute chunk position in file stream, start of chunk header
-	unsigned char c_id[5];    //ID of chunk
+	char c_id[5];    //ID of chunk
 	size_t c_size;             //chunk size without chunk header (value as stored in RIFF file)
-	unsigned char c_type[5];  //(form) type ID of chunk (available for all chunks containing sub chunks) - at level 0 it is the RIFF form type
+	char c_type[5];  //(form) type ID of chunk (available for all chunks containing sub chunks) - at level 0 it is the RIFF form type
 };
 
 

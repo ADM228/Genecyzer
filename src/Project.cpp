@@ -7,16 +7,11 @@
 #include <cstring>
 #include <exception>
 #include <fstream>
-#include <ios>
-#include <stdexcept>
 #include <string>
 #include <vector>
-#include <array>
+
 #include "TextRenderer.cpp"
 #include "Instrument.cpp"
-#include "Tracker.cpp"
-#include "RIFF.cpp"
-#include "BitConverter.cpp"
 #include "Utils.cpp"
 #include "Song.cpp"
 
@@ -41,10 +36,17 @@ class FileException : public std::exception {
         char * message;
 };
 
+struct ProjectMetadata {
+	const std::string & name;
+	const std::string & composer;
+	const std::string & copyright;
+	const std::string & comments;
+};
+
 class Project {
     public:
-        // Create new project
-        Project ();
+		// Create new default project
+		void makeDefault ();
 
         // Load project from filestream
         int Load (std::ifstream & file);
@@ -65,21 +67,32 @@ class Project {
         // Global instruments
         std::vector<Instrument> globalInstruments;
 
+        // Set / get methods for the metadata
+        void importMetadata (ProjectMetadata & metadata);
+        ProjectMetadata * exportMetadata();
+
+				std::string&	name()				{return __name;};
+		const	std::string&	name()		const	{return __name;};
+				std::string&	composer()			{return __composer;};
+        const	std::string&	composer()	const	{return __composer;};
+				std::string&	copyright()			{return __copyright;};
+        const	std::string&	copyright()	const	{return __copyright;};
+				std::string&	comments()			{return __comments;};
+        const	std::string&	comments()	const	{return __comments;};
+
+
     private:
 
-        int loadInternal (RIFF::RIFFReader & file);
-        int saveInternal (RIFF::RIFFWriter & file);
-
-        std::string name;
-        std::string composer;
-        std::string copyright;
-        std::string comments;
+        std::string __name;
+        std::string __composer;
+        std::string __copyright;
+        std::string __comments;
 
 
 };
 
-Project::Project() {
-    songs.push_back(Song());
+void Project::makeDefault() {
+	songs.push_back(Song());
     const std::string allTextTest = "English Ελληνικά Русский にほんこご antidisestablishmentarianism\nThe quick brown fox jumped over the lazy dog\nСъешь же ещё этих мягких французских булочек, да выпей чаю";
 	const std::string greekTextTest = "   Θωθ   \nΟ Θωθ ή και Θωτ ή και Τωθ υπήρξε ένας από τους πλέον δημοφιλείς θεούς της αιγυπτιακής θρησκείας. Ήταν θεότητα της Σελήνης και της Σοφίας. Οι αρχαίοι Έλληνες τον προσδιόρισαν ως τον Ερμή τον Τρισμέγιστο. \n   Ιδιότητες   \nΣτις αρχέγονες περιόδους του αιγυπτιακού πολιτισμού ήταν θεός της Σελήνης και από το σεληνιακό συσχετισμό του λέγεται ότι αντλεί την πολυμορφία του, καθώς εκφράζεται με πολλά και διαφορετικά πρόσωπα. Όπως η Σελήνη αντλεί το φως της από τον Ήλιο, έτσι και ο Θωθ αντλούσε ένα μεγάλο μέρος της εξουσίας του από τον ηλιακό θεό Ρα, όντας γραφέας και σύμβουλός του. Στην πραγματικότητα, τόσο σημαντικές ήταν οι φάσεις της Σελήνης για τους ρυθμούς της αιγυπτιακής ζωής, ώστε ο Θωθ θεωρήθηκε αρχή της κοσμικής τάξης, καθώς και των θρησκευτικών και κοινωνικών ιδρυμάτων. Ήταν παρών σχεδόν σε κάθε όψη λατρείας στους ναούς, στην απονομή δικαιοσύνης και στις μαγικές τέχνες, με τις οποίες σχετιζόταν ιδιαιτέρως.\n\nΕπίσης είναι ο θεϊκός γραφέας, εκείνος που επινόησε τη γραφή και κύριος της σοφίας. Το ιερατείο απέδιδε σ' εκείνον πολλές από τις ιερές γραφές, ανάμεσα στις οποίες συγκαταλέγεται η Βίβλος των Αναπνοών και ένα τμήμα της Βίβλου των Νεκρών. Πιστευόταν άλλωστε ότι είχε μεταδώσει την τέχνη της ιερογλυφικής γραφής στους Αιγυπτίους από τα πανάρχαια χρόνια.[1], ενώ ήταν και προστάτης των γραφέων. Του αποδίδονταν τιμές ως Κύριου της Γνώσης όλων των Επιστημών, θεωρούμενος η προσωποποίηση της Κατανόησης και της Λογικής. Υπήρξε, επίσης, μεσολαβητής για να επέλθει ειρήνη ανάμεσα στον Ώρο και τον Σηθ. Ιδιαίτερο πεδίο δράσης του ήταν η εσωτερική σοφία και γι' αυτό αποκαλείτο «ο Μυστηριώδης» ή «ο Άγνωστος». Οι μαγικές του δυνάμεις τον συνέδεσαν, επίσης, με την ιατρική και, όταν το σώμα υπέκυπτε τελικώς στο θάνατο, εκείνος ήταν πάλι που οδηγούσε το νεκρό στο βασίλειο των θεών και ακολουθούσε η κρίση της ψυχής του.";
     const std::string jpTextTest = "スーパーファミコン（SUPER Famicom）は、任天堂より日本・中華民国（台湾）・香港などで発売された家庭用ゲーム機。略記・略称はSFC、スーファミなど[注 1]。日本発売は1990年（平成2年）11月21日、生産終了は2003年（平成15年）9月30日。\n\nファミリーコンピュータの後継機として開発された。同世代機の中では後発であったが、ファミリーコンピュータに引き続き、最多出荷台数を記録した。\n\n北米・欧州・オーストラリア・ブラジルなどでは“Super Nintendo Entertainment System”（スーパーニンテンドーエンターテインメントシステム、略称：Super NES、またはSNES）の名称で発売された。 ";
@@ -93,163 +106,12 @@ Project::Project() {
         globalInstruments.back().setPalette((i / 12)&0x07);
     }
 }
-// Project file format:
-
-/* It's a RIFF file, with the gczr file extension
-    The RIFF specification can be found at 
-        thirdparty/libriff/docs/riffmci.pdf
-    Chunk types:
-        "RIFF" - the root of everything, as per the RIFF spec:
-            4 bytes [00:03] -
-                The string "RIFF". The loading will be aborted
-                if the string doesn't match.
-            4 bytes [04:07] - 
-                The length of the data in the chunk.
-            4 bytes [08:11] - (counts as data)
-                The string indicating the file format. It
-                should be "GCZR" for Genecyzer, the loading
-                will be aborted if it doesn't match that.
-            X bytes [12:] - (counts as data)
-                The rest of the data in the chunk, which is the
-                entire file.
-
-        For the rest of the chunk types' descriptions, the
-        chunk header is omitted.
-
-        "ver " - tells about the file version:
-            8 bytes [08:15] - 
-                the branch of Genecyzer where this file was
-                saved from. Full Genecyzer releases only accept
-                "Release ", and in development versions on the
-                main branch also accept "Dev Main", otherwise
-                loading will be aborted. If you are creating a
-                fork with incompatible file data, please use a
-                different combination of 8 bytes, otherwise
-                stuff might break.
-            4 bytes [16:19] -
-                the version of the files inside that branch.
-
-        "LIST" - The list chunk as per the RIFF spec. Several
-        types are in use by Genecyzer:
-
-        Type "INFO" - as per RIFF spec. Only the following 
-        subchunks are used by Genecyzer (the rest are ignored
-        on reading):
-            "IART" - Artist. 
-                Lists the contents of the composer field.
-            "ICMT" - Comments.
-                Lists the contents of the notes field. Since
-                the RIFF spec explicitly says not to include 
-                newline characters, they are converted into the
-                Record Separator characters (0x1E) when writing
-                to the file, and back into newline characters
-                when reading from it.
-            "ICOP" - Copyright.
-                Lists the contents of the copyright field.
-            "ICRD" - Creation date.
-                Lists the first time the file has been saved.
-            "INAM" - Name.
-                Lists the title of the project.
-            "ISFT" - Software.
-                Genecyzer always sets this field to 
-                "Genecyzer", gives a warning if the string
-                doesn't match it on reading.
-
-        Type "song" - the internal Genecyzer song format. 
-        Contains the following subchunks:
-            "effc" - The amount of effect columns:
-                8 bytes [08:15] - the amount of effect columns
-                for the corresponding channel.
-            "INAM" - Name. 
-                Lists the song title.
-            "col " - Color.
-                Lists the color of the song in the standard
-                24-bit color format.
-            "LIST" chunk of type "pat " - a pattern (the 
-            indexes are assumed to be in order). Subchunks:
-                "idx " - The pattern indexes themselves,
-                16-bit words, size is fixed at 8*2 = 16 bytes.
-                "bmaj" - The major beats. Variable size.
-                "bmin" - The minor beats. Variable size.
-            "note" chunk - a chunk of a "note struct":
-                4 bytes - the amount of note structs in 
-                this chunk. Each note struct consists of:
-                    1 byte - the note value:
-                        In range 0..96 for C0..B7, 
-                        253 means to repeat the default 
-                        tracker cell (and no further data
-                        follows after this),
-                        254 means a KEY OFF/stop note,
-                        255 means an empty note cell.
-                    1 byte - the flags for the following
-                    data:
-                        bit 7 - whether the note has attack
-                        enabled,
-                        bit 6 - whether an instrument value
-                        is set,      
-                        bit 5 - whether a volume value
-                        is set,
-                        bit 4 - whether any effects are 
-                        declared,
-                        bit 3 - whether to set this cell as
-                        the default cell.
-                    1 byte (optional) - Instrument value
-                        Only present if bit 6 is set in the
-                        flags byte.
-                    1 byte (optional) - Volume value
-                        Only present if bit 5 is set in the
-                        flags byte.
-                    X bytes (optional) - Effect data
-                        TODO
-
-        
-*/
-
-//
-const char fileType     [5]     = "GCZR";
-const char software     [10]    = "Genecyzer";
-
-const char mainBranch   [9]     = "Release ";
-const char thisBranch   [9]     = "Dev Main";
-
-
-// Chunk IDs
-const char versionId        [5]     = "ver ";
-const char listId           [5]     = "LIST";
-// in "INFO"
-const char artistId         [5]     = "IART";
-const char commentsId       [5]     = "ICMT";
-const char copyrightId      [5]     = "ICOP";
-const char creationDateId   [5]     = "ICRD";
-const char nameId           [5]     = "INAM";
-const char softwareId       [5]     = "ISFT";
-// in "song"
-const char effectColumnId   [5]     = "effc";
-const char * songNameId             = nameId;
-const char colorId          [5]     = "col ";
-const char noteId           [5]     = "note";
-// in "pat"
-const char patternIndexesId [5]     = "idx ";
-const char majorBeatsId     [5]     = "bmaj";
-const char minorBeatsId     [5]     = "bmin";
-
-
-
-// List types
-const char infoListType     [5]     = "INFO";
-const char songListType     [5]     = "song";
-const char patternListType  [5]     = "pat ";
-
-
-
-const uint32_t mainBranchVer = 0;
-const uint32_t thisBranchVer = 0;
 
 int Project::Load(std::vector<uint8_t>& __data) {
     auto file = RIFF::RIFFReader();
     auto errCode = file.open(__data.data());
     if (errCode) return errCode;
-    loadInternal(file);
+    // loadInternal(file);
     // auto errdata = file.readChunkData();
     // if (errdata->errorCode) return errdata->errorCode;
     // auto data = *(errdata->data);
@@ -260,95 +122,11 @@ int Project::Load(std::ifstream & __file) {
     auto file = RIFF::RIFFReader();
     auto errCode = file.open(__file);
     if (errCode) return errCode;
-    return loadInternal (file);
-}
-
-int Project::loadInternal(RIFF::RIFFReader & file) {
-    int errCode;
-    // 1. Test file type
-        if (memcmp(file.rr->h_type, fileType, 4)){
-            fprintf(stderr, "The file type is not a Genecyzer file. Aborting loading\n");
-            return -1;
-        } 
-        auto chunkData = file.readChunkData();
-        if (chunkData == nullptr) return RIFF_ERROR_UNKNOWN;
-        auto data = chunkData->data();
-        auto size = chunkData->size();
-        printByteArray(data, size, 16);
-        if ( !(
-            (!memcmp(data, mainBranch, 8) && readUint32(data+8) <= mainBranchVer) || 
-            (!memcmp(data, thisBranch, 8) && readUint32(data+8) <= thisBranchVer)
-        ) ) { 
-            fprintf(stderr, "File version is invalid. Aborting loading\n");
-            return -1;
-        }
-        errCode = file.seekNextChunk();
-
-    // And now, read the rest of the file
-    while (!errCode) {
-        if (!memcmp(file.rr->c_id, listId, 4)){
-            // LIST type, has several subtypes
-            errCode = file.seekLevelSub();
-
-            auto * type = file.rr->ls[file.rr->ls_level-1].c_type;
-
-            if (!memcmp(type, infoListType, 4)){
-                // INFO subchunk
-                while (!errCode) {
-                    chunkData = file.readChunkData();
-
-                    auto id = file.rr->c_id;
-
-                    if (!memcmp (id, commentsId, 4)){
-                        // Comment subsubchunk, gotta convert 'em 
-                        // record separator chars into newlines
-                        for (auto &c : *chunkData) {
-                            if (c == 0x1E) c = 0x0A; // Record Separator -> LineFeed
-                        }
-                    }
-
-                    printByteArray(chunkData->data(), chunkData->size(), 16);
-
-                    if (chunkData->back() != 0) 
-                        chunkData->push_back(0);
-
-                    if (!memcmp (id, nameId, 4))
-                        name = std::string((char *)chunkData->data());
-                    else if (!memcmp (id, artistId, 4))
-                        composer = std::string((char *)chunkData->data());
-                    else if (!memcmp (id, copyrightId, 4))
-                        copyright = std::string((char *)chunkData->data());
-                    else if (!memcmp (id, commentsId, 4))
-                        comments = std::string((char *)chunkData->data());
-                    else if (!memcmp (id, softwareId, 4)){
-                        if ( ! (
-                            chunkData->size() == 10 &&
-                            !memcmp (chunkData->data(), software, 9)
-                        ) )
-                            fprintf(stderr, "The \"Software\" field in the Genecyzer file's metadata is not set to \"Genecyzer\". This indicates a file that has been created or modified by external software, which could lead to invalid file loading.\n");
-                    }
-
-                    errCode = file.seekNextChunk();
-                }
-            }
-        } 
-
-        errCode = file.seekNextChunk();
-    }
-
-    printf("Name: %s\nComposer: %s\nCopyright:\n----\n%s\n----\nComments:\n----\n%s\n----\n", name.c_str(), composer.c_str(), copyright.c_str(), comments.c_str());
-
-    return errCode == RIFF_ERROR_EOCL ? 0 : errCode;
+    // return loadInternal (file);
 }
 
 void Project::Save (std::ofstream & file) {
-    RIFF::RIFFWriter writer;
 
-    writer.open(file);
-
-    saveInternal(writer);
-
-    writer.close();
 }
 
 uint8_t * Project::Save(size_t * size_out) {
@@ -356,7 +134,7 @@ uint8_t * Project::Save(size_t * size_out) {
 
     writer.openMem();
 
-    saveInternal(writer);
+    // saveInternal(writer);
 
     writer.close();
     *size_out = writer.rw->size;
@@ -364,45 +142,10 @@ uint8_t * Project::Save(size_t * size_out) {
     return outMem;
 }
 
-int Project::saveInternal(RIFF::RIFFWriter & file) {
-    // Write the version chunk
-    file.newChunk();
-    file.writeInChunk((void *)thisBranch, 8);
-    char buf[4];
-    writeBytes(thisBranchVer, buf);
-    file.writeInChunk(buf, 4);
-    file.finishChunk((char *)versionId);    
-
-    // Write the INFO LIST chunk
-    file.newListChunk((char *)infoListType);
-        file.writeNewChunk((void*)software, sizeof(software), (char *)softwareId);
-        if (composer.length())
-            file.writeNewChunk((void *)composer.c_str(), composer.length(), (char *)artistId);
-        if (comments.length()) {
-            char * chunkData = new char[comments.length()];
-            std::strncpy(chunkData, comments.c_str(), comments.length());
-            for (size_t i = 0; i < comments.length(); i++) {
-                if (chunkData[i] == 0x0A) chunkData[i] = 0x1E; // LineFeed -> Record Separator
-            }
-            file.writeNewChunk(chunkData, comments.length(), (char *)commentsId);
-            delete[] chunkData;
-        }
-        if (copyright.length())
-            file.writeNewChunk((void *)copyright.c_str(), copyright.length(), (char *)copyrightId);
-        if (name.length())
-            file.writeNewChunk((void *)name.c_str(), name.length(), (char *)nameId);
-    file.finishListChunk();
-
-    file.newListChunk((char *)songListType);
-
-        file.writeNewChunk(&songs[0].effectColumnAmount, 8, (char *)effectColumnId);
-
-    file.finishListChunk();
-
-    file.setFileType((char *)fileType);
-
-    return 0;
+ProjectMetadata * Project::exportMetadata() {
+	return new ProjectMetadata {
+		__name, __composer, __copyright, __comments
+	};
 }
-
 
 #endif
