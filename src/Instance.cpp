@@ -184,8 +184,8 @@ Instance::Instance() {
 
     std::vector<uint8_t> rawData = {
         64, 0, 0, 0, // Total size
-        0+3*12, 1<<INSTRUMENT|1<<NOTE_REPEAT, 00, 02, 00,
-        1<<FLAG_REPEAT, 20, 00,
+        0+3*12, 1<<INSTRUMENT|1<<NOTE_REPEAT, 00, 02+0x40,
+        1<<FLAG_REPEAT, 20+0x40,
         // Note and flag repeated lmao
         0+4*12,
         0+3*12,
@@ -206,7 +206,7 @@ Instance::Instance() {
         6+3*12,
         6+4*12,
         9+3*12,
-        EMPTY_NOTE, 1<<NOTE_REPEAT|1<<FLAG_REPEAT, 42, 00, 42, 00
+        EMPTY_NOTE, 1<<NOTE_REPEAT|1<<FLAG_REPEAT, 42+0x40, 42+0x40
     };
 
     activeProject.songs[0].patternData.push_back(activeProject.songs[0].patternData[0]);

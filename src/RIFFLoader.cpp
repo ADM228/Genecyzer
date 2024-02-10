@@ -13,7 +13,6 @@
 #include "Song.cpp"
 #include "Instrument.cpp"
 #include "Effect.cpp"
-#include "libriff/riff.h"
 
 // Project file format:
 
@@ -125,17 +124,24 @@
                         flags byte.
                     X bytes (optional) - Effect data
                         TODO this
-					2 bytes (optional) - Repeat count (note)
+					1-2 bytes (optional) - Repeat count
+					(note)
 						Only present if bit 3 is set in the
-						flags byte.
-					2 bytes (optional) - Repeat count 
+						flags byte. Treated as 
+						!!! BIG-ENDIAN !!!
+						2 bytes if the value of the first
+						byte < 0x40, else it's treated as 1
+						byte (and 0x40 is subtracted)
+					1-2 bytes (optional) - Repeat count 
 					(instrument)
 						Only present if bit 2 is set in the
-						flags byte.
-					2 bytes (optional) - Repeat count (flag
-					byte)
+						flags byte. For byte size look 
+						above into Repeat count (note).
+					1-2 bytes (optional) - Repeat count 
+					(flag byte)
 						Only present if bit 1 is set in the
-						flags byte.
+						flags byte. For byte size look 
+						above into Repeat count (note).
 
         
 */
@@ -375,6 +381,25 @@ Song loadSongFromRIFF(RIFF::RIFFReader & file) {
 #define INST_REPEAT 2
 #define FLAG_REPEAT 1
 
+uint16_t decompressNumber (uint8_t * & ptr) {
+	uint16_t value; 
+	if (*ptr < 0x40) {
+		value = ((*ptr) << 8) | (*(ptr+1) & 0xFF);
+		ptr += 2;
+	} else {
+		value = (*ptr) - 0x40;
+		ptr++;
+	}
+	return value;
+}
+
+std::vector <uint8_t> compressNumber (uint16_t value) {
+	if (value < (0x100 - 0x40))
+		return std::vector<uint8_t> {static_cast<uint8_t>(value&0xFF)};
+	else
+		return std::vector<uint8_t> {static_cast<uint8_t>(((value>>8)&0xFF)), static_cast<uint8_t>((value&0xFF))};
+}
+
 std::vector<TrackerCell> decodeNoteStruct (std::vector<uint8_t> * chunkData) {
 	// Accepts chunk data directly from RIFF::RIFFReader::ReadChunkData()
 	if (chunkData == 0) return std::vector<TrackerCell>(0);
@@ -441,21 +466,19 @@ std::vector<TrackerCell> decodeNoteStruct (std::vector<uint8_t> * chunkData) {
 		if (flagsByte & 1<<NOTE_REPEAT) {
 			// 7.1. Note repeating
 			noteRpt = noteValue;
-			noteRptCount = readUint16(ptr);
-			ptr += 2;
+			noteRptCount = decompressNumber(ptr);
 		}
 		if (flagsByte & 1<<INST_REPEAT) {
 			// 7.2. Instrument repeating
 			instRpt = cell.instrument;
-			instRptCount = readUint16(ptr);
-			ptr += 2;
+			instRptCount = decompressNumber(ptr);
 		}
 		if (flagsByte & 1<<FLAG_REPEAT) {
 			// 7.3. Flag byte repeating
 			flagRpt = flagsByte;
 			flagRpt &= ~((1<<NOTE_REPEAT)|(1<<INST_REPEAT)|(1<<FLAG_REPEAT)); 	// Repeating this would break shit
-			flagRptCount = readUint16(ptr);
-			ptr += 2;
+			flagRptCount = decompressNumber(ptr);
+
 		}
 
 		array.push_back(cell);
