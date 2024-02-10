@@ -120,7 +120,7 @@ Instance::Instance() {
         data.open(filename, std::ios_base::binary | std::ios_base::in);
         auto file = RIFF::RIFFReader();
         file.open(data);
-        loadRIFFFile(file, activeProject);
+        RIFFLoader::loadRIFFFile(file, activeProject);
     #else
 
 
@@ -142,7 +142,7 @@ Instance::Instance() {
 
         size_t size = 0;
         RIFF::RIFFWriter tmp; tmp.openMem();
-        saveRIFFFile(tmp, activeProject);
+        RIFFLoader::saveRIFFFile(tmp, activeProject);
         auto ptr = tmp.rw->fh; size = tmp.rw->size; tmp.close();
         printByteArray(ptr, size, 16);
         free(ptr);
@@ -155,7 +155,7 @@ Instance::Instance() {
             writer.open(outData);
 
             // saveInternal(writer);
-            saveRIFFFile(writer, activeProject);
+            RIFFLoader::saveRIFFFile(writer, activeProject);
             writer.close();
 			outData.close();
 		}
@@ -181,6 +181,36 @@ Instance::Instance() {
     //     3+3*12, 3+4*12, 3+3*12,
     //     6+3*12, 6+4*12, 9+3*12
     // };
+
+    std::vector<uint8_t> rawData = {
+        64, 0, 0, 0, // Total size
+        0+3*12, 1<<INSTRUMENT|1<<NOTE_REPEAT, 00, 02, 00,
+        1<<FLAG_REPEAT, 20, 00,
+        // Note and flag repeated lmao
+        0+4*12,
+        0+3*12,
+        3+3*12,
+        3+4*12,
+        3+3*12,
+        6+3*12,
+        6+4*12,
+        9+3*12,
+        0+3*12,
+        0+3*12,
+        0+3*12,
+        0+4*12,
+        0+3*12,
+        3+3*12,
+        3+4*12,
+        3+3*12,
+        6+3*12,
+        6+4*12,
+        9+3*12,
+        EMPTY_NOTE, 1<<NOTE_REPEAT|1<<FLAG_REPEAT, 42, 00, 42, 00
+    };
+
+    activeProject.songs[0].patternData.push_back(activeProject.songs[0].patternData[0]);
+    activeProject.songs[0].patternData[0] = RIFFLoader::decodeNoteStruct(&rawData);
 
     // for (int i = 0; i < 22; i++){
     //     cells.push_back(TrackerCell());

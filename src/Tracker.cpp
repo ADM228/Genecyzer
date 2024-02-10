@@ -1,6 +1,7 @@
 #ifndef __TRACKER_INCLUDED__
 #define __TRACKER_INCLUDED__
 
+#include <cstdint>
 #include <vector>
 #include "Tile.cpp"
 #include "Effect.cpp"
@@ -23,11 +24,17 @@ class TrackerCell {
         TrackerCell();
         uint8_t noteValue;
         uint8_t instrument;
-        bool attack;
         std::vector<EffectBase> effects;
+
+        bool attack () {return ((flags & 1) != 0);};
+        void attack (bool in) {flags = (flags & ~1) || (in ? 1 : 0);};
+
+        bool hideInstrument () {return ((flags & 2) != 0);};
+        void hideInstrument (bool in) {flags = (flags & ~1) || (in ? 2 : 0);};
 
         TileMatrix render(uint16_t effectColumns = 0, bool singleTile = true);
     private:
+        uint8_t flags;
         constexpr static uint32_t singleNoteTileTable[] {
             0x43, 0x1B, 0x44, 0x1C, 0x45,               // C, C#, D, D#, E
             0x46, 0x1D, 0x47, 0x1E, 0x41, 0x1F, 0x42    // F, F#, G, G#, A, A#, B
@@ -51,7 +58,8 @@ class TrackerCell {
 
 TrackerCell::TrackerCell(){
     noteValue = EMPTY_NOTE;
-    attack = true;
+    attack(true);
+    hideInstrument(false);
     instrument = 0;
 }
 
@@ -79,13 +87,19 @@ TileMatrix TrackerCell::render(uint16_t effectColumns, bool singleTile) {
         output.copyRect(0, 0, tileAppend+2+1+2, 1, keyOffRowPtr);
     } else {
         char row[5];
-        std::snprintf(row, 5, "%1d %02X", noteValue/12, instrument);
-        std::vector<uint32_t> row32(0);
-        for (int i = 0; i < 4; i++) row32.push_back(row[i]);
+        std::vector<uint32_t> row32 (0);
+        if (hideInstrument()) {
+            std::snprintf (row, 3, "%1d ", noteValue/12);
+            for (int i = 0; i < 2; i++) row32.push_back(row[i]);
+            row32[2] = EMPTY; row32[3] = EMPTY;
+        } else {
+            std::snprintf(row, 5, "%1d %02X", noteValue/12, instrument);
+            for (int i = 0; i < 4; i++) row32.push_back(row[i]);
+        }
         output.copyRect(tileAppend+1, 0, 2+1+2-1, 1, row32.data());
         output.setTile(0, 0, noteTileTable[noteValue%12]);
         if (!singleTile) output.setTile(1, 0, noteTileTable[12+noteValue%12]);
-        output.setTile(tileAppend+2, 0, attack ? SPACE : NOATTACK);
+        output.setTile(tileAppend+2, 0, attack() ? SPACE : NOATTACK);
     }
     // Render effects
     {

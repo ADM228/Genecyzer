@@ -1,10 +1,12 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <vector>
 
 #include "RIFF.cpp"
 #include "BitConverter.cpp"
 #include "RIFF.hpp"
+#include "Tracker.cpp"
 #include "Utils.cpp"
 
 #include "Project.cpp"
@@ -95,7 +97,7 @@
                 4 bytes - the amount of note structs in 
                 this chunk. Each note struct consists of:
                     1 byte - the note value:
-                        In range 0..96 for C0..B7, 
+                        In range 0..95 for C0..B7, 
                         253 means to repeat the default 
                         tracker cell (and no further data
                         follows after this),
@@ -107,25 +109,41 @@
                         enabled,
                         bit 6 - whether an instrument value
                         is set,      
-                        bit 5 - whether a volume value
-                        is set,
-                        bit 4 - whether any effects are 
+                        bit 5 - whether any effects are 
                         declared,
-                        bit 3 - whether to set this cell as
+                        bit 4 - whether to set this cell as
                         the default cell.
+						bit 3 - whether to repeat the note
+						on the next cells.
+						bit 2 - whether to repeat the 
+						instruments on the next cells.
+						bit 1 - whether to repeat the flag
+						byte (except for repeat bits) on 
+						the next X cells.
                     1 byte (optional) - Instrument value
                         Only present if bit 6 is set in the
                         flags byte.
-                    1 byte (optional) - Volume value
-                        Only present if bit 5 is set in the
-                        flags byte.
                     X bytes (optional) - Effect data
-                        TODO
+                        TODO this
+					2 bytes (optional) - Repeat count (note)
+						Only present if bit 3 is set in the
+						flags byte.
+					2 bytes (optional) - Repeat count 
+					(instrument)
+						Only present if bit 2 is set in the
+						flags byte.
+					2 bytes (optional) - Repeat count (flag
+					byte)
+						Only present if bit 1 is set in the
+						flags byte.
 
         
 */
 
+namespace RIFFLoader {
+
 Song loadSongFromRIFF(RIFF::RIFFReader & file);
+std::vector<TrackerCell> decodeNoteStruct (std::vector<uint8_t> * chunkData);
 
 // RIFF constants
 
@@ -198,6 +216,7 @@ int loadRIFFFile (RIFF::RIFFReader & file, Project & project) {
 			fprintf(stderr, "File version is invalid. Aborting loading\n");
 			return -1;
 		}
+		delete chunkData;
 		errCode = file.seekNextChunk();
 
     // And now, read the rest of the file
@@ -345,3 +364,104 @@ Song loadSongFromRIFF(RIFF::RIFFReader & file) {
 
 	return song;
 };
+
+#define REPEAT_DEFAULT_CELL 253
+
+#define NO_ATTACK 7
+#define INSTRUMENT 6
+#define EFFECTS 5
+#define SET_DEFAULT 4
+#define NOTE_REPEAT 3
+#define INST_REPEAT 2
+#define FLAG_REPEAT 1
+
+std::vector<TrackerCell> decodeNoteStruct (std::vector<uint8_t> * chunkData) {
+	// Accepts chunk data directly from RIFF::RIFFReader::ReadChunkData()
+	if (chunkData == 0) return std::vector<TrackerCell>(0);
+	uint32_t count = readUint32(chunkData->data());
+	
+	uint16_t noteRptCount = 0, instRptCount = 0, flagRptCount = 0;
+	uint8_t noteRpt, instRpt, flagRpt;
+	
+	uint8_t * ptr = &(*chunkData)[4];
+	uint8_t * endPtr = chunkData->end().base();
+	TrackerCell cell, defaultCell;
+	std::vector<TrackerCell> array;
+
+	for (int i = count; ptr <= endPtr && i != 0; i--) {
+		// 1. Parse (or repeat) the note byte
+		uint8_t noteValue;
+
+		if (noteRptCount != 0) {
+			noteRptCount--;
+			noteValue = noteRpt;
+		} else {
+			noteValue = *ptr;
+			ptr++;
+		}
+
+		if (noteValue == REPEAT_DEFAULT_CELL) {
+			array.push_back(defaultCell);
+			continue;
+		} else if (noteValue >= 0 && noteValue < 96 || noteValue == EMPTY_NOTE || noteValue == KEY_OFF) cell.noteValue = noteValue;
+
+		// 2. Parse the flags byte
+		uint8_t flagsByte;
+		if (flagRptCount != 0) {
+			flagRptCount--;
+			flagsByte = flagRpt;
+		} else {
+			flagsByte = *ptr;
+			ptr++;
+		}
+
+		cell.attack((flagsByte & 1<<NO_ATTACK) != 0);	// 3. Set attack
+		if (flagsByte & 1<<INSTRUMENT) {
+			// 4. Get instrument value
+			if (instRptCount != 0) {
+				instRptCount--;
+				cell.instrument = instRpt;
+			} else {
+				cell.instrument = *ptr;
+				ptr++;
+			}
+			cell.hideInstrument(false);
+		} else cell.hideInstrument(true);
+		if (flagsByte & 1<<EFFECTS) {
+			// 5. Effects
+			// ptr++;
+			throw "No FX support rn\n";
+		}
+		if (flagsByte & 1<<SET_DEFAULT) {
+			// 6. Set it as the default cell
+			defaultCell = cell;
+		}
+
+		// 7. Deal with repeating
+		if (flagsByte & 1<<NOTE_REPEAT) {
+			// 7.1. Note repeating
+			noteRpt = noteValue;
+			noteRptCount = readUint16(ptr);
+			ptr += 2;
+		}
+		if (flagsByte & 1<<INST_REPEAT) {
+			// 7.2. Instrument repeating
+			instRpt = cell.instrument;
+			instRptCount = readUint16(ptr);
+			ptr += 2;
+		}
+		if (flagsByte & 1<<FLAG_REPEAT) {
+			// 7.3. Flag byte repeating
+			flagRpt = flagsByte;
+			flagRpt &= ~((1<<NOTE_REPEAT)|(1<<INST_REPEAT)|(1<<FLAG_REPEAT)); 	// Repeating this would break shit
+			flagRptCount = readUint16(ptr);
+			ptr += 2;
+		}
+
+		array.push_back(cell);
+	}
+
+	return array;
+}
+
+}	// namespace RIFFLoader
