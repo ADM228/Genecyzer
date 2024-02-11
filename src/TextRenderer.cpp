@@ -11,44 +11,46 @@
 uint32_t excNumberTR = 0;
 #define debugNum(x) { printf("[TextRenderer #%08X]\n", x); fflush(stdout); }
 
+namespace TextRenderer {
+
 struct wrappedText {
     std::vector<char32_t> text;
     uint16_t width;
     uint16_t height;
 };
 
-class TextRenderer {
-    public:
-        static std::u32string preprocess(std::u32string string);
-        static wrappedText wrapText(std::u32string text, int maxChars = -1, bool preprocess = 1);
-        #if defined (__TILE_INCLUDED__) && defined(__CHRFONT_INCLUDED__) 
-            static TileMatrix render (wrappedText *text, ChrFont *font, bool inverted = 0);
-            static TileMatrix render (std::u32string text, ChrFont *font, int maxChars = -1, bool preprocess = 1, bool inverted = 0);
-            #ifdef __STRCONVERT_INCLUDED__
-                static TileMatrix render (std::string text, ChrFont *font, int maxChars = -1, bool preprocess = 1, bool inverted = 0);
-            #endif
-        #endif
-    private:
-        TextRenderer() {};
-        constexpr static uint16_t halfKatakanaTable[] {
-                                                                    0x2985, // U+FF5F                             ｟ 
-            0x2986, 0x3002, 0x300C, 0x300D, 0x3001, 0x30FB, 0x30F2, 0x30A1, // U+FF60	｠  ｡   ｢   ｣   ､   ･   ｦ   ｧ 
-            0x30A3, 0x30A5, 0x30A7, 0x30A9, 0x30E3, 0x30E5, 0x30E7, 0x30C3, // U+FF68   ｨ 	ｩ 	ｪ 	ｫ 	ｬ 	ｭ 	ｮ 	ｯ 
-            0x30FC, 0x30A2, 0x30A4, 0x30A6, 0x30A8, 0x30AA, 0x30AB, 0x30AD, // U+FF70	ｰ 	ｱ 	ｲ 	ｳ 	ｴ 	ｵ 	ｶ 	ｷ 
-            0x30AF, 0x30B1, 0x30B3, 0x30B5, 0x30B7, 0x30B9, 0x30BB, 0x30BD, // U+FF78	ｸ 	ｹ 	ｺ 	ｻ 	ｼ 	ｽ 	ｾ 	ｿ
-            0x30BF, 0x30C1, 0x30C4, 0x30C6, 0x30C8, 0x30CA, 0x30CB, 0x30CC, // U+FF80 	ﾀ 	ﾁ 	ﾂ 	ﾃ 	ﾄ 	ﾅ 	ﾆ 	ﾇ 
-            0x30CD, 0x30CE, 0x30CF, 0x30D2, 0x30D5, 0x30D8, 0x30DB, 0x30DE, // U+FF88	ﾈ 	ﾉ 	ﾊ 	ﾋ 	ﾌ 	ﾍ 	ﾎ 	ﾏ
-            0x30DF, 0x30E0, 0x30E1, 0x30E2, 0x30E4, 0x30E6, 0x30E8, 0x30E9, // U+FF90 	ﾐ 	ﾑ 	ﾒ 	ﾓ 	ﾔ 	ﾕ 	ﾖ 	ﾗ 
-            0x30EA, 0x30EB, 0x30EC, 0x30ED, 0x30EF, 0x30F3, 0x309B, 0x309C, // U+FF98	ﾘ 	ﾙ 	ﾚ 	ﾛ 	ﾜ 	ﾝ 	ﾞ 	ﾟ
-            0x3164                                                          // U+FFA0 [HWHF]
-        };
-        constexpr static uint16_t modWidthSymbolTable[] {
-            0x00A2, 0x00A3, 0x00AC, 0x00AF, 0x00A6, 0x00A5, 0x20A9, 0x0000, // U+FFE0	￠  ￡  ￢  ￣  ￤  ￥  ￦ 
-            0x2502, 0x2190, 0x2191, 0x2192, 0x2193, 0x25A0, 0x25CB, 0x0000  // U+FFE8	￨ 	￩ 	￪ 	￫ 	￬ 	￭ 	￮ 
-        };
+
+std::u32string preprocess(std::u32string string);
+wrappedText wrapText(std::u32string text, int maxChars = -1, bool preprocess = 1);
+#if defined (__TILE_INCLUDED__) && defined(__CHRFONT_INCLUDED__) 
+    TileMatrix render (wrappedText *text, ChrFont *font, bool inverted = 0);
+    TileMatrix render (std::u32string text, ChrFont *font, int maxChars = -1, bool preprocess = 1, bool inverted = 0);
+    #ifdef __STRCONVERT_INCLUDED__
+        TileMatrix render (std::string text, ChrFont *font, int maxChars = -1, bool preprocess = 1, bool inverted = 0);
+    #endif
+#endif
+
+#pragma region Tables
+constexpr static uint16_t halfKatakanaTable[] {
+                                                            0x2985, // U+FF5F                             ｟ 
+    0x2986, 0x3002, 0x300C, 0x300D, 0x3001, 0x30FB, 0x30F2, 0x30A1, // U+FF60	｠  ｡   ｢   ｣   ､   ･   ｦ   ｧ 
+    0x30A3, 0x30A5, 0x30A7, 0x30A9, 0x30E3, 0x30E5, 0x30E7, 0x30C3, // U+FF68   ｨ 	ｩ 	ｪ 	ｫ 	ｬ 	ｭ 	ｮ 	ｯ 
+    0x30FC, 0x30A2, 0x30A4, 0x30A6, 0x30A8, 0x30AA, 0x30AB, 0x30AD, // U+FF70	ｰ 	ｱ 	ｲ 	ｳ 	ｴ 	ｵ 	ｶ 	ｷ 
+    0x30AF, 0x30B1, 0x30B3, 0x30B5, 0x30B7, 0x30B9, 0x30BB, 0x30BD, // U+FF78	ｸ 	ｹ 	ｺ 	ｻ 	ｼ 	ｽ 	ｾ 	ｿ
+    0x30BF, 0x30C1, 0x30C4, 0x30C6, 0x30C8, 0x30CA, 0x30CB, 0x30CC, // U+FF80 	ﾀ 	ﾁ 	ﾂ 	ﾃ 	ﾄ 	ﾅ 	ﾆ 	ﾇ 
+    0x30CD, 0x30CE, 0x30CF, 0x30D2, 0x30D5, 0x30D8, 0x30DB, 0x30DE, // U+FF88	ﾈ 	ﾉ 	ﾊ 	ﾋ 	ﾌ 	ﾍ 	ﾎ 	ﾏ
+    0x30DF, 0x30E0, 0x30E1, 0x30E2, 0x30E4, 0x30E6, 0x30E8, 0x30E9, // U+FF90 	ﾐ 	ﾑ 	ﾒ 	ﾓ 	ﾔ 	ﾕ 	ﾖ 	ﾗ 
+    0x30EA, 0x30EB, 0x30EC, 0x30ED, 0x30EF, 0x30F3, 0x309B, 0x309C, // U+FF98	ﾘ 	ﾙ 	ﾚ 	ﾛ 	ﾜ 	ﾝ 	ﾞ 	ﾟ
+    0x3164                                                          // U+FFA0 [HWHF]
+};
+constexpr static uint16_t modWidthSymbolTable[] {
+    0x00A2, 0x00A3, 0x00AC, 0x00AF, 0x00A6, 0x00A5, 0x20A9, 0x0000, // U+FFE0	￠  ￡  ￢  ￣  ￤  ￥  ￦ 
+    0x2502, 0x2190, 0x2191, 0x2192, 0x2193, 0x25A0, 0x25CB, 0x0000  // U+FFE8	￨ 	￩ 	￪ 	￫ 	￬ 	￭ 	￮ 
 };
 
-std::u32string TextRenderer::preprocess(std::u32string string){
+#pragma endregion
+
+std::u32string preprocess(std::u32string string){
     std::vector<char32_t> output_text;
     for (uint32_t i = 0; i < string.length(); i++){
         uint32_t character = string[i];
@@ -120,7 +122,7 @@ std::u32string TextRenderer::preprocess(std::u32string string){
     return out_string;
 }
 
-wrappedText TextRenderer::wrapText(std::u32string text, int maxChars, bool preprocess){
+wrappedText wrapText(std::u32string text, int maxChars, bool preprocess){
     std::u32string inString;
     if (preprocess) inString = TextRenderer::preprocess(text);
     else inString = text;
@@ -233,7 +235,7 @@ wrappedText TextRenderer::wrapText(std::u32string text, int maxChars, bool prepr
 
 #if defined (__TILE_INCLUDED__) && defined(__CHRFONT_INCLUDED__) 
 
-TileMatrix TextRenderer::render(wrappedText *text, ChrFont *font, bool inverted){
+TileMatrix render(wrappedText *text, ChrFont *font, bool inverted){
 
     auto string = text->text;
     auto codepages = font->codepages;
@@ -270,18 +272,20 @@ TileMatrix TextRenderer::render(wrappedText *text, ChrFont *font, bool inverted)
 }
 
 
-TileMatrix TextRenderer::render (std::u32string text, ChrFont *font, int maxChars, bool preprocess, bool inverted){
+TileMatrix render (std::u32string text, ChrFont *font, int maxChars, bool preprocess, bool inverted){
     auto wrappedText = TextRenderer::wrapText(text, maxChars, preprocess);
     TileMatrix matrix = TextRenderer::render(&wrappedText, font, inverted);
     return matrix;
 }
 
-TileMatrix TextRenderer::render (std::string text, ChrFont *font, int maxChars, bool preprocess, bool inverted){
+TileMatrix render (std::string text, ChrFont *font, int maxChars, bool preprocess, bool inverted){
     std::u32string text32 = To_UTF32(text);
     TileMatrix matrix = TextRenderer::render(text32, font, maxChars, preprocess, inverted);
     return matrix;
 }
 
 #endif
+
+}
 
 #endif  // __TEXTRENDERER_INCLUDED__

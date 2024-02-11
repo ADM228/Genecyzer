@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <vector>
+#include <array>
 #include "Tile.cpp"
 #include "Effect.cpp"
 
@@ -87,14 +88,14 @@ TileMatrix TrackerCell::render(uint16_t effectColumns, bool singleTile) {
         output.copyRect(0, 0, tileAppend+2+1+2, 1, keyOffRowPtr);
     } else {
         char row[5];
-        std::vector<uint32_t> row32 (0);
+        std::array<uint32_t, 5> row32;
         if (hideInstrument()) {
             std::snprintf (row, 3, "%1d ", noteValue/12);
-            for (int i = 0; i < 2; i++) row32.push_back(row[i]);
+            for (int i = 0; i < 2; i++) row32[i] = row[i];
             row32[2] = EMPTY; row32[3] = EMPTY;
         } else {
             std::snprintf(row, 5, "%1d %02X", noteValue/12, instrument);
-            for (int i = 0; i < 4; i++) row32.push_back(row[i]);
+            for (int i = 0; i < 4; i++) row32[i] = row[i];
         }
         output.copyRect(tileAppend+1, 0, 2+1+2-1, 1, row32.data());
         output.setTile(0, 0, noteTileTable[noteValue%12]);

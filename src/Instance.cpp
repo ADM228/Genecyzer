@@ -23,6 +23,7 @@
 #include <chrono>
 #include <fstream>
 #include <ios>
+#include <type_traits>
 #include "tinyfiledialogs.h"
 
 char const * filter[] = {"*.gczr"};
@@ -143,11 +144,12 @@ Instance::Instance() {
         size_t size = 0;
         RIFF::RIFFWriter tmp; tmp.openMem();
         RIFFLoader::saveRIFFFile(tmp, activeProject);
-        auto ptr = tmp.rw->fh; size = tmp.rw->size; tmp.close();
+        tmp.close(); auto ptr = tmp.rw->fh; size = tmp.rw->size;
         printByteArray(ptr, size, 16);
         free(ptr);
 
         auto outFilename = tinyfd_saveFileDialog("Save the file", "outTest.gczr", 1, filter, "Genecyzer project file");
+        if (outFilename != NULL) {
 		{ 
 			auto outData = std::ofstream(outFilename, std::ios_base::out | std::ios_base::binary);
             RIFF::RIFFWriter writer;
@@ -165,6 +167,7 @@ Instance::Instance() {
 			outData.read(tmp, 256);
 			printByteArray(tmp, 256);
 		}
+        }
 		// printf("hex dump\n\n\n");		//	LMFAO I CAN HEX DUMP MY RAM
 		// printByteArray(this, -1);
 
@@ -209,7 +212,7 @@ Instance::Instance() {
         EMPTY_NOTE, 1<<NOTE_REPEAT|1<<FLAG_REPEAT, 42+0x40, 42+0x40
     };
 
-    activeProject.songs[0].patternData.push_back(activeProject.songs[0].patternData[0]);
+    activeProject.songs[0] = Song::createDefault();
     activeProject.songs[0].patternData[0] = RIFFLoader::decodeNoteStruct(&rawData);
 
     // for (int i = 0; i < 22; i++){

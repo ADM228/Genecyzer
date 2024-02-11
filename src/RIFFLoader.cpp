@@ -306,10 +306,10 @@ int saveRIFFFile (RIFF::RIFFWriter & file, Project & project) {
 	file.newListChunk((char *)infoListType);
 	{
 		auto metadata = project.exportMetadata();
-		auto & name 		= metadata->name;
-		auto & composer 	= metadata->composer;
-		auto & copyright	= metadata->copyright;
-		auto & comments	= metadata->comments;
+		auto & name 		= metadata.name;
+		auto & composer 	= metadata.composer;
+		auto & copyright	= metadata.copyright;
+		auto & comments	= metadata.comments;
 
 		file.writeNewChunk((void*)software, sizeof(software), (char *)softwareId);
 		if (composer.length())
@@ -327,7 +327,6 @@ int saveRIFFFile (RIFF::RIFFWriter & file, Project & project) {
 			file.writeNewChunk((void *)copyright.c_str(), copyright.length(), (char *)copyrightId);
 		if (name.length())
 			file.writeNewChunk((void *)name.c_str(), name.length(), (char *)nameId);
-		delete metadata;
 	}
 
 	file.finishListChunk();
@@ -428,7 +427,7 @@ std::vector<TrackerCell> decodeNoteStruct (std::vector<uint8_t> * chunkData) {
 		if (noteValue == REPEAT_DEFAULT_CELL) {
 			array.push_back(defaultCell);
 			continue;
-		} else if (noteValue >= 0 && noteValue < 96 || noteValue == EMPTY_NOTE || noteValue == KEY_OFF) cell.noteValue = noteValue;
+		} else if (noteValue >= 0 && noteValue <= MAX_NOTE || noteValue == EMPTY_NOTE || noteValue == KEY_OFF) cell.noteValue = noteValue;
 
 		// 2. Parse the flags byte
 		uint8_t flagsByte;
