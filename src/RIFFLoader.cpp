@@ -408,8 +408,8 @@ std::vector<TrackerCell> decodeNoteStruct (std::vector<uint8_t> * chunkData) {
 	uint16_t noteRptCount = 0, instRptCount = 0, flagRptCount = 0;
 	uint8_t noteRpt, instRpt, flagRpt;
 	
-	uint8_t * ptr = &(*chunkData)[4];
-	uint8_t * endPtr = chunkData->end().base();
+	uint8_t * ptr = &(chunkData->at(4));
+	uint8_t * endPtr = chunkData->data()+chunkData->size();
 	TrackerCell cell, defaultCell;
 	std::vector<TrackerCell> array;
 
