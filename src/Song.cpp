@@ -9,7 +9,7 @@
 #include "Instrument.cpp"
 
 struct TrackerPattern {
-    std::array<uint32_t, 8> cells;
+    std::array<uint16_t, 8> cells;
     std::vector<uint16_t> beats_major;
     std::vector<uint16_t> beats_minor;
     size_t rows;

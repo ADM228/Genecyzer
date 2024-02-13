@@ -1,3 +1,4 @@
+#include <atomic>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -13,6 +14,39 @@
 #include "Song.cpp"
 #include "Instrument.cpp"
 #include "Effect.cpp"
+
+// Var16 number format:
+
+/*
+Treated as 
+!!! BIG-ENDIAN !!!
+2 bytes if the value of the first
+byte < 0x40, else it's treated as 1
+byte (and 0x40 is subtracted)
+*/
+
+#define VAR16_MIN_SIZE 1
+#define VAR16_MAX_SIZE 2
+
+
+uint16_t decodeVar16 (uint8_t * & ptr) {
+	uint16_t value; 
+	if (*ptr < 0x40) {
+		value = ((*ptr) << 8) | (*(ptr+1) & 0xFF);
+		ptr += 2;
+	} else {
+		value = (*ptr) - 0x40;
+		ptr++;
+	}
+	return value;
+}
+
+std::vector <uint8_t> encodeVar16 (uint16_t value) {
+	if (value < (0x100 - 0x40))
+		return std::vector<uint8_t> {static_cast<uint8_t>(value&0xFF)};
+	else
+		return std::vector<uint8_t> {static_cast<uint8_t>(((value>>8)&0xFF)), static_cast<uint8_t>((value&0xFF))};
+}
 
 // Project file format:
 
@@ -86,12 +120,16 @@
             "col " - Color.
                 Lists the color of the song in the standard
                 24-bit color format.
-            "LIST" chunk of type "pat " - a pattern (the 
-            indexes are assumed to be in order). Subchunks:
-                "idx " - The pattern indexes themselves,
-                16-bit words, size is fixed at 8*2 = 16 bytes.
-                "bmaj" - The major beats. Variable size.
-                "bmin" - The minor beats. Variable size.
+            "pat " - a pattern (the indexes are assumed	to be
+			in order):
+				4 bytes  [08:11] - The amount of rows in the
+				pattern.
+				16 bytes [12:27] - The pattern indexes
+				themselves, 16-bit words.
+                Var16 bytes - Size of the list of major beats.
+				X bytes - The major beats.
+				Var16 bytes - Size of the list of minor beats.
+                X bytes - The minor beats.
             "note" chunk - a chunk of a "note struct":
                 4 bytes - the amount of note structs in 
                 this chunk. Each note struct consists of:
@@ -127,21 +165,15 @@
 					1-2 bytes (optional) - Repeat count
 					(note)
 						Only present if bit 3 is set in the
-						flags byte. Treated as 
-						!!! BIG-ENDIAN !!!
-						2 bytes if the value of the first
-						byte < 0x40, else it's treated as 1
-						byte (and 0x40 is subtracted)
+						flags byte. Var16 format.
 					1-2 bytes (optional) - Repeat count 
 					(instrument)
 						Only present if bit 2 is set in the
-						flags byte. For byte size look 
-						above into Repeat count (note).
+						flags byte. Var16 format.
 					1-2 bytes (optional) - Repeat count 
 					(flag byte)
 						Only present if bit 1 is set in the
-						flags byte. For byte size look 
-						above into Repeat count (note).
+						flags byte. Var16 format.
 
         
 */
@@ -149,7 +181,13 @@
 namespace RIFFLoader {
 
 Song loadSongFromRIFF(RIFF::RIFFReader & file);
+
 std::vector<TrackerCell> decodeNoteStruct (std::vector<uint8_t> * chunkData);
+std::vector<uint8_t> encodeNoteStruct (std::vector<TrackerCell> & pattern);
+
+TrackerPattern decodePatternStruct (std::vector<uint8_t> * chunkData);
+std::vector<uint8_t> encodePatternStruct (TrackerPattern & pattern);
+
 
 // RIFF constants
 
@@ -175,16 +213,11 @@ const char effectColumnId   [5]     = "effc";
 const char * songNameId             = nameId;
 const char colorId          [5]     = "col ";
 const char noteId           [5]     = "note";
-// in "pat"
-const char patternIndexesId [5]     = "idx ";
-const char majorBeatsId     [5]     = "bmaj";
-const char minorBeatsId     [5]     = "bmin";
-
+const char patternId		[5]		= "ptrn";
 
 // List types
-const char infoListType     [5]     = "INFO";
-const char songListType     [5]     = "song";
-const char patternListType  [5]     = "pat ";
+const char infoListType		[5]		= "INFO";
+const char songListType		[5]		= "song";
 
 const uint32_t mainBranchVer = 0;
 const uint32_t thisBranchVer = 0;
@@ -331,11 +364,27 @@ int saveRIFFFile (RIFF::RIFFWriter & file, Project & project) {
 
 	file.finishListChunk();
 
-	file.newListChunk((char *)songListType);
+	for (Song &song : project.songs) {
+		file.newListChunk((char *)songListType);
 
-		file.writeNewChunk(project.songs[0].effectColumnAmount.data(), 8, (char *)effectColumnId);
+			file.writeNewChunk(project.songs[0].effectColumnAmount.data(), 8, (char *)effectColumnId);
 
-	file.finishListChunk();
+			for (auto &pattern : song.patternData) {
+				if (pattern.size() > 0) {
+					auto data = encodeNoteStruct(pattern);
+
+					file.writeNewChunk(data, (char *)noteId);
+				}
+			}
+
+			for (auto &pattern : song.patterns) {
+				auto data = encodePatternStruct(pattern);
+
+				file.writeNewChunk(data, (char *)patternId);
+			}
+
+		file.finishListChunk();
+	}
 
 	file.setFileType((char *)fileType);
 
@@ -346,7 +395,7 @@ Song loadSongFromRIFF(RIFF::RIFFReader & file) {
 	char * id = getID();
 	char * type = getType();
 
-	if (memcmp(type, songListType, 4)){throw "RLoad:LSong: TP WRONG"; return *(Song*)0;};
+	if (memcmp(type, songListType, 4)){err ("RLoad:LSong: TP WRONG"); return *(Song*)0;};
 
 	Song song;
 
@@ -358,9 +407,19 @@ Song loadSongFromRIFF(RIFF::RIFFReader & file) {
 		id = getID();
 		ifID (effectColumnId) {
 			auto data = file.readChunkData();
-			if (data == nullptr) {throw "RLoad:LSong: EFFC RCD NULLPTR\n";}
-			else if (data->size() != 8) {throw "RLoad:LSong: EFFC RCD SIZE\n";}
+			if (data == nullptr) {err ("RLoad:LSong: EFFC RCD NULLPTR\n");}
+			else if (data->size() != 8) {err ("RLoad:LSong: EFFC RCD SIZE\n");}
 			else memcpy(&song.effectColumnAmount, data->data(), 8);
+		} else ifID (noteId) {
+			auto data = file.readChunkData();
+			if (data == nullptr) {err ("RLoad:LSong: NOTE RCD NULLPTR\n");}
+			else if (data->size() < 4) {err ("RLoad:LSong: NOTE RCD SIZE\n");}
+			else song.patternData.push_back(decodeNoteStruct(data));
+		} else ifID (patternId) {
+			auto data = file.readChunkData();
+			if (data == nullptr) {err ("RLoad:LSong: PTRN RCD NULLPTR\n");}
+			else if (data->size() < 2*sizeof(uint16_t)+2*VAR16_MIN_SIZE+sizeof(uint32_t)) {err ("RLoad:LSong: PTRN RCD SIZE\n");}
+			else song.patterns.push_back(decodePatternStruct(data));
 		}
 
 		errCode = file.seekNextChunk();
@@ -380,34 +439,18 @@ Song loadSongFromRIFF(RIFF::RIFFReader & file) {
 #define INST_REPEAT 2
 #define FLAG_REPEAT 1
 
-uint16_t decompressNumber (uint8_t * & ptr) {
-	uint16_t value; 
-	if (*ptr < 0x40) {
-		value = ((*ptr) << 8) | (*(ptr+1) & 0xFF);
-		ptr += 2;
-	} else {
-		value = (*ptr) - 0x40;
-		ptr++;
-	}
-	return value;
-}
-
-std::vector <uint8_t> compressNumber (uint16_t value) {
-	if (value < (0x100 - 0x40))
-		return std::vector<uint8_t> {static_cast<uint8_t>(value&0xFF)};
-	else
-		return std::vector<uint8_t> {static_cast<uint8_t>(((value>>8)&0xFF)), static_cast<uint8_t>((value&0xFF))};
-}
-
 std::vector<TrackerCell> decodeNoteStruct (std::vector<uint8_t> * chunkData) {
 	// Accepts chunk data directly from RIFF::RIFFReader::ReadChunkData()
 	if (chunkData == 0) return std::vector<TrackerCell>(0);
-	uint32_t count = readUint32(chunkData->data());
+	uint8_t * ptr = chunkData->data();	// Might seem unnecessary, but this will prevent segfaults
+	
+	uint32_t count = readUint32(ptr);
+	if (count == 0) return std::vector<TrackerCell>(0);
+	ptr += sizeof(count);
 	
 	uint16_t noteRptCount = 0, instRptCount = 0, flagRptCount = 0;
 	uint8_t noteRpt, instRpt, flagRpt;
 	
-	uint8_t * ptr = &(chunkData->at(4));
 	uint8_t * endPtr = chunkData->data()+chunkData->size();
 	TrackerCell cell, defaultCell;
 	std::vector<TrackerCell> array;
@@ -454,7 +497,7 @@ std::vector<TrackerCell> decodeNoteStruct (std::vector<uint8_t> * chunkData) {
 		if (flagsByte & 1<<EFFECTS) {
 			// 5. Effects
 			// ptr++;
-			throw "No FX support rn\n";
+			err ("No FX support rn\n");
 		}
 		if (flagsByte & 1<<SET_DEFAULT) {
 			// 6. Set it as the default cell
@@ -465,24 +508,105 @@ std::vector<TrackerCell> decodeNoteStruct (std::vector<uint8_t> * chunkData) {
 		if (flagsByte & 1<<NOTE_REPEAT) {
 			// 7.1. Note repeating
 			noteRpt = noteValue;
-			noteRptCount = decompressNumber(ptr);
+			noteRptCount = decodeVar16(ptr);
 		}
 		if (flagsByte & 1<<INST_REPEAT) {
 			// 7.2. Instrument repeating
 			instRpt = cell.instrument;
-			instRptCount = decompressNumber(ptr);
+			instRptCount = decodeVar16(ptr);
 		}
 		if (flagsByte & 1<<FLAG_REPEAT) {
 			// 7.3. Flag byte repeating
 			flagRpt = flagsByte;
 			flagRpt &= ~((1<<NOTE_REPEAT)|(1<<INST_REPEAT)|(1<<FLAG_REPEAT)); 	// Repeating this would break shit
-			flagRptCount = decompressNumber(ptr);
+			flagRptCount = decodeVar16(ptr);
 
 		}
 
 		array.push_back(cell);
 	}
 
+	return array;
+}
+
+std::vector<uint8_t> encodeNoteStruct (std::vector<TrackerCell> & pattern) {
+	// Accepts chunk data directly from RIFF::RIFFReader::ReadChunkData()
+	std::vector<uint8_t> array (4);
+		
+	writeBytes(pattern.size(), array.data());
+	if (pattern.size() == 0) {return array;}
+	
+	for (auto & cell : pattern) {
+		array.push_back(cell.noteValue);
+		array.push_back(
+			(cell.attack() 			? 0 : 1<<NO_ATTACK	) |
+			(cell.hideInstrument()	? 0 : 1<<INSTRUMENT	)
+		);
+		if (!cell.hideInstrument()) 
+			array.push_back(cell.instrument);
+	}
+
+	//TODO COMPRESSION AGLORITHM
+
+	return array;
+}
+
+TrackerPattern decodePatternStruct (std::vector<uint8_t> * chunkData) {
+	TrackerPattern pattern;
+
+	auto * ptr = chunkData->data();	// Might seem unnecessary, but this will prevent segfaults
+
+	// Get amount of rows
+	pattern.rows = readUint32(ptr);
+	ptr += sizeof(uint32_t);
+
+	// Get the rows
+	memcpy(&pattern.cells, ptr, sizeof(uint16_t)*8);
+	ptr += sizeof(uint16_t)*8;
+
+	// Major beats
+	auto count = decodeVar16(ptr);
+	pattern.beats_major = std::vector<uint16_t> (count);
+	memcpy(pattern.beats_major.data(), ptr, count*sizeof(uint16_t));
+	ptr += count*sizeof(uint16_t);
+
+	// Minor beats
+	count = decodeVar16(ptr);
+	pattern.beats_minor = std::vector<uint16_t> (count);
+	memcpy(pattern.beats_minor.data(), ptr, count*sizeof(uint16_t));
+	
+	return pattern;
+}
+
+
+std::vector<uint8_t> encodePatternStruct (TrackerPattern & pattern) {
+	std::vector<uint8_t> array (sizeof(uint16_t)*8+sizeof(uint32_t));
+
+	auto * ptr = array.data();	
+
+	// Row amount
+	writeBytes((uint32_t)pattern.rows, ptr);
+	ptr += sizeof(uint32_t);
+
+	// Get the rows
+	memcpy(ptr, &pattern.cells, sizeof(uint16_t)*8);
+	ptr += sizeof(uint16_t)*8;
+
+	// Major beats
+	auto count = encodeVar16(pattern.beats_major.size());
+	array.resize(array.size()+count.size()+pattern.beats_major.size()*sizeof(uint16_t));
+	memcpy(ptr, count.data(), count.size());
+	ptr += count.size();
+	memcpy(ptr, pattern.beats_major.data(), pattern.beats_major.size()*sizeof(uint16_t));
+	ptr += pattern.beats_major.size()*sizeof(uint16_t);
+
+	// Minor beats
+	count = encodeVar16(pattern.beats_minor.size());
+	array.resize(array.size()+count.size()+pattern.beats_minor.size()*sizeof(uint16_t));
+	memcpy(ptr, count.data(), count.size());
+	ptr += count.size();
+	memcpy(ptr, pattern.beats_minor.data(), pattern.beats_minor.size()*sizeof(uint16_t));
+	
 	return array;
 }
 

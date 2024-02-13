@@ -3,11 +3,13 @@
 
 #include "SFML/System/Vector2.hpp"
 #include <cmath>
+#include <stdio.h>
 #include <string>
 #include <locale>
 #include <codecvt>
 #include <vector>
 #include <SFML/System.hpp>
+#include <cstdarg>
 
 // utility wrapper to adapt locale-bound facets for wstring/wbuffer convert
 template<class Facet>
@@ -81,4 +83,12 @@ void printByteArray(void * ptr, size_t size, size_t divide = 16) {
     fflush(stdout);
 }
 
+int err(const char *format, ... ){
+	va_list args;
+	va_start(args, format);
+	int r = vfprintf(stderr, format, args);
+	va_end (args);
+    fflush(stderr);
+	return r;
+}
 #endif  // __STRCONVERT_INCLUDED__

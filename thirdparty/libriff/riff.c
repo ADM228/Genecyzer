@@ -197,7 +197,7 @@ size_t seek_mem(riff_reader *rr, size_t pos){
 #ifdef RIFF_WRITE
 /*****************************************************************************/
 size_t write_mem(riff_writer *rw, void * ptr, size_t size){
-	if (rw->pos + size > rw->size) {
+	if (rw->pos + size >= rw->size) {
 		rw->size = fmax((rw->size>>1)*3, 256);
 		rw->size = fmax(rw->size, rw->pos + size); 
 		rw->fh = realloc(rw->fh, rw->size);

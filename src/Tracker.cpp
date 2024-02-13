@@ -31,7 +31,7 @@ class TrackerCell {
         void attack (bool in) {flags = (flags & ~1) || (in ? 1 : 0);};
 
         bool hideInstrument () {return ((flags & 2) != 0);};
-        void hideInstrument (bool in) {flags = (flags & ~1) || (in ? 2 : 0);};
+        void hideInstrument (bool in) {flags = (flags & ~2) || (in ? 2 : 0);};
 
         TileMatrix render(uint16_t effectColumns = 0, bool singleTile = true);
     private:
@@ -60,7 +60,7 @@ class TrackerCell {
 TrackerCell::TrackerCell(){
     noteValue = EMPTY_NOTE;
     attack(true);
-    hideInstrument(false);
+    hideInstrument(true);
     instrument = 0;
 }
 
