@@ -1,8 +1,8 @@
-#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <sys/types.h>
 #include <vector>
 
 #include "RIFF.cpp"
@@ -29,6 +29,10 @@ byte (and 0x40 is subtracted)
 #define VAR16_MIN_SIZE 1
 #define VAR16_MAX_SIZE 2
 
+#define VAR16_MIN_VALUE 0
+#define VAR16_MAX_VALUE 0x3FFF
+#define VAR16_ROLLOVER_VALUE (0x100 - 0x40)
+
 
 uint16_t decodeVar16 (uint8_t * & ptr) {
 	uint16_t value; 
@@ -43,10 +47,24 @@ uint16_t decodeVar16 (uint8_t * & ptr) {
 }
 
 std::vector <uint8_t> encodeVar16 (uint16_t value) {
-	if (value < (0x100 - 0x40))
+	if (value < VAR16_ROLLOVER_VALUE)
 		return std::vector<uint8_t> {static_cast<uint8_t>((value+0x40)&0xFF)};
 	else
-		return std::vector<uint8_t> {static_cast<uint8_t>(((value>>8)&0xFF)), static_cast<uint8_t>((value&0xFF))};
+		return std::vector<uint8_t> {static_cast<uint8_t>(((value>>8)&0x3F)), static_cast<uint8_t>((value&0xFF))};
+}
+
+int getSizeOfVar16 (uint16_t value) {
+	return value < VAR16_ROLLOVER_VALUE ? 1 : 2;
+}
+
+template <typename T> void writeVar16 (T * ptr, uint16_t value) {
+	uint8_t * ptr8 = ptr;
+	if (value < VAR16_ROLLOVER_VALUE)
+		*ptr8 = (uint8_t)(value+0x40);
+	else {
+		*ptr8 = (uint8_t)((value>>8) & 0x3F);
+		*(ptr8+1) = (uint8_t)(value & 0xFF);
+	}
 }
 
 // Project file format:
@@ -411,7 +429,7 @@ Song loadSongFromRIFF(RIFF::RIFFReader & file) {
 			auto data = file.readChunkData();
 			if (data == nullptr) {err ("RLoad:LSong: EFFC RCD NULLPTR\n");}
 			else if (data->size() != 8) {err ("RLoad:LSong: EFFC RCD SIZE\n");}
-			else memcpy(&song.effectColumnAmount, data->data(), 8);
+			else memcpy(&song.effectColumnAmount, data->data(), 8);	// Is endian-safe cuz 1 byte
 			delete data;
 		} else ifID (noteId) {
 			auto data = file.readChunkData();
@@ -566,19 +584,20 @@ TrackerPattern decodePatternStruct (std::vector<uint8_t> * chunkData) {
 	ptr += sizeof(uint32_t);
 
 	// Get the rows
-	memcpy(&pattern.cells, ptr, sizeof(uint16_t)*8);
-	ptr += sizeof(uint16_t)*8;
+	for (size_t i = 0; i < 8; i++, ptr += sizeof(uint16_t))
+		pattern.cells[i] = readUint16(ptr);
 
 	// Major beats
 	auto count = decodeVar16(ptr);
 	pattern.beats_major = std::vector<uint16_t> (count);
-	memcpy(pattern.beats_major.data(), ptr, count*sizeof(uint16_t)); //TODO Big endian safety
-	ptr += count*sizeof(uint16_t);
+	for (size_t i = 0; i < count; i++, ptr += sizeof(uint16_t))
+		pattern.beats_major[i] = readUint16(ptr);
 
 	// Minor beats
 	count = decodeVar16(ptr);
 	pattern.beats_minor = std::vector<uint16_t> (count);
-	memcpy(pattern.beats_minor.data(), ptr, count*sizeof(uint16_t)); //TODO Big endian safety
+	for (size_t i = 0; i < count; i++, ptr += sizeof(uint16_t))
+		pattern.beats_minor[i] = readUint16(ptr);
 	
 	return pattern;
 }
@@ -594,30 +613,34 @@ std::vector<uint8_t> encodePatternStruct (TrackerPattern & pattern) {
 	writeBytes((uint32_t)pattern.rows, ptr+offset);
 	offset += sizeof(uint32_t);
 
-	// Get the rows
-	memcpy(ptr+offset, &pattern.cells, sizeof(uint16_t)*8);
-	offset += sizeof(uint16_t)*8;
+	// Put the rows
+	for (size_t i = 0; i < 8; i++, offset+=sizeof(uint16_t))
+		writeBytes(pattern.cells[i], ptr+offset);
 
 	// Major beats
-	auto count = encodeVar16(pattern.beats_major.size());
-
-	array.resize(array.size()+count.size()+pattern.beats_major.size()*sizeof(uint16_t));
+	auto sizeOfData = pattern.beats_major.size();
+	auto sizeOfSize = getSizeOfVar16(sizeOfData);
+	array.resize(array.size()+sizeOfSize+sizeOfData*sizeof(uint16_t));
 	ptr = array.data();	// Update cuz might have moved
 
-	memcpy(ptr+offset, count.data(), count.size());
-	offset += count.size();
-	memcpy(ptr+offset, pattern.beats_major.data(), pattern.beats_major.size()*sizeof(uint16_t));
-	offset += pattern.beats_major.size()*sizeof(uint16_t);
+	writeVar16(ptr+offset, sizeOfData);
+	offset += sizeOfSize;
+
+	for (size_t i = 0; i < sizeOfData; i++, offset+=sizeof(uint16_t))
+		writeBytes(pattern.beats_major[i], ptr+offset);
 
 	// Minor beats
-	count = encodeVar16(pattern.beats_minor.size());
+	sizeOfData = pattern.beats_minor.size();
+	sizeOfSize = getSizeOfVar16(sizeOfData);
 
-	array.resize(array.size()+count.size()+pattern.beats_minor.size()*sizeof(uint16_t));
+	array.resize(array.size()+sizeOfSize+sizeOfData*sizeof(uint16_t));
 	ptr = array.data();	// Update cuz might have moved
 
-	memcpy(ptr+offset, count.data(), count.size());
-	offset += count.size();
-	memcpy(ptr+offset, pattern.beats_minor.data(), pattern.beats_minor.size()*sizeof(uint16_t));
+	writeVar16(ptr+offset, sizeOfData);
+	offset += sizeOfSize;
+
+	for (size_t i = 0; i < sizeOfData; i++, offset+=sizeof(uint16_t))
+		writeBytes(pattern.beats_minor[i], ptr+offset);
 	
 	return array;
 }
