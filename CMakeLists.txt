@@ -66,6 +66,17 @@ set (TINYFD_SOURCE_DIR "${SOURCE_DIR}")
 add_executable(Genecyzer src/main.cpp)
 target_compile_features(Genecyzer PRIVATE cxx_std_17)
 
+get_target_property(TEMP Genecyzer COMPILE_FLAGS)
+if(TEMP STREQUAL "TEMP-NOTFOUND")
+    SET(TEMP "") # Set to empty string
+else()
+    SET(TEMP "${TEMP} ") # A space to cleanly separate from existing content
+endif()
+# Append our values
+SET(TEMP "${TEMP}-g -O0 " )
+set_target_properties(Genecyzer PROPERTIES COMPILE_FLAGS ${TEMP} )
+
+
 add_custom_target(GenecyzerFileTest DEPENDS Genecyzer)
 
 if (TARGET GenecyzerFileTest)

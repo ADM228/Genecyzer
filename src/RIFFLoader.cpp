@@ -1,4 +1,5 @@
 #include <atomic>
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -43,7 +44,7 @@ uint16_t decodeVar16 (uint8_t * & ptr) {
 
 std::vector <uint8_t> encodeVar16 (uint16_t value) {
 	if (value < (0x100 - 0x40))
-		return std::vector<uint8_t> {static_cast<uint8_t>(value&0xFF)};
+		return std::vector<uint8_t> {static_cast<uint8_t>((value+0x40)&0xFF)};
 	else
 		return std::vector<uint8_t> {static_cast<uint8_t>(((value>>8)&0xFF)), static_cast<uint8_t>((value&0xFF))};
 }
@@ -306,6 +307,7 @@ int loadRIFFFile (RIFF::RIFFReader & file, Project & project) {
 								"modified by external software, which could lead "
 								"to invalid file loading.\n");
 					}
+					delete chunkData;
 
 					errCode = file.seekNextChunk();
 				}
@@ -410,16 +412,19 @@ Song loadSongFromRIFF(RIFF::RIFFReader & file) {
 			if (data == nullptr) {err ("RLoad:LSong: EFFC RCD NULLPTR\n");}
 			else if (data->size() != 8) {err ("RLoad:LSong: EFFC RCD SIZE\n");}
 			else memcpy(&song.effectColumnAmount, data->data(), 8);
+			delete data;
 		} else ifID (noteId) {
 			auto data = file.readChunkData();
 			if (data == nullptr) {err ("RLoad:LSong: NOTE RCD NULLPTR\n");}
 			else if (data->size() < 4) {err ("RLoad:LSong: NOTE RCD SIZE\n");}
 			else song.patternData.push_back(decodeNoteStruct(data));
+			delete data;
 		} else ifID (patternId) {
 			auto data = file.readChunkData();
 			if (data == nullptr) {err ("RLoad:LSong: PTRN RCD NULLPTR\n");}
 			else if (data->size() < 2*sizeof(uint16_t)+2*VAR16_MIN_SIZE+sizeof(uint32_t)) {err ("RLoad:LSong: PTRN RCD SIZE\n");}
 			else song.patterns.push_back(decodePatternStruct(data));
+			delete data;
 		}
 
 		errCode = file.seekNextChunk();
@@ -431,7 +436,7 @@ Song loadSongFromRIFF(RIFF::RIFFReader & file) {
 
 #define REPEAT_DEFAULT_CELL 253
 
-#define NO_ATTACK 7
+#define ATTACK 7
 #define INSTRUMENT 6
 #define EFFECTS 5
 #define SET_DEFAULT 4
@@ -482,7 +487,7 @@ std::vector<TrackerCell> decodeNoteStruct (std::vector<uint8_t> * chunkData) {
 			ptr++;
 		}
 
-		cell.attack((flagsByte & 1<<NO_ATTACK) != 0);	// 3. Set attack
+		cell.attack((flagsByte & 1<<ATTACK) != 0);	// 3. Set attack
 		if (flagsByte & 1<<INSTRUMENT) {
 			// 4. Get instrument value
 			if (instRptCount != 0) {
@@ -533,13 +538,13 @@ std::vector<uint8_t> encodeNoteStruct (std::vector<TrackerCell> & pattern) {
 	// Accepts chunk data directly from RIFF::RIFFReader::ReadChunkData()
 	std::vector<uint8_t> array (4);
 		
-	writeBytes(pattern.size(), array.data());
+	writeBytes((uint32_t)pattern.size(), array.data());
 	if (pattern.size() == 0) {return array;}
 	
 	for (auto & cell : pattern) {
 		array.push_back(cell.noteValue);
 		array.push_back(
-			(cell.attack() 			? 0 : 1<<NO_ATTACK	) |
+			(cell.attack() 			? 1<<ATTACK : 0		) |
 			(cell.hideInstrument()	? 0 : 1<<INSTRUMENT	)
 		);
 		if (!cell.hideInstrument()) 
@@ -567,13 +572,13 @@ TrackerPattern decodePatternStruct (std::vector<uint8_t> * chunkData) {
 	// Major beats
 	auto count = decodeVar16(ptr);
 	pattern.beats_major = std::vector<uint16_t> (count);
-	memcpy(pattern.beats_major.data(), ptr, count*sizeof(uint16_t));
+	memcpy(pattern.beats_major.data(), ptr, count*sizeof(uint16_t)); //TODO Big endian safety
 	ptr += count*sizeof(uint16_t);
 
 	// Minor beats
 	count = decodeVar16(ptr);
 	pattern.beats_minor = std::vector<uint16_t> (count);
-	memcpy(pattern.beats_minor.data(), ptr, count*sizeof(uint16_t));
+	memcpy(pattern.beats_minor.data(), ptr, count*sizeof(uint16_t)); //TODO Big endian safety
 	
 	return pattern;
 }
@@ -582,30 +587,37 @@ TrackerPattern decodePatternStruct (std::vector<uint8_t> * chunkData) {
 std::vector<uint8_t> encodePatternStruct (TrackerPattern & pattern) {
 	std::vector<uint8_t> array (sizeof(uint16_t)*8+sizeof(uint32_t));
 
+	size_t offset = 0;
 	auto * ptr = array.data();	
 
 	// Row amount
-	writeBytes((uint32_t)pattern.rows, ptr);
-	ptr += sizeof(uint32_t);
+	writeBytes((uint32_t)pattern.rows, ptr+offset);
+	offset += sizeof(uint32_t);
 
 	// Get the rows
-	memcpy(ptr, &pattern.cells, sizeof(uint16_t)*8);
-	ptr += sizeof(uint16_t)*8;
+	memcpy(ptr+offset, &pattern.cells, sizeof(uint16_t)*8);
+	offset += sizeof(uint16_t)*8;
 
 	// Major beats
 	auto count = encodeVar16(pattern.beats_major.size());
+
 	array.resize(array.size()+count.size()+pattern.beats_major.size()*sizeof(uint16_t));
-	memcpy(ptr, count.data(), count.size());
-	ptr += count.size();
-	memcpy(ptr, pattern.beats_major.data(), pattern.beats_major.size()*sizeof(uint16_t));
-	ptr += pattern.beats_major.size()*sizeof(uint16_t);
+	ptr = array.data();	// Update cuz might have moved
+
+	memcpy(ptr+offset, count.data(), count.size());
+	offset += count.size();
+	memcpy(ptr+offset, pattern.beats_major.data(), pattern.beats_major.size()*sizeof(uint16_t));
+	offset += pattern.beats_major.size()*sizeof(uint16_t);
 
 	// Minor beats
 	count = encodeVar16(pattern.beats_minor.size());
+
 	array.resize(array.size()+count.size()+pattern.beats_minor.size()*sizeof(uint16_t));
-	memcpy(ptr, count.data(), count.size());
-	ptr += count.size();
-	memcpy(ptr, pattern.beats_minor.data(), pattern.beats_minor.size()*sizeof(uint16_t));
+	ptr = array.data();	// Update cuz might have moved
+
+	memcpy(ptr+offset, count.data(), count.size());
+	offset += count.size();
+	memcpy(ptr+offset, pattern.beats_minor.data(), pattern.beats_minor.size()*sizeof(uint16_t));
 	
 	return array;
 }

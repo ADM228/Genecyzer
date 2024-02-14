@@ -163,9 +163,9 @@ Instance::Instance() {
 		}
 		{
 			auto outData = std::ifstream(outFilename, std::ios_base::binary | std::ios_base::in);
-			char tmp[256];
-			outData.read(tmp, 256);
-			printByteArray(tmp, 256);
+			char tmp[1024];
+			outData.read(tmp, 1024);
+			printByteArray(tmp, 1024);
 		}
         }
 		// printf("hex dump\n\n\n");		//	LMFAO I CAN HEX DUMP MY RAM
@@ -657,16 +657,20 @@ void Instance::renderBeatsTexture() {
     auto & min_beats = pattern.beats_minor;
     auto colors = new uint8_t[rows]();
     auto pixels = new uint8_t[rows*trackerMatrix.getWidth()*TILE_SIZE/2*sizeof(sf::Color)](); // automatically zeroes out alpha value
-    for (int i = 0; i < rows;) {
-        for (int j = 0; j < min_beats.size() && i < rows; j++) {
-            colors[i] = 1;
-            i += min_beats[j];
+    if (min_beats.size() > 0) {
+        for (int i = 0; i < rows;) {
+            for (int j = 0; j < min_beats.size() && i < rows; j++) {
+                colors[i] = 1;
+                i += min_beats[j];
+            }
         }
     }
-    for (int i = 0; i < rows;) {
-        for (int j = 0; j < maj_beats.size() && i < rows; j++) {
-            colors[i] = 2;
-            i += maj_beats[j];
+    if (maj_beats.size() > 0) {
+        for (int i = 0; i < rows;) {
+            for (int j = 0; j < maj_beats.size() && i < rows; j++) {
+                colors[i] = 2;
+                i += maj_beats[j];
+            }
         }
     }
 
