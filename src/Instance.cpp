@@ -168,51 +168,8 @@ Instance::Instance() {
 			printByteArray(tmp, 1024);
 		}
         }
-		// printf("hex dump\n\n\n");		//	LMFAO I CAN HEX DUMP MY RAM
-		// printByteArray(this, -1);
-
     #endif
     
-
-    // TODO: convert into raw data
-
-    // std::vector<uint8_t> rawData = {
-    //     64, 0, 0, 0, // Total size
-    //     0+3*12, 1<<INSTRUMENT|1<<NOTE_REPEAT, 00, 02+0x40,
-    //     1<<FLAG_REPEAT, 20+0x40,
-    //     // Note and flag repeated lmao
-    //     0+4*12,
-    //     0+3*12,
-    //     3+3*12,
-    //     3+4*12,
-    //     3+3*12,
-    //     6+3*12,
-    //     6+4*12,
-    //     9+3*12,
-    //     0+3*12,
-    //     0+3*12,
-    //     0+3*12,
-    //     0+4*12,
-    //     0+3*12,
-    //     3+3*12,
-    //     3+4*12,
-    //     3+3*12,
-    //     6+3*12,
-    //     6+4*12,
-    //     9+3*12,
-    //     EMPTY_NOTE, 1<<NOTE_REPEAT|1<<FLAG_REPEAT, 42+0x40, 42+0x40
-    // };
-
-    // printByteArray(rawData.data(), rawData.size());
-
-    // activeProject.songs[0] = Song::createDefault();
-    // activeProject.songs[0].patternData[0] = RIFFLoader::decodeNoteStruct(&rawData);
-
-    // for (int i = 0; i < 22; i++){
-    //     cells.push_back(TrackerCell());
-    //     cells.back().noteValue = notes[i];
-    // }
-
 }
 
 void Instance::addMonospaceFont(const uint8_t *data, uint32_t size, std::vector<uint32_t> codepages){
