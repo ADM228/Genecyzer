@@ -1,9 +1,13 @@
 #ifndef __TRACKER_INCLUDED__
 #define __TRACKER_INCLUDED__
 
+#include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <vector>
 #include <array>
+#include <functional>
+
 #include "Tile.cpp"
 #include "Effect.cpp"
 
@@ -27,13 +31,16 @@ class TrackerCell {
         uint8_t instrument;
         std::vector<EffectBase> effects;
 
-        bool attack () {return ((flags & 1) != 0);};
+        bool attack () const {return ((flags & 1) != 0);};
         void attack (bool in) {flags = (flags & ~1) || (in ? 1 : 0);};
 
-        bool hideInstrument () {return ((flags & 2) != 0);};
+        bool hideInstrument () const {return ((flags & 2) != 0);};
         void hideInstrument (bool in) {flags = (flags & ~2) || (in ? 2 : 0);};
 
         TileMatrix render(uint16_t effectColumns = 0, bool singleTile = true);
+
+        const bool operator==(const TrackerCell & other) const;
+        const bool operator!=(const TrackerCell & other) const;
     private:
         uint8_t flags;
         constexpr static uint32_t singleNoteTileTable[] {
@@ -113,6 +120,41 @@ TileMatrix TrackerCell::render(uint16_t effectColumns, bool singleTile) {
         }
     }
     return output;
+}
+
+template<>
+struct std::hash<TrackerCell> {
+    size_t operator()(const TrackerCell & cell) const noexcept {
+        char buffer[9];
+        std::snprintf(buffer, 9, "%2X/%2X/%d%d", cell.noteValue, cell.instrument, cell.hideInstrument(), cell.attack());
+        //TODO EFFECTS
+        return std::hash<std::string>{}(std::string(buffer));
+    }
+    /*
+    for (auto & effect : effects)
+        std::snprintf("%X", effect.exportString)
+    
+    */
+
+
+};
+
+const bool TrackerCell::operator==(const TrackerCell & other) const {
+    return (
+        noteValue == other.noteValue &&
+        instrument == other.instrument &&
+        flags == other.flags &&
+        effects == other.effects
+    );
+}
+
+const bool TrackerCell::operator!=(const TrackerCell & other) const {
+    return (
+        noteValue != other.noteValue ||
+        instrument != other.instrument ||
+        flags != other.flags ||
+        effects != other.effects
+    );
 }
 
 

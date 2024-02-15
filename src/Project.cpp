@@ -14,6 +14,7 @@
 #include "Instrument.cpp"
 #include "Utils.cpp"
 #include "Song.cpp"
+#include "RIFF.hpp"
 
 class FileException : public std::exception {
     public:
@@ -54,12 +55,12 @@ class Project {
         int Load (std::vector<uint8_t>& data);
 
         // Save project to filestream
-        void Save (std::ofstream & file);
+        void Save (std::ofstream & file) const;
         // Save project to memory
-        uint8_t * Save (size_t * size_out);
+        uint8_t * Save (size_t * size_out) const;
 
         // Export project's patterns to SNESFM opcode format
-        uint8_t * exportSNESFM ();
+        uint8_t * exportSNESFM () const;
 
         // The songs
         std::vector<Song> songs;
@@ -69,7 +70,7 @@ class Project {
 
         // Set / get methods for the metadata
         void importMetadata (ProjectMetadata & metadata);
-        ProjectMetadata exportMetadata();
+        const ProjectMetadata exportMetadata() const;
 
 				std::string&	name()				{return __name;};
 		const	std::string&	name()		const	{return __name;};
@@ -128,11 +129,11 @@ int Project::Load(std::ifstream & __file) {
     return 0;
 }
 
-void Project::Save (std::ofstream & file) {
+void Project::Save (std::ofstream & file) const{
 
 }
 
-uint8_t * Project::Save(size_t * size_out) {
+uint8_t * Project::Save(size_t * size_out) const{
     RIFF::RIFFWriter writer;
 
     writer.openMem();
@@ -145,7 +146,7 @@ uint8_t * Project::Save(size_t * size_out) {
     return outMem;
 }
 
-ProjectMetadata Project::exportMetadata() {
+const ProjectMetadata Project::exportMetadata() const{
 	return ProjectMetadata {
 		__name, __composer, __copyright, __comments
 	};

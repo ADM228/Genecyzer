@@ -3,69 +3,19 @@
 #include <cstdio>
 #include <cstring>
 #include <sys/types.h>
+#include <unordered_map>
 #include <vector>
 
-#include "RIFF.cpp"
 #include "BitConverter.cpp"
-#include "RIFF.hpp"
 #include "Tracker.cpp"
+#include "RIFF.hpp"
 #include "Utils.cpp"
+#include "Var16.cpp"
 
 #include "Project.cpp"
 #include "Song.cpp"
-#include "Instrument.cpp"
-#include "Effect.cpp"
-
-// Var16 number format:
-
-/*
-Treated as 
-!!! BIG-ENDIAN !!!
-2 bytes if the value of the first
-byte < 0x40, else it's treated as 1
-byte (and 0x40 is subtracted)
-*/
-
-#define VAR16_MIN_SIZE 1
-#define VAR16_MAX_SIZE 2
-
-#define VAR16_MIN_VALUE 0
-#define VAR16_MAX_VALUE 0x3FFF
-#define VAR16_ROLLOVER_VALUE (0x100 - 0x40)
-
-
-uint16_t decodeVar16 (uint8_t * & ptr) {
-	uint16_t value; 
-	if (*ptr < 0x40) {
-		value = ((*ptr) << 8) | (*(ptr+1) & 0xFF);
-		ptr += 2;
-	} else {
-		value = (*ptr) - 0x40;
-		ptr++;
-	}
-	return value;
-}
-
-std::vector <uint8_t> encodeVar16 (uint16_t value) {
-	if (value < VAR16_ROLLOVER_VALUE)
-		return std::vector<uint8_t> {static_cast<uint8_t>((value+0x40)&0xFF)};
-	else
-		return std::vector<uint8_t> {static_cast<uint8_t>(((value>>8)&0x3F)), static_cast<uint8_t>((value&0xFF))};
-}
-
-int getSizeOfVar16 (uint16_t value) {
-	return value < VAR16_ROLLOVER_VALUE ? 1 : 2;
-}
-
-template <typename T> void writeVar16 (T * ptr, uint16_t value) {
-	uint8_t * ptr8 = ptr;
-	if (value < VAR16_ROLLOVER_VALUE)
-		*ptr8 = (uint8_t)(value+0x40);
-	else {
-		*ptr8 = (uint8_t)((value>>8) & 0x3F);
-		*(ptr8+1) = (uint8_t)(value & 0xFF);
-	}
-}
+// #include "Instrument.cpp"
+// #include "Effect.cpp"
 
 // Project file format:
 
@@ -268,8 +218,8 @@ int loadRIFFFile (RIFF::RIFFReader & file, Project & project) {
 		auto size = chunkData->size();
 		printByteArray(data, size, 16);
 		if ( !(
-			(!memcmp(data, mainBranch, 8) && readUint32(data+8) <= mainBranchVer) || 
-			(!memcmp(data, thisBranch, 8) && readUint32(data+8) <= thisBranchVer)
+			(!memcmp(data, mainBranch, 8) && BitConverter::readUint32(data+8) <= mainBranchVer) || 
+			(!memcmp(data, thisBranch, 8) && BitConverter::readUint32(data+8) <= thisBranchVer)
 		) ) { 
 			fprintf(stderr, "File version is invalid. Aborting loading\n");
 			return -1;
@@ -351,7 +301,7 @@ int saveRIFFFile (RIFF::RIFFWriter & file, Project & project) {
 	file.newChunk();
 	file.writeInChunk((void *)thisBranch, 8);
 	char buf[4];
-	writeBytes(thisBranchVer, buf);
+	BitConverter::writeBytes(buf, thisBranchVer);
 	file.writeInChunk(buf, 4);
 	file.finishChunk((char *)versionId);    
 
@@ -467,7 +417,7 @@ std::vector<TrackerCell> decodeNoteStruct (std::vector<uint8_t> * chunkData) {
 	if (chunkData == 0) return std::vector<TrackerCell>(0);
 	uint8_t * ptr = chunkData->data();	// Might seem unnecessary, but this will prevent segfaults
 	
-	uint32_t count = readUint32(ptr);
+	uint32_t count = BitConverter::readUint32(ptr);
 	if (count == 0) return std::vector<TrackerCell>(0);
 	ptr += sizeof(count);
 	
@@ -531,18 +481,18 @@ std::vector<TrackerCell> decodeNoteStruct (std::vector<uint8_t> * chunkData) {
 		if (flagsByte & 1<<NOTE_REPEAT) {
 			// 7.1. Note repeating
 			noteRpt = noteValue;
-			noteRptCount = decodeVar16(ptr);
+			noteRptCount = Var16::readBytes(ptr);
 		}
 		if (flagsByte & 1<<INST_REPEAT) {
 			// 7.2. Instrument repeating
 			instRpt = cell.instrument;
-			instRptCount = decodeVar16(ptr);
+			instRptCount = Var16::readBytes(ptr);
 		}
 		if (flagsByte & 1<<FLAG_REPEAT) {
 			// 7.3. Flag byte repeating
 			flagRpt = flagsByte;
 			flagRpt &= ~((1<<NOTE_REPEAT)|(1<<INST_REPEAT)|(1<<FLAG_REPEAT)); 	// Repeating this would break shit
-			flagRptCount = decodeVar16(ptr);
+			flagRptCount = Var16::readBytes(ptr);
 
 		}
 
@@ -556,14 +506,49 @@ std::vector<uint8_t> encodeNoteStruct (std::vector<TrackerCell> & pattern) {
 	// Accepts chunk data directly from RIFF::RIFFReader::ReadChunkData()
 	std::vector<uint8_t> array (4);
 		
-	writeBytes((uint32_t)pattern.size(), array.data());
+	std::unordered_map<TrackerCell, int> cellUsage;	// For determining the best default cell
+
+	BitConverter::writeBytes(array.data(), (uint32_t)pattern.size());
 	if (pattern.size() == 0) {return array;}
 	
 	for (auto & cell : pattern) {
+		if (cellUsage.count(cell) == 0) 
+				cellUsage[cell] = 0;
+		else	cellUsage[cell]++;
+	}
+
+	int max = 0;
+	std::vector<TrackerCell> defaultCells;
+
+	for (auto & value : cellUsage) {
+		if (value.second > max) {
+			defaultCells.clear();
+			defaultCells.push_back(value.first);
+			max = value.second;
+		} else if (value.second == max) {
+			defaultCells.push_back(value.first);
+		}
+	}
+
+	TrackerCell currentDefaultCell;
+	uint8_t tmp_flags;
+
+	for (auto & cell : pattern) {
+		tmp_flags = 0;
+		if (cell == (TrackerCell)defaultCells[0]){// TODO: handle this ([0]) better
+			if (cell != currentDefaultCell){
+				tmp_flags |= 1<<SET_DEFAULT;
+				currentDefaultCell = cell;
+			} else {
+				array.push_back(REPEAT_DEFAULT_CELL);
+				continue;
+			}
+		}	
 		array.push_back(cell.noteValue);
 		array.push_back(
 			(cell.attack() 			? 1<<ATTACK : 0		) |
-			(cell.hideInstrument()	? 0 : 1<<INSTRUMENT	)
+			(cell.hideInstrument()	? 0 : 1<<INSTRUMENT	) |
+			tmp_flags
 		);
 		if (!cell.hideInstrument()) 
 			array.push_back(cell.instrument);
@@ -580,24 +565,24 @@ TrackerPattern decodePatternStruct (std::vector<uint8_t> * chunkData) {
 	auto * ptr = chunkData->data();	// Might seem unnecessary, but this will prevent segfaults
 
 	// Get amount of rows
-	pattern.rows = readUint32(ptr);
+	pattern.rows = BitConverter::readUint32(ptr);
 	ptr += sizeof(uint32_t);
 
 	// Get the rows
 	for (size_t i = 0; i < 8; i++, ptr += sizeof(uint16_t))
-		pattern.cells[i] = readUint16(ptr);
+		pattern.cells[i] = BitConverter::readUint16(ptr);
 
 	// Major beats
-	auto count = decodeVar16(ptr);
+	auto count = Var16::readBytes(ptr);
 	pattern.beats_major = std::vector<uint16_t> (count);
 	for (size_t i = 0; i < count; i++, ptr += sizeof(uint16_t))
-		pattern.beats_major[i] = readUint16(ptr);
+		pattern.beats_major[i] = BitConverter::readUint16(ptr);
 
 	// Minor beats
-	count = decodeVar16(ptr);
+	count = Var16::readBytes(ptr);
 	pattern.beats_minor = std::vector<uint16_t> (count);
 	for (size_t i = 0; i < count; i++, ptr += sizeof(uint16_t))
-		pattern.beats_minor[i] = readUint16(ptr);
+		pattern.beats_minor[i] = BitConverter::readUint16(ptr);
 	
 	return pattern;
 }
@@ -610,37 +595,37 @@ std::vector<uint8_t> encodePatternStruct (TrackerPattern & pattern) {
 	auto * ptr = array.data();	
 
 	// Row amount
-	writeBytes((uint32_t)pattern.rows, ptr+offset);
+	BitConverter::writeBytes(ptr+offset, (uint32_t)pattern.rows);
 	offset += sizeof(uint32_t);
 
 	// Put the rows
 	for (size_t i = 0; i < 8; i++, offset+=sizeof(uint16_t))
-		writeBytes(pattern.cells[i], ptr+offset);
+		BitConverter::writeBytes(ptr+offset, pattern.cells[i]);
 
 	// Major beats
 	auto sizeOfData = pattern.beats_major.size();
-	auto sizeOfSize = getSizeOfVar16(sizeOfData);
+	auto sizeOfSize = Var16::getSize(sizeOfData);
 	array.resize(array.size()+sizeOfSize+sizeOfData*sizeof(uint16_t));
 	ptr = array.data();	// Update cuz might have moved
 
-	writeVar16(ptr+offset, sizeOfData);
+	Var16::writeBytes(ptr+offset, sizeOfData);
 	offset += sizeOfSize;
 
 	for (size_t i = 0; i < sizeOfData; i++, offset+=sizeof(uint16_t))
-		writeBytes(pattern.beats_major[i], ptr+offset);
+		BitConverter::writeBytes(ptr+offset, pattern.beats_major[i]);
 
 	// Minor beats
 	sizeOfData = pattern.beats_minor.size();
-	sizeOfSize = getSizeOfVar16(sizeOfData);
+	sizeOfSize = Var16::getSize(sizeOfData);
 
 	array.resize(array.size()+sizeOfSize+sizeOfData*sizeof(uint16_t));
 	ptr = array.data();	// Update cuz might have moved
 
-	writeVar16(ptr+offset, sizeOfData);
+	Var16::writeBytes(ptr+offset, sizeOfData);
 	offset += sizeOfSize;
 
 	for (size_t i = 0; i < sizeOfData; i++, offset+=sizeof(uint16_t))
-		writeBytes(pattern.beats_minor[i], ptr+offset);
+		BitConverter::writeBytes(ptr+offset, pattern.beats_minor[i]);
 	
 	return array;
 }

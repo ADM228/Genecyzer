@@ -6,8 +6,6 @@
 #include <stdio.h>
 #include <string>
 #include <locale>
-#include <codecvt>
-#include <vector>
 #include <SFML/System.hpp>
 #include <cstdarg>
 

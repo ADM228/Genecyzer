@@ -48,8 +48,7 @@ ExternalProject_Add(SNESFM
 	GIT_REPOSITORY https://github.com/ADM228/SNES-FM.git
 	GIT_TAG master
 	CONFIGURE_COMMAND ""
-	BUILD_COMMAND $<$<STREQUAL:$<UPPER_CASE:${CMAKE_HOST_SYSTEM_NAME}>,LINUX>:make>
-	BUILD_IN_SOURCE True
+	BUILD_COMMAND ""
 	INSTALL_COMMAND "")
 ExternalProject_Add(tinyfiledialogs
 	GIT_REPOSITORY https://git.code.sf.net/p/tinyfiledialogs/code
@@ -65,17 +64,6 @@ set (TINYFD_SOURCE_DIR "${SOURCE_DIR}")
 
 add_executable(Genecyzer src/main.cpp)
 target_compile_features(Genecyzer PRIVATE cxx_std_17)
-
-get_target_property(TEMP Genecyzer COMPILE_FLAGS)
-if(TEMP STREQUAL "TEMP-NOTFOUND")
-    SET(TEMP "") # Set to empty string
-else()
-    SET(TEMP "${TEMP} ") # A space to cleanly separate from existing content
-endif()
-# Append our values
-SET(TEMP "${TEMP}-g -O0 " )
-set_target_properties(Genecyzer PROPERTIES COMPILE_FLAGS ${TEMP} )
-
 
 add_custom_target(GenecyzerFileTest DEPENDS Genecyzer)
 

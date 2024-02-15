@@ -3,6 +3,8 @@
 
 #include <cstdint>
 
+namespace BitConverter {
+
 #if !defined(__BIG_ENDIAN_OVERRIDE) && ( \
     defined(__BYTE_ORDER) && __BYTE_ORDER == __LITTLE_ENDIAN || \
     defined(__LITTLE_ENDIAN__) || \
@@ -14,13 +16,13 @@
 // system is natively little-endian, no conversion needed
 
 // Write a uint64_t to ptr, exists for portability with big-endian systems
-template <typename T> inline void writeBytes (uint64_t input, T * ptr) { *(uint64_t *)ptr = input; }
+template <typename T> inline void writeBytes (T * ptr, uint64_t input) { *(uint64_t *)ptr = input; }
 
 // Write a uint32_t to ptr, exists for portability with big-endian systems
-template <typename T> inline void writeBytes (uint32_t input, T * ptr) { *(uint32_t *)ptr = input; }
+template <typename T> inline void writeBytes (T * ptr, uint32_t input) { *(uint32_t *)ptr = input; }
 
 // Write a uint16_t to ptr, exists for portability with big-endian systems
-template <typename T> inline void writeBytes (uint16_t input, T * ptr) { *(uint16_t *)ptr = input; }
+template <typename T> inline void writeBytes (T * ptr, uint16_t input) { *(uint16_t *)ptr = input; }
 
 // Read a uint64_t from ptr, exists for portability with big-endian systems
 template <typename T> inline uint64_t readUint64 (T * ptr) {return *(uint64_t *) ptr;}
@@ -44,7 +46,7 @@ template <typename T> inline uint16_t readUint16 (T * ptr) {return *(uint16_t *)
 
 // Write a uint64_t to ptr, while converting it to little-endian
 template <typename T>
-inline void writeBytes (uint64_t input, T * ptr) {
+inline void writeBytes (T * ptr, uint64_t input) {
     uint8_t * tmp = (uint8_t*) ptr; 
     *(tmp  )= (input    )&0xFF;
     *(tmp+1)= (input>> 8)&0xFF;
@@ -70,7 +72,7 @@ inline void writeBytes (uint64_t input, uint8_t * ptr) {
 
 // Write a uint32_t to ptr, while converting it to little-endian
 template <typename T>
-inline void writeBytes (uint32_t input, T * ptr) {
+inline void writeBytes (T * ptr, uint32_t input) {
     uint8_t * tmp = (uint8_t*) ptr; 
     *(tmp  )= (input    )&0xFF;
     *(tmp+1)= (input>> 8)&0xFF;
@@ -88,7 +90,7 @@ inline void writeBytes (uint32_t input, uint8_t * ptr) {
 
 // Write a uint16_t to ptr, while converting it to little-endian
 template <typename T>
-inline void writeBytes (uint16_t input, T * ptr) {
+inline void writeBytes (T * ptr, uint16_t input) {
     uint8_t * tmp = (uint8_t*) ptr; 
     *(tmp  )= (input    )&0xFF;
     *(tmp+1)= (input>> 8)&0xFF;
@@ -130,5 +132,7 @@ inline uint16_t readUint16 (uint8_t * ptr) {
 #else
 #error "Unsupported architecture. Please contact the lead dev and report what architecture you're compiling on"
 #endif
+
+}   // namespace BitConverter
 
 #endif  // __BITCONVERTER_INCLUDED__

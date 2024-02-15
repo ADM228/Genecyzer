@@ -28,10 +28,10 @@ class Instrument {
 
         void setName(std::string);
         void setName(std::u32string);
-        std::string getName();
+        std::string getName() const;
 
         void setPalette(uint8_t palette);
-        uint8_t getPalette();
+        uint8_t getPalette() const;
 
     private:
         uint32_t name[INSTRUMENT_NAME_LENGTH];
@@ -60,7 +60,7 @@ void Instrument::setName(std::u32string name){
     std::copy_n(name.data(), std::min((size_t)INSTRUMENT_NAME_LENGTH, name.size()), this->name);
 }
 
-std::string Instrument::getName(){
+std::string Instrument::getName() const{
     std::u32string UTF32_name;
     for (int i = 0; i < INSTRUMENT_NAME_LENGTH; i++){
         // printf("%04x ", this->name[i]);
@@ -75,7 +75,7 @@ void Instrument::setPalette(uint8_t palette){
     this->palette = palette;
 }
 
-uint8_t Instrument::getPalette(){
+uint8_t Instrument::getPalette() const{
     return this->palette;
 }
 

@@ -4,7 +4,6 @@
 #include <vector>
 #include <array>
 
-#include "RIFF.cpp"
 #include "Tracker.cpp"
 #include "Instrument.cpp"
 

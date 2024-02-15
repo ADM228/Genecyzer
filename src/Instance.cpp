@@ -7,11 +7,11 @@
 
 #include "Tile.cpp"
 #include "ChrFont.cpp"
-#include "Instrument.cpp"
+// #include "Instrument.cpp"
 #include "Utils.cpp"
 #include "TextRenderer.cpp"
-#include "Tracker.cpp"
-#include "Effect.cpp"
+// #include "Tracker.cpp"
+// #include "Effect.cpp"
 #include "Project.cpp"
 #include "ModularSynth.cpp"
 #include "RIFFLoader.cpp"
@@ -20,10 +20,8 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
-#include <chrono>
 #include <fstream>
 #include <ios>
-#include <type_traits>
 #include "tinyfiledialogs.h"
 
 char const * filter[] = {"*.gczr"};
