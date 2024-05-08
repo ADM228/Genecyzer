@@ -151,11 +151,11 @@ namespace RIFFLoader {
 
 Song loadSongFromRIFF(RIFF::RIFFReader & file);
 
-std::vector<TrackerCell> decodeNoteStruct (std::vector<uint8_t> * chunkData);
-std::vector<uint8_t> encodeNoteStruct (std::vector<TrackerCell> & pattern);
+std::vector<TrackerCell> decodeNoteStruct (const std::vector<uint8_t> chunkData);
+std::vector<uint8_t> encodeNoteStruct (const std::vector<TrackerCell> pattern);
 
-TrackerPattern decodePatternStruct (std::vector<uint8_t> * chunkData);
-std::vector<uint8_t> encodePatternStruct (TrackerPattern & pattern);
+TrackerPattern decodePatternStruct (const std::vector<uint8_t> chunkData);
+std::vector<uint8_t> encodePatternStruct (const TrackerPattern pattern);
 
 
 // RIFF constants
@@ -213,9 +213,8 @@ int loadRIFFFile (RIFF::RIFFReader & file, Project & project) {
 			return -1;
 		} 
 		auto chunkData = file.readChunkData();
-		if (chunkData == nullptr) return RIFF_ERROR_UNKNOWN;
-		auto data = chunkData->data();
-		auto size = chunkData->size();
+		auto data = chunkData.data();
+		auto size = chunkData.size();
 		printByteArray(data, size, 16);
 		if ( !(
 			(!memcmp(data, mainBranch, 8) && BitConverter::readUint32(data+8) <= mainBranchVer) || 
@@ -224,7 +223,6 @@ int loadRIFFFile (RIFF::RIFFReader & file, Project & project) {
 			fprintf(stderr, "File version is invalid. Aborting loading\n");
 			return -1;
 		}
-		delete chunkData;
 		errCode = file.seekNextChunk();
 
     // And now, read the rest of the file
@@ -246,28 +244,28 @@ int loadRIFFFile (RIFF::RIFFReader & file, Project & project) {
 					ifID(commentsId) {
 					// Comment subsubchunk, gotta convert 'em
 					// record separator chars into newlines
-					for (auto &c : *chunkData) {
+					for (auto &c : chunkData) {
 						if (c == 0x1E)
 						c = 0x0A; // Record Separator -> LineFeed
 					}
 					}
 
-					printByteArray(chunkData->data(), chunkData->size(), 16);
+					printByteArray(chunkData.data(), chunkData.size(), 16);
 
-					if (chunkData->back() != 0)
-					chunkData->push_back(0);
+					if (chunkData.back() != 0)
+					chunkData.push_back(0);
 
 					ifID(nameId) project.name() =
-						std::string((char *)chunkData->data());
+						std::string((char *)chunkData.data());
 					else ifID(artistId) project.composer() =
-						std::string((char *)chunkData->data());
+						std::string((char *)chunkData.data());
 					else ifID(copyrightId) project.copyright() =
-						std::string((char *)chunkData->data());
+						std::string((char *)chunkData.data());
 					else ifID(commentsId) project.comments() =
-						std::string((char *)chunkData->data());
+						std::string((char *)chunkData.data());
 					else ifID(softwareId) {
-					if (!(chunkData->size() == 10 &&
-							!memcmp(chunkData->data(), software, 9)))
+					if (!(chunkData.size() == 10 &&
+							!memcmp(chunkData.data(), software, 9)))
 						fprintf(stderr,
 								"The \"Software\" field in the Genecyzer file's "
 								"metadata is not set to \"Genecyzer\". This "
@@ -275,7 +273,6 @@ int loadRIFFFile (RIFF::RIFFReader & file, Project & project) {
 								"modified by external software, which could lead "
 								"to invalid file loading.\n");
 					}
-					delete chunkData;
 
 					errCode = file.seekNextChunk();
 				}
@@ -363,8 +360,6 @@ Song loadSongFromRIFF(RIFF::RIFFReader & file) {
 	char * id = getID();
 	char * type = getType();
 
-	if (memcmp(type, songListType, 4)){err ("RLoad:LSong: TP WRONG"); return *(Song*)0;};
-
 	Song song;
 
 	// Format is correct, let's start loading
@@ -375,22 +370,16 @@ Song loadSongFromRIFF(RIFF::RIFFReader & file) {
 		id = getID();
 		ifID (effectColumnId) {
 			auto data = file.readChunkData();
-			if (data == nullptr) {err ("RLoad:LSong: EFFC RCD NULLPTR\n");}
-			else if (data->size() != 8) {err ("RLoad:LSong: EFFC RCD SIZE\n");}
-			else memcpy(&song.effectColumnAmount, data->data(), 8);	// Is endian-safe cuz 1 byte
-			delete data;
+			if (data.size() != 8) {err ("RLoad:LSong: EFFC RCD SIZE\n");}
+			else memcpy(&song.effectColumnAmount, data.data(), 8);	// Is endian-safe cuz 1 byte
 		} else ifID (noteId) {
 			auto data = file.readChunkData();
-			if (data == nullptr) {err ("RLoad:LSong: NOTE RCD NULLPTR\n");}
-			else if (data->size() < 4) {err ("RLoad:LSong: NOTE RCD SIZE\n");}
+			if (data.size() < 4) {err ("RLoad:LSong: NOTE RCD SIZE\n");}
 			else song.patternData.push_back(decodeNoteStruct(data));
-			delete data;
 		} else ifID (patternId) {
 			auto data = file.readChunkData();
-			if (data == nullptr) {err ("RLoad:LSong: PTRN RCD NULLPTR\n");}
-			else if (data->size() < 2*sizeof(uint16_t)+2*VAR16_MIN_SIZE+sizeof(uint32_t)) {err ("RLoad:LSong: PTRN RCD SIZE\n");}
+			if (data.size() < 2*sizeof(uint16_t)+2*VAR16_MIN_SIZE+sizeof(uint32_t)) {err ("RLoad:LSong: PTRN RCD SIZE\n");}
 			else song.patterns.push_back(decodePatternStruct(data));
-			delete data;
 		}
 
 		errCode = file.seekNextChunk();
@@ -410,10 +399,9 @@ Song loadSongFromRIFF(RIFF::RIFFReader & file) {
 #define INST_REPEAT 2
 #define FLAG_REPEAT 1
 
-std::vector<TrackerCell> decodeNoteStruct (std::vector<uint8_t> * chunkData) {
+std::vector<TrackerCell> decodeNoteStruct (std::vector<uint8_t> chunkData) {
 	// Accepts chunk data directly from RIFF::RIFFReader::ReadChunkData()
-	if (chunkData == 0) return std::vector<TrackerCell>(0);
-	uint8_t * ptr = chunkData->data();	// Might seem unnecessary, but this will prevent segfaults
+	uint8_t * ptr = chunkData.data();	// Might seem unnecessary, but this will prevent segfaults
 	
 	uint32_t count = BitConverter::readUint32(ptr);
 	if (count == 0) return std::vector<TrackerCell>(0);
@@ -422,7 +410,7 @@ std::vector<TrackerCell> decodeNoteStruct (std::vector<uint8_t> * chunkData) {
 	uint16_t noteRptCount = 0, instRptCount = 0, flagRptCount = 0;
 	uint8_t noteRpt, instRpt, flagRpt;
 	
-	uint8_t * endPtr = chunkData->data()+chunkData->size();
+	uint8_t * endPtr = chunkData.data()+chunkData.size();
 	TrackerCell cell, defaultCell;
 	std::vector<TrackerCell> array;
 
@@ -500,7 +488,7 @@ std::vector<TrackerCell> decodeNoteStruct (std::vector<uint8_t> * chunkData) {
 	return array;
 }
 
-std::vector<uint8_t> encodeNoteStruct (std::vector<TrackerCell> & pattern) {
+std::vector<uint8_t> encodeNoteStruct (std::vector<TrackerCell> pattern) {
 	// Accepts chunk data directly from RIFF::RIFFReader::ReadChunkData()
 	std::unordered_map<TrackerCell, int> cellUsage;	// For determining the best default cell
 
@@ -555,10 +543,10 @@ std::vector<uint8_t> encodeNoteStruct (std::vector<TrackerCell> & pattern) {
 	return array;
 }
 
-TrackerPattern decodePatternStruct (std::vector<uint8_t> * chunkData) {
+TrackerPattern decodePatternStruct (std::vector<uint8_t> chunkData) {
 	TrackerPattern pattern;
 
-	auto * ptr = chunkData->data();	// Might seem unnecessary, but this will prevent segfaults
+	auto * ptr = chunkData.data();	// Might seem unnecessary, but this will prevent segfaults
 
 	// Get amount of rows
 	pattern.rows = BitConverter::readUint32(ptr);

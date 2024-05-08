@@ -12,8 +12,8 @@
 
 class ModSynthBezier : public CubicBezier {
     public:
-        void updatePosition(std::array<sf::Vector2f, 2> & position);
-        void updatePosition(sf::Vector2f & position, bool end);
+        void updatePosition(std::array<sf::Vector2f, 2> position);
+        void updatePosition(sf::Vector2f position, bool end);
         void calculate(float precision, float lineWidth, bool thin);
 
         uint_fast8_t state;
@@ -40,11 +40,11 @@ class ModSynthElement : public sf::Drawable {
 
 
 
-void ModSynthBezier::updatePosition(std::array<sf::Vector2f, 2> & position) {
+void ModSynthBezier::updatePosition(std::array<sf::Vector2f, 2> position) {
     this->position = position;
 }
 
-void ModSynthBezier::updatePosition(sf::Vector2f & position, bool end) {
+void ModSynthBezier::updatePosition(sf::Vector2f position, bool end) {
     this->position[end] = position;
 }
 

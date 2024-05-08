@@ -149,19 +149,16 @@ std::string RIFFReader::errorToString (int errorCode) {
     return outstring;
 }
 
-std::vector<uint8_t> * RIFFReader::readChunkData() {
+std::vector<uint8_t> RIFFReader::readChunkData() {
     int errCode;
     errCode = seekChunkStart(); 
-    if (errCode) {
-        return nullptr;
+    if (errCode || rr->c_size == 0) {
+        return std::vector<uint8_t>(0);
     }
-    if (rr->c_size == 0) {
-        return new std::vector<uint8_t>(0);
-    }
-    auto outVec = new std::vector<uint8_t>(rr->c_size);
+    auto outVec = std::vector<uint8_t>(rr->c_size);
     size_t totalSize = 0, succSize;
     do {
-        succSize = readInChunk(outVec->data()+totalSize, rr->c_size);
+        succSize = readInChunk(outVec.data()+totalSize, rr->c_size);
         totalSize += succSize;
     } while (succSize != 0);
 #if RIFF_PRINT_ERRORS
@@ -367,7 +364,7 @@ int RIFFWriter::finishListChunk(const char * type) {
 }
 #pragma endregion
 
-void RIFFWriter::writeNewChunk (const std::vector<uint8_t> & data, const char * id){
+void RIFFWriter::writeNewChunk (const std::vector<uint8_t> data, const char * id){
     int errCode;
     errCode = newChunk(); if (errCode) {if (rw->fp_printf != NULL) rw->fp_printf(errorToString(errCode).c_str()); return;}
     writeInChunk(data.data(), data.size()); if (errCode) {if (rw->fp_printf != NULL) rw->fp_printf(errorToString(errCode).c_str()); return;}

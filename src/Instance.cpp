@@ -240,11 +240,9 @@ void Instance::Update(){
         }
 
         case 1: {
-            auto deeznuts = std::array<sf::Vector2f, 2> 
-            {sf::Vector2f((float)selectionBounds[0] / scale, (float)selectionBounds[1] / scale - 8*TILE_SIZE), {100, 100}};
-            
-            // auto start = std::chrono::high_resolution_clock::now();
-            bezierTest.updatePosition(deeznuts);
+                // auto start = std::chrono::high_resolution_clock::now();
+            bezierTest.updatePosition(std::array<sf::Vector2f, 2> 
+            {sf::Vector2f((float)selectionBounds[0] / scale, (float)selectionBounds[1] / scale - 8*TILE_SIZE), {100, 100}});
             bezierTest.calculate((float)scale/16, 3.f/scale, false);
             // auto elapsed = std::chrono::high_resolution_clock::now() - start;
             // uint64_t microseconds = std::chrono::duration_cast<std::chrono::microseconds>( elapsed).count();
