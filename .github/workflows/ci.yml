@@ -33,6 +33,6 @@ jobs:
       shell: bash
       run: cmake --build build --target GenecyzerFileTest --config Release
 
-    - name: Install
-      shell: bash
-      run: cmake --install build --config Release
+    # - name: Install
+    #   shell: bash
+    #   run: cmake --install build --config Release

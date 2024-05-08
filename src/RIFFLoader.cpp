@@ -336,16 +336,12 @@ int saveRIFFFile (RIFF::RIFFWriter & file, Project & project) {
 
 			for (auto &pattern : song.patternData) {
 				if (pattern.size() > 0) {
-					auto data = encodeNoteStruct(pattern);
-
-					file.writeNewChunk(data, noteId);
+					file.writeNewChunk(encodeNoteStruct(pattern), noteId);
 				}
 			}
 
 			for (auto &pattern : song.patterns) {
-				auto data = encodePatternStruct(pattern);
-
-				file.writeNewChunk(data, patternId);
+				file.writeNewChunk(encodePatternStruct(pattern), patternId);
 			}
 
 		file.finishListChunk();
@@ -572,7 +568,7 @@ TrackerPattern decodePatternStruct (std::vector<uint8_t> chunkData) {
 }
 
 
-std::vector<uint8_t> encodePatternStruct (TrackerPattern & pattern) {
+std::vector<uint8_t> encodePatternStruct (TrackerPattern pattern) {
 	std::vector<uint8_t> array (sizeof(uint16_t)*8+sizeof(uint32_t));
 
 	size_t offset = 0;
