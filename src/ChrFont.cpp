@@ -12,10 +12,10 @@
 class ChrFont {
     public:
         ChrFont() {};
-        ChrFont(uint8_t* chrData, uint32_t size, std::vector<uint32_t> codepageTable, bool inverted = 0);
-        void init(uint8_t* chrData, uint32_t size, std::vector<uint32_t> codepageTable, bool inverted = 0);
+        ChrFont(const void* chrData, uint32_t size, std::vector<uint32_t> codepageTable, bool inverted = 0);
+        void init(const void* chrData, uint32_t size, std::vector<uint32_t> codepageTable, bool inverted = 0);
 
-        uint8_t* chrDataPtr;
+        const uint8_t* chrDataPtr;
         uint32_t chrDataSize;
         sf::Texture texture;
         std::vector<uint32_t> codepages;
@@ -23,11 +23,12 @@ class ChrFont {
 
 #pragma endregion
 
-ChrFont::ChrFont(uint8_t* chrData, uint32_t size, std::vector<uint32_t> codepageTable, bool inverted){
+ChrFont::ChrFont(const void* chrData, uint32_t size, std::vector<uint32_t> codepageTable, bool inverted){
     init(chrData, size, codepageTable, inverted);
 }
 
-void ChrFont::init(uint8_t* chrData, uint32_t size, std::vector<uint32_t> codepageTable, bool inverted){
+void ChrFont::init(const void* __chrData, uint32_t size, std::vector<uint32_t> codepageTable, bool inverted){
+    auto chrData = (const uint8_t *)__chrData;
     this->chrDataPtr = chrData;
     this->chrDataSize = size;
     this->codepages = codepageTable;

@@ -45,7 +45,7 @@ int RIFFReader::open (std::FILE & __file, size_t __size) {
 
 #pragma region open_mem 
 
-int RIFFReader::open (void * __mem_ptr, size_t __size) {
+int RIFFReader::open (const void * __mem_ptr, size_t __size) {
     file = nullptr;
     type = MEM_PTR;
     return riff_reader_open_mem(rr, __mem_ptr, __size);
@@ -122,7 +122,7 @@ int RIFFReader::openIfstreamCommon(){
 
 #pragma endregion
 
-void RIFFWriter::close(char * filetype) {
+void RIFFWriter::close(const char * filetype) {
     setFileType(filetype);
     close();
 }
@@ -230,7 +230,7 @@ size_t seek_ofstream(riff_writer *rr, size_t pos){
 	return stream->tellp();
 }
 
-size_t write_ofstream(riff_writer *rr, void *ptr, size_t size){
+size_t write_ofstream(riff_writer *rr, const void *ptr, size_t size){
     auto stream = ((std::ofstream *)rr->fh);
     size_t oldp = stream->tellp();
     stream->write((char *)ptr, size);
@@ -344,37 +344,37 @@ std::string RIFFWriter::errorToString (int errorCode) {
 }
 
 #pragma region typeFunctions
-int RIFFWriter::newChunk(char * id) {
+int RIFFWriter::newChunk(const char * id) {
     setChunkID(id);
     return newChunk();
 }
 
-int RIFFWriter::finishChunk(char * id) {
+int RIFFWriter::finishChunk(const char * id) {
     setChunkID(id);
     return finishChunk();
 }
 
-int RIFFWriter::newListChunk(char * type) {
+int RIFFWriter::newListChunk(const char * type) {
     int errCode = newListChunk();
     if (errCode) return errCode;
     setListType(type);
     return RIFF_ERROR_NONE;
 }
 
-int RIFFWriter::finishListChunk(char * type) {
+int RIFFWriter::finishListChunk(const char * type) {
     setListType(type);
     return finishListChunk();
 }
 #pragma endregion
 
-void RIFFWriter::writeNewChunk (std::vector<uint8_t> & data, char * id){
+void RIFFWriter::writeNewChunk (const std::vector<uint8_t> & data, const char * id){
     int errCode;
     errCode = newChunk(); if (errCode) {if (rw->fp_printf != NULL) rw->fp_printf(errorToString(errCode).c_str()); return;}
     writeInChunk(data.data(), data.size()); if (errCode) {if (rw->fp_printf != NULL) rw->fp_printf(errorToString(errCode).c_str()); return;}
     finishChunk(id); if (errCode) {if (rw->fp_printf != NULL) rw->fp_printf(errorToString(errCode).c_str());}
 }
 
-void RIFFWriter::writeNewChunk (void * data, size_t size, char * id){
+void RIFFWriter::writeNewChunk (const void * data, size_t size, const char * id){
     int errCode;
     errCode = newChunk(); if (errCode) {if (rw->fp_printf != NULL) rw->fp_printf(errorToString(errCode).c_str()); return;}
     writeInChunk(data, size); if (errCode) {if (rw->fp_printf != NULL) rw->fp_printf(errorToString(errCode).c_str()); return;}

@@ -74,24 +74,24 @@ TrackerCell::TrackerCell(){
 TileMatrix TrackerCell::render(uint16_t effectColumns, bool singleTile) {
     uint8_t tileAppend;
     uint8_t firstIndex;
-    uint32_t * noteTileTable;
+    const uint32_t * noteTileTable;
     if (singleTile) { 
         tileAppend = 0; 
         firstIndex = 1; 
-        noteTileTable = const_cast<uint32_t *>(&singleNoteTileTable[0]);
+        noteTileTable = singleNoteTileTable;
     } else {
         tileAppend = 1; 
         firstIndex = 0; 
-        noteTileTable = const_cast<uint32_t *>(&doubleNoteTileTable[0]);
+        noteTileTable = doubleNoteTileTable;
     }
     if (!effectColumns) effectColumns = 1;
     TileMatrix output(tileAppend+2+1+2+effectColumns*(3+1), 1, 0x20);
     // Render note
     if (noteValue == EMPTY_NOTE){
-        uint32_t * emptyRowPtr = const_cast<uint32_t *>(&emptyRow[firstIndex]);
+        const uint32_t * emptyRowPtr = &emptyRow[firstIndex];
         output.copyRect(0, 0, tileAppend+2+1+2, 1, emptyRowPtr);
     } else if (noteValue == KEY_OFF){
-        uint32_t * keyOffRowPtr = const_cast<uint32_t *>(&keyOffRow[firstIndex]);
+        const uint32_t * keyOffRowPtr = &keyOffRow[firstIndex];
         output.copyRect(0, 0, tileAppend+2+1+2, 1, keyOffRowPtr);
     } else {
         char row[5];

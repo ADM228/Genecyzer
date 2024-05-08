@@ -72,6 +72,8 @@ if (TARGET GenecyzerFileTest)
 	configure_file("${CMAKE_SOURCE_DIR}/tests/testFile.gczr" "${CMAKE_BINARY_DIR}/testFile.gczr" COPYONLY)
 endif()
 
+target_compile_definitions(Genecyzer PRIVATE BITCONVERTER_ARRAY_CONVS BITCONVERTER_VECTOR_CONVS)
+
 set(FONTFILE "tilesetUnicode.chr")
 set(FONTDIR "${SNESFM_SOURCE_DIR}/graphics/")
 

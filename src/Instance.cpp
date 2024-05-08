@@ -1,7 +1,6 @@
 #ifndef __INSTANCE_CPP_INCLUDED__
 #define __INSTANCE_CPP_INCLUDED__
 
-#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -21,7 +20,7 @@
 #include "Renderer/InstrumentRenderer.cpp"
 #include "Renderer/TrackerRenderer.cpp"
 
-char const * filter[] = {"*.gczr"};
+const char * const filter[] = {"*.gczr"};
 
 constexpr uint64_t UPDATE_SCALE = 1;
 constexpr uint64_t UPDATE_INST_POS = 2;
@@ -102,9 +101,8 @@ Instance::Instance() {
     
 }
 
-void Instance::addMonospaceFont(const uint8_t *data, uint32_t size, std::vector<uint32_t> codepages){
-    unsigned char * fontPointer = const_cast<unsigned char *>(data);
-    font.init(fontPointer, size, codepages, 1);
+void Instance::addMonospaceFont(const void * data, uint32_t size, std::vector<uint32_t> codepages){
+    font.init(data, size, codepages, 1);
 }
 
 void Instance::ProcessEvents(){

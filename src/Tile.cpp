@@ -202,7 +202,7 @@ class TileMatrix : public sf::Drawable {
          * @param __row 
          * @param __src 
          */
-        void copyRow(uint16_t __row, uint32_t __src[]);
+        void copyRow(uint16_t __row, const uint32_t * __src);
 
         /**
          * @brief Copies column from input array into the specified row (tiles with the X coordinate)
@@ -210,7 +210,7 @@ class TileMatrix : public sf::Drawable {
          * @param __col 
          * @param __src 
          */
-        void copyCol(uint16_t __col, uint32_t __src[]);
+        void copyCol(uint16_t __col, const uint32_t * __src);
 
         /**
          * @brief Copies a rectangle from input one-dimensional array, from left to right, from top to bottom; 
@@ -221,7 +221,7 @@ class TileMatrix : public sf::Drawable {
          * @param __height 
          * @param __src 
          */
-        void copyRect(uint16_t __x, uint16_t __y, uint16_t __width, uint16_t __height, uint32_t __src[]);
+        void copyRect(uint16_t __x, uint16_t __y, uint16_t __width, uint16_t __height, const uint32_t * __src);
 
         /**
          * @brief Copies a rectangle from another TileMatrix
@@ -234,7 +234,7 @@ class TileMatrix : public sf::Drawable {
          * @param __in_x 
          * @param __in_y 
          */
-        void copyRect(uint16_t __out_x, uint16_t __out_y, uint16_t __width, uint16_t __height, TileMatrix *__src, uint16_t __in_x, uint16_t __in_y);
+        void copyRect(uint16_t __out_x, uint16_t __out_y, uint16_t __width, uint16_t __height, const TileMatrix *__src, uint16_t __in_x, uint16_t __in_y);
 
         #pragma endregion
         #pragma region rendering
@@ -466,19 +466,19 @@ void TileMatrix::fillPaletteRect(uint16_t x, uint16_t y, uint16_t __width, uint1
 #pragma endregion
 #pragma region copying
 
-void TileMatrix::copyRow(uint16_t row, uint32_t src[]){
+void TileMatrix::copyRow(uint16_t row, const uint32_t * src){
     if (row >= tiles.size()) {inv_arg("[TileMatrix::copyRow]: row is out of bounds"); return;}
     for (uint16_t i = 0; i < tiles[row].size(); i++){tiles[row][i].tileIndex = src[i];}
 }
 
-void TileMatrix::copyCol(uint16_t col, uint32_t src[]){
+void TileMatrix::copyCol(uint16_t col, const uint32_t * src){
     if (col >= width) {inv_arg("[TileMatrix::copyCol]: col is out of bounds");}
     for (uint16_t i = 0; i < tiles.size(); i++){
         if (col < tiles[i].size()) tiles[i][col].tileIndex = src[i];
     }
 }
 
-void TileMatrix::copyRect(uint16_t x, uint16_t y, uint16_t __width, uint16_t __height, uint32_t src[]){
+void TileMatrix::copyRect(uint16_t x, uint16_t y, uint16_t __width, uint16_t __height, const uint32_t * src){
     if (x >= width) {inv_arg("[TileMatrix::copyRect]: x is out of bounds"); return;}
     if (y >= tiles.size()) {inv_arg("[TileMatrix::copyRect]: y is out of bounds"); return;}
     if (__width+x > width) {inv_arg("[TileMatrix::copyRect]: width+x is out of bounds, tiles are gonna get shifted");}
@@ -491,7 +491,7 @@ void TileMatrix::copyRect(uint16_t x, uint16_t y, uint16_t __width, uint16_t __h
     }
 }
 
-void TileMatrix::copyRect(uint16_t out_x, uint16_t out_y, uint16_t __width, uint16_t __height, TileMatrix *src, uint16_t in_x, uint16_t in_y){
+void TileMatrix::copyRect(uint16_t out_x, uint16_t out_y, uint16_t __width, uint16_t __height, const TileMatrix *src, uint16_t in_x, uint16_t in_y){
 
     #pragma region errorHandling
     if (in_x >= src->width) {inv_arg("[TileMatrix::copyRect]: x is out of bounds (source)"); return;}

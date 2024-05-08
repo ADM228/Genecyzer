@@ -23,7 +23,7 @@ class Instance {
         void ProcessEvents();
         void Update();
 
-        void addMonospaceFont(const uint8_t* data, uint32_t size, std::vector<uint32_t> codepages);
+        void addMonospaceFont(const void * data, uint32_t size, std::vector<uint32_t> codepages);
 
 
         bool isWindowOpen(){ return window.isOpen(); };

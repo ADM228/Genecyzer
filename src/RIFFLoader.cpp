@@ -299,14 +299,12 @@ int loadRIFFFile (RIFF::RIFFReader & file, Project & project) {
 int saveRIFFFile (RIFF::RIFFWriter & file, Project & project) {
 	// Write the version chunk
 	file.newChunk();
-	file.writeInChunk((void *)thisBranch, 8);
-	char buf[4];
-	BitConverter::writeBytes(buf, thisBranchVer);
-	file.writeInChunk(buf, 4);
-	file.finishChunk((char *)versionId);    
+	file.writeInChunk(thisBranch, 8);
+	file.writeInChunk(BitConverter::toByteArray(thisBranchVer).data(), 4);
+	file.finishChunk(versionId);    
 
 	// Write the INFO LIST chunk
-	file.newListChunk((char *)infoListType);
+	file.newListChunk(infoListType);
 	{
 		auto metadata = project.exportMetadata();
 		auto & name 		= metadata.name;
@@ -314,49 +312,49 @@ int saveRIFFFile (RIFF::RIFFWriter & file, Project & project) {
 		auto & copyright	= metadata.copyright;
 		auto & comments	= metadata.comments;
 
-		file.writeNewChunk((void*)software, sizeof(software), (char *)softwareId);
+		file.writeNewChunk(software, sizeof(software), softwareId);
 		if (composer.length())
-			file.writeNewChunk((void *)composer.c_str(), composer.length(), (char *)artistId);
+			file.writeNewChunk(composer.c_str(), composer.length(), artistId);
 		if (comments.length()) {
 			char * chunkData = new char[comments.length()];
 			std::strncpy(chunkData, comments.c_str(), comments.length());
 			for (size_t i = 0; i < comments.length(); i++) {
 				if (chunkData[i] == 0x0A) chunkData[i] = 0x1E; // LineFeed -> Record Separator
 			}
-			file.writeNewChunk(chunkData, comments.length(), (char *)commentsId);
+			file.writeNewChunk(chunkData, comments.length(), commentsId);
 			delete[] chunkData;
 		}
 		if (copyright.length())
-			file.writeNewChunk((void *)copyright.c_str(), copyright.length(), (char *)copyrightId);
+			file.writeNewChunk(copyright.c_str(), copyright.length(), copyrightId);
 		if (name.length())
-			file.writeNewChunk((void *)name.c_str(), name.length(), (char *)nameId);
+			file.writeNewChunk(name.c_str(), name.length(), nameId);
 	}
 
 	file.finishListChunk();
 
 	for (Song &song : project.songs) {
-		file.newListChunk((char *)songListType);
+		file.newListChunk(songListType);
 
-			file.writeNewChunk(project.songs[0].effectColumnAmount.data(), 8, (char *)effectColumnId);
+			file.writeNewChunk(project.songs[0].effectColumnAmount.data(), 8, effectColumnId);
 
 			for (auto &pattern : song.patternData) {
 				if (pattern.size() > 0) {
 					auto data = encodeNoteStruct(pattern);
 
-					file.writeNewChunk(data, (char *)noteId);
+					file.writeNewChunk(data, noteId);
 				}
 			}
 
 			for (auto &pattern : song.patterns) {
 				auto data = encodePatternStruct(pattern);
 
-				file.writeNewChunk(data, (char *)patternId);
+				file.writeNewChunk(data, patternId);
 			}
 
 		file.finishListChunk();
 	}
 
-	file.setFileType((char *)fileType);
+	file.setFileType(fileType);
 
 	return 0;
 }
@@ -504,11 +502,9 @@ std::vector<TrackerCell> decodeNoteStruct (std::vector<uint8_t> * chunkData) {
 
 std::vector<uint8_t> encodeNoteStruct (std::vector<TrackerCell> & pattern) {
 	// Accepts chunk data directly from RIFF::RIFFReader::ReadChunkData()
-	std::vector<uint8_t> array (4);
-		
 	std::unordered_map<TrackerCell, int> cellUsage;	// For determining the best default cell
 
-	BitConverter::writeBytes(array.data(), (uint32_t)pattern.size());
+	auto array = BitConverter::toVector((uint32_t)pattern.size());
 	if (pattern.size() == 0) {return array;}
 	
 	for (auto & cell : pattern) {

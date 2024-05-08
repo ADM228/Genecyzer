@@ -214,7 +214,7 @@ typedef struct riff_writer {
 
 	// ******** For internal use
 	//write bytes; required
-	size_t (*fp_write)(struct riff_writer *rw, void *ptr, size_t size);
+	size_t (*fp_write)(struct riff_writer *rw, const void *ptr, size_t size);
 	
 
 } riff_writer;
@@ -241,7 +241,7 @@ size_t riff_readInChunk(riff_reader *rr, void *to, size_t size); //read in curre
 int riff_readerSeekInChunk(riff_reader *rr, size_t c_pos);      //seek in current chunk, returns RIFF_ERROR_EOC if end of chunk is reached, pos 0 is first byte after chunk size (chunk offset 8)
 
 #ifdef RIFF_WRITE
-size_t riff_writeInChunk(riff_writer *rw, void *from, size_t size); // write in current chunk
+size_t riff_writeInChunk(riff_writer *rw, const void *from, size_t size); // write in current chunk
 int riff_writerSeekInChunk(riff_writer *rw, size_t c_pos);	//seek in current chunk, returns RIFF_ERROR_EOC if end of chunk is reached, pos 0 is first byte after chunk size (chunk offset 8)
 #endif
 
@@ -333,7 +333,7 @@ int riff_reader_open_file(riff_reader *rr, FILE *f, size_t size);
 //create and return initialized RIFF reader, FPs are set up to default for memory access
 //If memory was allocated by the user, it must be deallocated by the user after use.
 //size: must be > 0
-int riff_reader_open_mem(riff_reader *rr, void *memptr, size_t size);
+int riff_reader_open_mem(riff_reader *rr, const void *memptr, size_t size);
 
 
 #ifdef RIFF_WRITE

@@ -62,7 +62,7 @@ class RIFFReader {
          * @param size The expected size of the data, leave at 0 (or don't specify) if unknown
          * @return Error code
          */
-        int open(void * __mem_ptr, size_t __size = 0);
+        int open(const void * __mem_ptr, size_t __size = 0);
 
         /**
          * @brief Open a RIFF file with the filename and mode provided
@@ -95,7 +95,7 @@ class RIFFReader {
          * @param size Amount of data to read
          * @return size_t Amount of data read successfully
          */
-        inline size_t readInChunk (void *to, size_t size) {return riff_readInChunk(rr, to, size);};
+        inline size_t readInChunk (void * to, size_t size) {return riff_readInChunk(rr, to, size);};
         /**
          * @brief Read current chunk's data
          * @note Returns nullptr if an error occurred
@@ -231,7 +231,7 @@ class RIFFWriter {
         int open(std::ofstream & __file);
 
         void close();
-        void close(char * filetype);
+        void close(const char * filetype);
 
         /**
          * @brief Write in current chunk
@@ -241,7 +241,7 @@ class RIFFWriter {
          * @param size Amount of data to read
          * @return size_t Amount of data read successfully
          */
-        inline size_t writeInChunk (void *from, size_t size) {return riff_writeInChunk(rw, from, size);};
+        inline size_t writeInChunk (const void * from, size_t size) {return riff_writeInChunk(rw, from, size);};
         /**
          * @brief Seek in current chunk
          * @note Returns RIFF_ERROR_EOC if end of chunk is reached
@@ -258,8 +258,8 @@ class RIFFWriter {
          * @param size - Size of the data (when providing raw data from memory)
          * @param id - Chunk ID
          */
-        void writeNewChunk (std::vector<uint8_t> & data, char * id);
-        void writeNewChunk (void * data, size_t size, char * id);
+        void writeNewChunk (const std::vector<uint8_t> & data, const char * id);
+        void writeNewChunk (const void * data, size_t size, const char * id);
 
         /**
          * @brief Start a new chunk after the previous one
@@ -269,7 +269,7 @@ class RIFFWriter {
          * @return Error code 
          */
         inline int newChunk() {return riff_writerNewChunk(rw);};
-        int newChunk(char * id);
+        int newChunk(const char * id);
         /**
          * @brief Finish writing a chunk - writes size, ID, and seeks to the first byte after this chunk
          * @note Since this is what actually writes the ID, it overrides the ID set in newChunk if it was set there
@@ -278,7 +278,7 @@ class RIFFWriter {
          * @return int 
          */
         inline int finishChunk() {return riff_writerFinishChunk(rw);};
-        int finishChunk(char * id);
+        int finishChunk(const char * id);
 
         /**
          * @brief Start a new LIST chunk and a sublevel
@@ -287,7 +287,7 @@ class RIFFWriter {
          * @return int 
          */
         inline int newListChunk() {return riff_writerNewListChunk(rw);};
-        int newListChunk(char * type);
+        int newListChunk(const char * type);
 
         /**
          * @brief Finish the LIST chunk and step back from the sublevel
@@ -296,7 +296,7 @@ class RIFFWriter {
          * @return int 
          */
         inline int finishListChunk() {return riff_writerFinishListChunk(rw);};
-        int finishListChunk(char * type);
+        int finishListChunk(const char * type);
 
         /**
          * @brief Set chunk ID
@@ -304,15 +304,15 @@ class RIFFWriter {
          * 
          * @param id The chunk ID
          */
-        inline void setChunkID(char * id) {memcpy (rw->c_id, id, 4);};
+        inline void setChunkID(const char * id) {memcpy (rw->c_id, id, 4);};
         /**
          * @brief Set list type
          * @note Overriden by the list type in the finishChunk method, if set
          * 
          * @param id The list type
          */
-        inline void setListType(char * type) {memcpy (rw->h_type, type, 4);};
-        inline void setFileType(char * type) {setListType(type);};
+        inline void setListType(const char * type) {memcpy (rw->h_type, type, 4);};
+        inline void setFileType(const char * type) {setListType(type);};
 
         /**
          * @brief Seek to start of next chunk within current level

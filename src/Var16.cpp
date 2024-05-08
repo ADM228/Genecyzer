@@ -46,8 +46,8 @@ int getSize (uint16_t value) {
 	return value < VAR16_ROLLOVER_VALUE ? 1 : 2;
 }
 
-template <typename T> void writeBytes (T * ptr, uint16_t value) {
-	uint8_t * ptr8 = ptr;
+void writeBytes (void * ptr, uint16_t value) {
+	uint8_t * ptr8 = (uint8_t *)ptr;
 	if (value < VAR16_ROLLOVER_VALUE)
 		*ptr8 = (uint8_t)(value+0x40);
 	else {

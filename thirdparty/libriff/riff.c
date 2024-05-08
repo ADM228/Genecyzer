@@ -122,7 +122,7 @@ size_t seek_file(riff_reader *rr, size_t pos){
 
 #ifdef RIFF_WRITE
 /*****************************************************************************/
-size_t write_file(riff_writer *rw, void * ptr, size_t size){
+size_t write_file(riff_writer *rw, const void * ptr, size_t size){
 	return fwrite(ptr, sizeof(char), size, (FILE*)rw->fh);
 }
 #endif
@@ -196,7 +196,7 @@ size_t seek_mem(riff_reader *rr, size_t pos){
 
 #ifdef RIFF_WRITE
 /*****************************************************************************/
-size_t write_mem(riff_writer *rw, void * ptr, size_t size){
+size_t write_mem(riff_writer *rw, const void * ptr, size_t size){
 	if (rw->pos + size >= rw->size) {
 		rw->size = fmax((rw->size>>1)*3, 256);
 		rw->size = fmax(rw->size, rw->pos + size); 
@@ -210,11 +210,11 @@ size_t write_mem(riff_writer *rw, void * ptr, size_t size){
 
 /*****************************************************************************/
 //description: see header file
-int riff_reader_open_mem(riff_reader *rr, void *ptr, size_t size){
+int riff_reader_open_mem(riff_reader *rr, const void *ptr, size_t size){
 	if(rr == NULL)
 		return RIFF_ERROR_INVALID_HANDLE;
 	
-	rr->fh = ptr;
+	rr->fh = (void *)ptr;
 	rr->size = size;
 	//rr->pos_start = 0 //redundant -> passed memory pointer is always expected to point to start of riff file
 	
@@ -295,8 +295,8 @@ void writeUInt32LE(riff_writer *rw, unsigned int value) {
 
 /*****************************************************************************/
 //pass pointer to 32 bit LE value and convert, return in native byte order
-unsigned int convUInt32LE(void *p){
-	unsigned char *c = (unsigned char*)p;
+unsigned int convUInt32LE(const void *p){
+	const unsigned char *c = (const unsigned char*)p;
 	return c[0] | (c[1] << 8) | (c[2] << 16) | (c[3] << 24);
 }
 
@@ -396,7 +396,7 @@ void reader_stack_pop(riff_reader *rr){
 
 /*****************************************************************************/
 //push to level stack
-void reader_stack_push(riff_reader *rr, void *type){
+void reader_stack_push(riff_reader *rr, const void *type){
 	//need to enlarge stack?
 	if(rr->ls_size < rr->ls_level + 1){
 		size_t ls_size_new = rr->ls_size * 2; //double size
@@ -676,7 +676,7 @@ int riff_readerSeekInChunk(riff_reader *rr, size_t c_pos){
 
 #ifdef RIFF_WRITE
 // write in current chunk
-size_t riff_writeInChunk(riff_writer *rw, void *from, size_t size){
+size_t riff_writeInChunk(riff_writer *rw, const void *from, size_t size){
 	if (rw->state == RIFFWriterStateNotInChunk) return RIFF_WRITER_ERROR_NOTCHUNK;
 	size_t n = rw->fp_write(rw, from, size);
 	rw->pos += n;
