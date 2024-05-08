@@ -23,10 +23,10 @@ struct wrappedText {
 std::u32string preprocess(std::u32string string);
 wrappedText wrapText(std::u32string text, int maxChars = -1, bool preprocess = 1);
 #if defined (__TILE_INCLUDED__) && defined(__CHRFONT_INCLUDED__) 
-    TileMatrix render (const wrappedText *text, const ChrFont *font, bool inverted = 0);
-    TileMatrix render (std::u32string text, const ChrFont *font, int maxChars = -1, bool preprocess = 1, bool inverted = 0);
+    TileMatrix render (const wrappedText &text, const ChrFont &font, bool inverted = 0);
+    TileMatrix render (std::u32string text, const ChrFont &font, int maxChars = -1, bool preprocess = 1, bool inverted = 0);
     #ifdef __STRCONVERT_INCLUDED__
-        TileMatrix render (std::string text, const ChrFont *font, int maxChars = -1, bool preprocess = 1, bool inverted = 0);
+        TileMatrix render (std::string text, const ChrFont &font, int maxChars = -1, bool preprocess = 1, bool inverted = 0);
     #endif
 #endif
 
@@ -235,12 +235,12 @@ wrappedText wrapText(std::u32string text, int maxChars, bool preprocess){
 
 #if defined (__TILE_INCLUDED__) && defined(__CHRFONT_INCLUDED__) 
 
-TileMatrix render(const wrappedText *text, const ChrFont *font, bool inverted){
+TileMatrix render(const wrappedText &text, const ChrFont &font, bool inverted){
 
-    auto string = text->text;
-    auto codepages = font->codepages;
+    auto string = text.text;
+    auto codepages = font.codepages;
 
-    TileMatrix matrix(text->width, text->height, 0x20);
+    TileMatrix matrix(text.width, text.height, 0x20);
 
     matrix.fillInvert(inverted);
     uint32_t x = 0, y = 0;
@@ -272,13 +272,13 @@ TileMatrix render(const wrappedText *text, const ChrFont *font, bool inverted){
 }
 
 
-TileMatrix render (std::u32string text, const ChrFont *font, int maxChars, bool preprocess, bool inverted){
+TileMatrix render (std::u32string text, const ChrFont &font, int maxChars, bool preprocess, bool inverted){
     auto wrappedText = TextRenderer::wrapText(text, maxChars, preprocess);
-    TileMatrix matrix = TextRenderer::render(&wrappedText, font, inverted);
+    TileMatrix matrix = TextRenderer::render(wrappedText, font, inverted);
     return matrix;
 }
 
-TileMatrix render (std::string text, const ChrFont *font, int maxChars, bool preprocess, bool inverted){
+TileMatrix render (std::string text, const ChrFont &font, int maxChars, bool preprocess, bool inverted){
     std::u32string text32 = To_UTF32(text);
     TileMatrix matrix = TextRenderer::render(text32, font, maxChars, preprocess, inverted);
     return matrix;

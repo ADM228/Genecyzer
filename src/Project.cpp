@@ -52,12 +52,12 @@ class Project {
         // Load project from filestream
         int Load (std::ifstream & file);
         // Load project from memory
-        int Load (std::vector<uint8_t>& data);
+        int Load (const std::vector<uint8_t>& data);
 
         // Save project to filestream
         void Save (std::ofstream & file) const;
         // Save project to memory
-        uint8_t * Save (size_t * size_out) const;
+        uint8_t * Save (size_t & size_out) const;
 
         // Export project's patterns to SNESFM opcode format
         uint8_t * exportSNESFM () const;
@@ -110,7 +110,7 @@ Project Project::createDefault() {
     return project;
 }
 
-int Project::Load(std::vector<uint8_t>& __data) {
+int Project::Load(const std::vector<uint8_t>& __data) {
     auto file = RIFF::RIFFReader();
     auto errCode = file.open(__data.data());
     if (errCode) return errCode;
@@ -133,7 +133,7 @@ void Project::Save (std::ofstream & file) const{
 
 }
 
-uint8_t * Project::Save(size_t * size_out) const{
+uint8_t * Project::Save(size_t & size_out) const{
     RIFF::RIFFWriter writer;
 
     writer.openMem();
@@ -141,7 +141,7 @@ uint8_t * Project::Save(size_t * size_out) const{
     // saveInternal(writer);
 
     writer.close();
-    *size_out = writer.rw->size;
+    size_out = writer().size;
     uint8_t * outMem = (uint8_t *)writer.file;
     return outMem;
 }

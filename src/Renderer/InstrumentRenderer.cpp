@@ -30,7 +30,7 @@ void Instance::renderInstList () {
                     output = num;
                     palette = 7;                   
                 }
-                TileMatrix string = TextRenderer::render(output, &font, 15);
+                TileMatrix string = TextRenderer::render(output, font, 15);
                 string.resize(INST_ENTRY_WIDTH, 1);
                 string.fillInvert(instNumber == instSelected);
                 string.fillPaletteRect(0, 0, INST_ENTRY_WIDTH, 1, palette);
@@ -65,7 +65,7 @@ void Instance::renderInstList () {
                 output = num;
                 palette = 7;                   
             }
-            TileMatrix string = TextRenderer::render(output, &font, 15);
+            TileMatrix string = TextRenderer::render(output, font, 15);
             string.resize(INST_ENTRY_WIDTH, 1);
             string.fillInvert(instNumber == instSelected);
             string.fillPaletteRect(0, 0, INST_ENTRY_WIDTH, 1, palette);

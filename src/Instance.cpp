@@ -73,7 +73,7 @@ Instance::Instance() {
         size_t size = 0;
         RIFF::RIFFWriter tmp; tmp.openMem();
         RIFFLoader::saveRIFFFile(tmp, activeProject);
-        tmp.close(); auto ptr = tmp.rw->fh; size = tmp.rw->size;
+        tmp.close(); auto ptr = tmp().fh; size = tmp().size;
         printByteArray(ptr, size, 16);
         free(ptr);
 

@@ -4,7 +4,6 @@
 
 #include "binIncludes.cpp"
 #include "Instance.cpp"
-#include "RIFF.cpp"
 
 int main()
 {    

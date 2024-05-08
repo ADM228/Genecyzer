@@ -47,7 +47,7 @@ void Instance::renderTracker () {
         char rowNum[4];
         for (int i = 0; i < rows && i < textHeight; i++){
             std::snprintf(rowNum, 4, "%03X", i);
-            auto rowNumMatrix = TextRenderer::render(std::string(rowNum), &font, 3, 1, 0);
+            auto rowNumMatrix = TextRenderer::render(std::string(rowNum), font, 3, 1, 0);
             text.copyRect(0, i, 3, 1, &rowNumMatrix, 0, 0);
         }
         

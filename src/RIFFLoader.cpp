@@ -194,8 +194,8 @@ const uint32_t thisBranchVer = 0;
 #define ifEq(ptra, ptrb) if (!memcmp(ptra, ptrb, 4))
 #define ifNeq(ptra, ptrb) if (memcmp(ptra, ptrb, 4))
 
-#define getID() file.rr->c_id
-#define getType() file.rr->ls[file.rr->ls_level-1].c_type
+#define getID() file().c_id
+#define getType() file().ls[file().ls_level-1].c_type
 
 #define ifID(ptr) ifEq(id, ptr)
 #define ifTp(ptr) ifEq(type, ptr)
@@ -208,7 +208,7 @@ int loadRIFFFile (RIFF::RIFFReader & file, Project & project) {
 	char *id, *type;
 
 	// 1. Test file type
-		ifNeq (file.rr->h_type, fileType){
+		ifNeq (file().h_type, fileType){
 			fprintf(stderr, "The file type is not a Genecyzer file. Aborting loading\n");
 			return -1;
 		} 

@@ -88,10 +88,10 @@ TileMatrix TrackerCell::render(uint16_t effectColumns, bool singleTile) {
     TileMatrix output(tileAppend+2+1+2+effectColumns*(3+1), 1, 0x20);
     // Render note
     if (noteValue == EMPTY_NOTE){
-        const uint32_t * emptyRowPtr = &emptyRow[firstIndex];
+        const uint32_t * emptyRowPtr = emptyRow+firstIndex;
         output.copyRect(0, 0, tileAppend+2+1+2, 1, emptyRowPtr);
     } else if (noteValue == KEY_OFF){
-        const uint32_t * keyOffRowPtr = &keyOffRow[firstIndex];
+        const uint32_t * keyOffRowPtr = keyOffRow+firstIndex;
         output.copyRect(0, 0, tileAppend+2+1+2, 1, keyOffRowPtr);
     } else {
         char row[5];

@@ -169,11 +169,13 @@ class RIFFReader {
          */
         std::string errorToString (int errorCode);
 
+        inline riff_reader & operator() () { return *rr; }
 
-        riff_reader * rr;
         void * file;
 
     private:
+        riff_reader * rr;
+
         int type = CLOSED;
 
         int openIfstreamCommon();
@@ -350,11 +352,12 @@ class RIFFWriter {
          */
         std::string errorToString (int errorCode);
 
+        inline riff_writer & operator() () { return *rw; }
 
-        riff_writer * rw;
         void * file;
 
     private:
+        riff_writer * rw;
         int type = CLOSED;
 
         int openOfstreamCommon();

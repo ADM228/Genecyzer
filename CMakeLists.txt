@@ -62,7 +62,7 @@ set (SNESFM_SOURCE_DIR "${SOURCE_DIR}")
 ExternalProject_Get_Property(tinyfiledialogs SOURCE_DIR)
 set (TINYFD_SOURCE_DIR "${SOURCE_DIR}")
 
-add_executable(Genecyzer src/main.cpp)
+add_executable(Genecyzer src/main.cpp src/RIFF.cpp)
 target_compile_features(Genecyzer PRIVATE cxx_std_17)
 
 add_custom_target(GenecyzerFileTest DEPENDS Genecyzer)
