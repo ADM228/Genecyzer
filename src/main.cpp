@@ -1,12 +1,22 @@
+#ifdef CLI_ONLY
+
+int main (int argc, char * argv[]) {
+    printf("CLI currently not supported, please wait for later or sumn\n");
+    fflush(stdout);
+}
+
+
+#else
+
 #include <cstdint>
-
-#include <SFML/Graphics.hpp>
-
 #include "binIncludes.cpp"
 #include "Instance.cpp"
 
-int main()
+int main(int argc, char * argv[])
 {    
+    if (argc > 1)
+        printf("CLI currently not supported, please wait for later or sumn\n");
+
     Instance instance;
 
     // Font stuff
@@ -21,3 +31,5 @@ int main()
 
     return 0;
 }
+
+#endif

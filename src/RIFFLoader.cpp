@@ -358,8 +358,6 @@ Song loadSongFromRIFF(RIFF::RIFFReader & file) {
 
 	Song song;
 
-	// Format is correct, let's start loading
-
 	int errCode = 0;
 
 	while (!errCode) {

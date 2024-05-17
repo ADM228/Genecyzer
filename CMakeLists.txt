@@ -15,10 +15,10 @@ cmake_policy(SET CMP0077 NEW)
 FetchContent_Declare(clip
 	GIT_REPOSITORY https://github.com/dacap/clip.git
 	GIT_TAG v1.6)
-set(CLIP_EXAMPLES FALSE)
-set(CLIP_TESTS FALSE)
+set(CLIP_EXAMPLES OFF)
+set(CLIP_TESTS OFF)
 if (UNIX AND NOT APPLE)
-	set(CLIP_X11_WITH_PNG FALSE)
+	set(CLIP_X11_WITH_PNG OFF)
 endif()
 
 message("* Getting SFML...")
@@ -64,13 +64,6 @@ set (TINYFD_SOURCE_DIR "${SOURCE_DIR}")
 
 add_executable(Genecyzer src/main.cpp src/RIFF.cpp)
 target_compile_features(Genecyzer PRIVATE cxx_std_17)
-
-add_custom_target(GenecyzerFileTest DEPENDS Genecyzer)
-
-if (TARGET GenecyzerFileTest)
-	target_compile_definitions(Genecyzer PRIVATE FILETEST)
-	configure_file("${CMAKE_SOURCE_DIR}/tests/testFile.gczr" "${CMAKE_BINARY_DIR}/testFile.gczr" COPYONLY)
-endif()
 
 target_compile_definitions(Genecyzer PRIVATE BITCONVERTER_ARRAY_CONVS BITCONVERTER_VECTOR_CONVS)
 

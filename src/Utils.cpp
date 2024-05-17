@@ -1,13 +1,14 @@
 #ifndef __STRCONVERT_INCLUDED__
 #define __STRCONVERT_INCLUDED__
 
-#include "SFML/System/Vector2.hpp"
+#include <SFML/System.hpp>
+
 #include <cmath>
-#include <stdio.h>
+#include <cstdio>
+#include <cstdarg>
+
 #include <string>
 #include <locale>
-#include <SFML/System.hpp>
-#include <cstdarg>
 
 // utility wrapper to adapt locale-bound facets for wstring/wbuffer convert
 template<class Facet>

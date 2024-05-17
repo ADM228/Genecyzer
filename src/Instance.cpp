@@ -44,60 +44,40 @@ Instance::Instance() {
     selectionBounds[1] = 0;
     
 
-    #ifdef FILETEST
-        auto filename = tinyfd_openFileDialog("Open a Genecyzer project file", NULL, 1, filter, "Genecyzer project file", 0);
-        auto data = std::ifstream();
-        data.open(filename, std::ios_base::binary | std::ios_base::in);
-        auto file = RIFF::RIFFReader();
-        file.open(data);
-        RIFFLoader::loadRIFFFile(file, activeProject);
-    #else
+    auto filename = tinyfd_openFileDialog("Open a Genecyzer project file", NULL, 1, filter, "Genecyzer project file", 0);
+    auto data = std::ifstream();
+    data.open(filename, std::ios_base::binary | std::ios_base::in);
+    auto file = RIFF::RIFFReader();
+    file.open(data);
+    RIFFLoader::loadRIFFFile(file, activeProject);
 
+    size_t size = 0;
+    RIFF::RIFFWriter tmp; tmp.openMem();
+    RIFFLoader::saveRIFFFile(tmp, activeProject);
+    tmp.close(); auto ptr = tmp().fh; size = tmp().size;
+    printByteArray(ptr, size, 16);
+    free(ptr);
 
-    std::vector<uint8_t> data = {
-        0x52, 0x49, 0x46, 0x46,         // "RIFF"
-        0x18, 0x00, 0x00, 0x00,         // filesize 24 bytes
-        0x47, 0x43, 0x5A, 0x52,         // "GCZR" 
-        0x76, 0x65, 0x72, 0x20,         // "ver "
-        0x0C, 0x00, 0x00, 0x00,         // chunksize 12 bytes
-        0x44, 0x65, 0x76, 0x20,         // "Dev "
-        0x4D, 0x61, 0x69, 0x6E,         // "Main"
-        0x00, 0x00, 0x00, 0x00          // ver 0
-    };
+    auto outFilename = tinyfd_saveFileDialog("Save the file", "outTest.gczr", 1, filter, "Genecyzer project file");
+    if (outFilename != NULL) {
+    { 
+        auto outData = std::ofstream(outFilename, std::ios_base::out | std::ios_base::binary);
+        RIFF::RIFFWriter writer;
 
-    #endif
+        writer.open(outData);
 
-
-    #ifdef FILETEST
-
-        size_t size = 0;
-        RIFF::RIFFWriter tmp; tmp.openMem();
-        RIFFLoader::saveRIFFFile(tmp, activeProject);
-        tmp.close(); auto ptr = tmp().fh; size = tmp().size;
-        printByteArray(ptr, size, 16);
-        free(ptr);
-
-        auto outFilename = tinyfd_saveFileDialog("Save the file", "outTest.gczr", 1, filter, "Genecyzer project file");
-        if (outFilename != NULL) {
-		{ 
-			auto outData = std::ofstream(outFilename, std::ios_base::out | std::ios_base::binary);
-            RIFF::RIFFWriter writer;
-
-            writer.open(outData);
-
-            // saveInternal(writer);
-            RIFFLoader::saveRIFFFile(writer, activeProject);
-            writer.close();
-			outData.close();
-		}
-		{
-			auto outData = std::ifstream(outFilename, std::ios_base::binary | std::ios_base::in);
-			char tmp[1024];
-			outData.read(tmp, 1024);
-			printByteArray(tmp, 1024);
-		}
-        }
-    #endif
+        // saveInternal(writer);
+        RIFFLoader::saveRIFFFile(writer, activeProject);
+        writer.close();
+        outData.close();
+    }
+    {
+        auto outData = std::ifstream(outFilename, std::ios_base::binary | std::ios_base::in);
+        char tmp[1024];
+        outData.read(tmp, 1024);
+        printByteArray(tmp, 1024);
+    }
+    }
     
 }
 
