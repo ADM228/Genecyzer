@@ -85,6 +85,10 @@ void Instance::addMonospaceFont(const void * data, uint32_t size, std::vector<ui
     font.init(data, size, codepages, 1);
 }
 
+void Instance::addMonospaceFont(const void * data, uint32_t size, const uint32_t * codepages, size_t codepagesSize){
+    font.init(data, size, codepages, codepagesSize, 1);
+}
+
 void Instance::ProcessEvents(){
 
 

@@ -7,5 +7,9 @@ INCBIN(font, "${FONTFILE}");
 	#include "${MSVCINCLUDEFILE}"
 #endif
 
+#include <cstdint>
+static const uint32_t bin_codepages[] = {0x0000, 0x0080, 0x0380, 0x0400, 0x0480, 0x3000, 0x3080};
+#define bin_codepages_size (sizeof(bin_codepages) / sizeof(uint32_t))
+
 // whenever c23 is finished:
 // #embed "${FONTFILE}

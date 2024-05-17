@@ -24,7 +24,7 @@ class Instance {
         void Update();
 
         void addMonospaceFont(const void * data, uint32_t size, std::vector<uint32_t> codepages);
-
+        void addMonospaceFont(const void * data, uint32_t size, const uint32_t * codepages, size_t codepagesSize);
 
         bool isWindowOpen(){ return window.isOpen(); };
 

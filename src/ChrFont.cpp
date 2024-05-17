@@ -12,26 +12,38 @@
 class ChrFont {
     public:
         ChrFont() {};
-        ChrFont(const void* chrData, uint32_t size, std::vector<uint32_t> codepageTable, bool inverted = 0);
         void init(const void* chrData, uint32_t size, std::vector<uint32_t> codepageTable, bool inverted = 0);
+        void init(const void* chrData, uint32_t size, const uint32_t* codepageTable, size_t codepageTableSize, bool inverted = 0);
+        inline ChrFont(const void* chrData, uint32_t size, std::vector<uint32_t> codepageTable, bool inverted = 0) {init(chrData, size, codepageTable, inverted);}
+        inline ChrFont(const void* chrData, uint32_t size, const uint32_t* codepageTable, size_t codepageTableSize, bool inverted = 0) {init(chrData, size, codepageTable, codepageTableSize, inverted);}
 
         const uint8_t* chrDataPtr;
         uint32_t chrDataSize;
         sf::Texture texture;
         std::vector<uint32_t> codepages;
+    private:
+        void init_common(const void* chrData, uint32_t size, bool inverted);
 };
 
 #pragma endregion
 
-ChrFont::ChrFont(const void* chrData, uint32_t size, std::vector<uint32_t> codepageTable, bool inverted){
-    init(chrData, size, codepageTable, inverted);
+void ChrFont::init(const void* chrData, uint32_t size, const uint32_t* codepageTable, size_t codepageTableSize, bool inverted) {
+    this->codepages = std::vector<uint32_t>(0);
+    for (size_t i = 0; i < codepageTableSize; i++) {
+        this->codepages.push_back(codepageTable[i]);
+    }
+    init_common(chrData, size, inverted);
 }
 
-void ChrFont::init(const void* __chrData, uint32_t size, std::vector<uint32_t> codepageTable, bool inverted){
+void ChrFont::init(const void* chrData, uint32_t size, std::vector<uint32_t> codepageTable, bool inverted){
+    this->codepages = codepageTable;
+    init_common(chrData, size, inverted);
+}
+
+void ChrFont::init_common(const void* __chrData, uint32_t size, bool inverted){
     auto chrData = (const uint8_t *)__chrData;
     this->chrDataPtr = chrData;
     this->chrDataSize = size;
-    this->codepages = codepageTable;
 
     uint8_t colorBuffer[TILE_SIZE*TILE_SIZE];
     uint32_t amount = size>>4;
