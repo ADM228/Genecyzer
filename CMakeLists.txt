@@ -21,6 +21,14 @@ if (UNIX AND NOT APPLE)
 	set(CLIP_X11_WITH_PNG OFF)
 endif()
 
+set(RIFF_WRITE TRUE)
+set(RIFF_CXX_WRAPPER TRUE)
+
+include(FetchContent)
+FetchContent_Declare(riff
+	GIT_REPOSITORY https://github.com/ADM228/libriff.git
+	GIT_TAG genecyzer-version)
+
 message("* Getting SFML...")
 FetchContent_MakeAvailable(SFML)
 
@@ -29,6 +37,9 @@ FetchContent_MakeAvailable(incbin)
 
 message("* Getting clip...")
 FetchContent_MakeAvailable(clip)
+
+message("* Getting libriff...")
+FetchContent_MakeAvailable(riff)
 
 message("* Libraries acquired")
 
@@ -40,8 +51,6 @@ set(CLIP_TESTS FALSE)
 if (UNIX AND NOT APPLE)
 	set(CLIP_X11_WITH_PNG FALSE)
 endif()
-
-set(THIRDPARTY "${CMAKE_SOURCE_DIR}/thirdparty/")
 
 include(ExternalProject)
 ExternalProject_Add(SNESFM
@@ -62,7 +71,7 @@ set (SNESFM_SOURCE_DIR "${SOURCE_DIR}")
 ExternalProject_Get_Property(tinyfiledialogs SOURCE_DIR)
 set (TINYFD_SOURCE_DIR "${SOURCE_DIR}")
 
-add_executable(Genecyzer src/main.cpp src/RIFF.cpp)
+add_executable(Genecyzer src/main.cpp)
 target_compile_features(Genecyzer PRIVATE cxx_std_17)
 
 target_compile_definitions(Genecyzer PRIVATE BITCONVERTER_ARRAY_CONVS BITCONVERTER_VECTOR_CONVS)
@@ -78,7 +87,7 @@ set(INCBIN_STYLE INCBIN_STYLE_SNAKE)
 set(INCBIN_TOOL_STYLE snakecase)
 
 configure_file("${CMAKE_SOURCE_DIR}/src/binIncludes.cpp.in" "${BININCLUDEFILE}")
-target_include_directories(Genecyzer PRIVATE ${CMAKE_BINARY_DIR} ${THIRDPARTY} ${TINYFD_SOURCE_DIR})
+target_include_directories(Genecyzer PRIVATE ${CMAKE_BINARY_DIR} ${TINYFD_SOURCE_DIR})
 
 add_library(Font STATIC "${BININCLUDEFILE}")
 add_custom_command(OUTPUT "${FONTDIR}" "${FONTDIR}${FONTFILE}" DEPENDS SNESFM COMMAND "")
@@ -86,11 +95,7 @@ add_custom_command(OUTPUT "${TINYFD_SOURCE_DIR}" "${TINYFD_SOURCE_DIR}/tinyfiled
 target_sources(Font PUBLIC "${FONTDIR}${FONTFILE}")
 target_link_libraries(Font PUBLIC incbin)
 
-add_library(riff STATIC "${THIRDPARTY}/libriff/riff.c")
 add_library(tinyfd STATIC "${TINYFD_SOURCE_DIR}/tinyfiledialogs.c")
-
-target_compile_definitions(riff PUBLIC RIFF_WRITE)
-target_compile_features(riff PRIVATE c_std_99)
 
 if (MSVC)	# Replacement of functions in cmake-incbin wrapper (it does not allow include directories, so fuck it)
 	get_filename_component(BININCLUDEFILE_NAME ${BININCLUDEFILE} NAME)

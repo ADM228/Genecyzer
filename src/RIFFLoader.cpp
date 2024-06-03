@@ -179,7 +179,7 @@ const char nameId           [5]     = "INAM";
 const char softwareId       [5]     = "ISFT";
 // in "song"
 const char effectColumnId   [5]     = "effc";
-const char * songNameId             = nameId;
+const char * const songNameId       = nameId;
 const char colorId          [5]     = "col ";
 const char noteId           [5]     = "note";
 const char patternId		[5]		= "ptrn";
