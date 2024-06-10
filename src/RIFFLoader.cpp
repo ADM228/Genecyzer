@@ -8,7 +8,7 @@
 
 #include "BitConverter.cpp"
 #include "Tracker.cpp"
-#include "RIFF.hpp"
+#include "riff.hpp"
 #include "Utils.cpp"
 #include "Var16.cpp"
 

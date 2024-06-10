@@ -14,7 +14,7 @@
 #include "Instrument.cpp"
 #include "Utils.cpp"
 #include "Song.cpp"
-#include "RIFF.hpp"
+#include "riff.hpp"
 
 class FileException : public std::exception {
     public:
