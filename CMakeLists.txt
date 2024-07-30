@@ -1,13 +1,15 @@
 cmake_minimum_required(VERSION 3.20)
 project(Genecyzer LANGUAGES CXX C)
 
-set(SFML_STATIC_LIBRARIES FALSE)
-find_package(SFML 2.6 COMPONENTS system window graphics audio)
+# set(SFML_MANUAL_OVERRIDE TRUE)
+
+if (NOT SFML_MANUAL_OVERRIDE)
+	set(SFML_STATIC_LIBRARIES FALSE)
+	find_package(SFML 2.6 COMPONENTS graphics audio window system)
+endif()
 
 include(FetchContent)
-if (SFML_FOUND)
-	include_directories({SFML_INCLUDE_DIR})
-else()
+if (NOT SFML_FOUND)
 	FetchContent_Declare(SFML
 		GIT_REPOSITORY https://github.com/SFML/SFML.git
 		GIT_TAG 2.6.1)
@@ -40,7 +42,6 @@ FetchContent_Declare(riff
 if (NOT SFML_FOUND)
 	message("* Getting SFML...")
 	FetchContent_MakeAvailable(SFML)
-	set (SFML_LIBRARIES "sfml-system sfml-window sfml-graphics sfml-audio")
 endif()
 
 message("* Getting incbin...")
@@ -122,7 +123,7 @@ else()
 endif()
 
 
-target_link_libraries(Genecyzer PRIVATE ${SFML_LIBRARIES} Font clip riff tinyfd)
+target_link_libraries(Genecyzer PRIVATE sfml-graphics sfml-audio sfml-window sfml-system Font clip riff tinyfd)
 
 if (WIN32 AND BUILD_SHARED_LIBS)
     add_custom_command(TARGET Genecyzer POST_BUILD
