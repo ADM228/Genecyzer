@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 project(Genecyzer LANGUAGES CXX C)
 
 set(SFML_STATIC_LIBRARIES FALSE)
-find_package(SFML 2.6 COMPONENTS system window graphics audio REQUIRED)
+find_package(SFML 2.6 COMPONENTS system window graphics audio)
 
 include(FetchContent)
 if (SFML_FOUND)
