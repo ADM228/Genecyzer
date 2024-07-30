@@ -1,11 +1,19 @@
 cmake_minimum_required(VERSION 3.20)
 project(Genecyzer LANGUAGES CXX C)
 
+set(SFML_STATIC_LIBRARIES FALSE)
+find_package(SFML 2.6 COMPONENTS system window graphics audio REQUIRED)
+
 include(FetchContent)
-FetchContent_Declare(SFML
-    GIT_REPOSITORY https://github.com/SFML/SFML.git
-    GIT_TAG 2.6.x)
-set(SFML_BUILD_NETWORK FALSE)
+if (SFML_FOUND)
+	include_directories({SFML_INCLUDE_DIR})
+else()
+	FetchContent_Declare(SFML
+		GIT_REPOSITORY https://github.com/SFML/SFML.git
+		GIT_TAG 2.6.1)
+	set(SFML_BUILD_NETWORK FALSE)
+
+endif()
 
 FetchContent_Declare(incbin
 	GIT_REPOSITORY https://github.com/morswin22/cmake-incbin.git
@@ -21,16 +29,19 @@ if (UNIX AND NOT APPLE)
 	set(CLIP_X11_WITH_PNG OFF)
 endif()
 
+set(RIFF_STATIC_LIBRARIES TRUE)
 set(RIFF_WRITE TRUE)
 set(RIFF_CXX_WRAPPER TRUE)
 
-include(FetchContent)
 FetchContent_Declare(riff
 	GIT_REPOSITORY https://github.com/ADM228/libriff.git
 	GIT_TAG genecyzer-version)
 
-message("* Getting SFML...")
-FetchContent_MakeAvailable(SFML)
+if (NOT SFML_FOUND)
+	message("* Getting SFML...")
+	FetchContent_MakeAvailable(SFML)
+	set (SFML_LIBRARIES "sfml-system sfml-window sfml-graphics sfml-audio")
+endif()
 
 message("* Getting incbin...")
 FetchContent_MakeAvailable(incbin)
@@ -43,9 +54,7 @@ FetchContent_MakeAvailable(riff)
 
 message("* Libraries acquired")
 
-
-option(SFML_BUILD_SHARED_LIBS "Build shared SFML libraries (normally static just in case)" FALSE)
-set(BUILD_SHARED_LIBS ${SFML_BUILD_SHARED_LIBS})
+set(BUILD_SHARED_LIBS FALSE)
 set(CLIP_EXAMPLES FALSE)
 set(CLIP_TESTS FALSE)
 if (UNIX AND NOT APPLE)
@@ -113,11 +122,11 @@ else()
 endif()
 
 
-target_link_libraries(Genecyzer PRIVATE sfml-graphics sfml-audio Font clip riff tinyfd)
+target_link_libraries(Genecyzer PRIVATE ${SFML_LIBRARIES} Font clip riff tinyfd)
 
 if (WIN32 AND BUILD_SHARED_LIBS)
     add_custom_command(TARGET Genecyzer POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:CMakeSFMLProject> $<TARGET_FILE_DIR:CMakeSFMLProject> COMMAND_EXPAND_LISTS)
+        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:Genecyzer> $<TARGET_FILE_DIR:Genecyzer> COMMAND_EXPAND_LISTS)
 endif()
 
 # install(TARGETS Genecyzer CONFIGURATIONS Debug
