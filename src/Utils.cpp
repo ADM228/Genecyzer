@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdarg>
+#include <cstdint>
 
 #include <string>
 #include <locale>

@@ -53,7 +53,13 @@ class Instance {
         #pragma region Update
         bool forceUpdateAll = 0;
 
-        uint64_t updateSections = 0;
+        struct {
+            bool scale;
+            bool inst_pos;
+            bool inst_list;
+            bool tracker;
+            bool tracker_selection;
+        } updateSections;
 
         std::vector<uint8_t> instrumentsToUpdate;
         int selectionBounds[4];

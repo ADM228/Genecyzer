@@ -22,12 +22,6 @@
 
 const char * const filter[] = {"*.gczr"};
 
-constexpr uint64_t UPDATE_SCALE = 1;
-constexpr uint64_t UPDATE_INST_POS = 2;
-constexpr uint64_t UPDATE_INST_LIST = 4;
-constexpr uint64_t UPDATE_TRACKER = 8;
-constexpr uint64_t UPDATE_TRACKER_SELECTION = 16;
-
 constexpr uint16_t MOUSE_DOWN = 1;
 
 #define getGlobalBounds_bottom(sprite) (sprite.getGlobalBounds().top + sprite.getGlobalBounds().height)
@@ -45,38 +39,46 @@ Instance::Instance() {
     
 
     auto filename = tinyfd_openFileDialog("Open a Genecyzer project file", NULL, 1, filter, "Genecyzer project file", 0);
-    auto data = std::ifstream();
-    data.open(filename, std::ios_base::binary | std::ios_base::in);
-    auto file = RIFF::RIFFReader();
-    file.open(data);
-    RIFFLoader::loadRIFFFile(file, activeProject);
+    if (filename == NULL) {
+        activeProject = Project::createDefault();
+    } else {
+        std::string sfilename(filename);
+        free(filename); 
+        auto data = std::ifstream();
+        data.open(filename, std::ios_base::binary | std::ios_base::in);
+        auto file = RIFF::RIFFReader();
+        file.open(data);
+        RIFFLoader::loadRIFFFile(file, activeProject);
 
-    size_t size = 0;
-    RIFF::RIFFWriter tmp; tmp.openMem();
-    RIFFLoader::saveRIFFFile(tmp, activeProject);
-    tmp.close(); auto ptr = tmp().fh; size = tmp().size;
-    printByteArray(ptr, size, 16);
-    free(ptr);
+        size_t size = 0;
+        RIFF::RIFFWriter tmp; tmp.openMem();
+        RIFFLoader::saveRIFFFile(tmp, activeProject);
+        tmp.close(); auto ptr = tmp().fh; size = tmp().size;
+        printByteArray(ptr, size, 16);
+        free(ptr);
 
-    auto outFilename = tinyfd_saveFileDialog("Save the file", "outTest.gczr", 1, filter, "Genecyzer project file");
-    if (outFilename != NULL) {
-    { 
-        auto outData = std::ofstream(outFilename, std::ios_base::out | std::ios_base::binary);
-        RIFF::RIFFWriter writer;
+        auto outFilename = tinyfd_saveFileDialog("Save the file", "outTest.gczr", 1, filter, "Genecyzer project file");
+        if (outFilename != NULL) {
+        std::string sOutFilename(outFilename);
+        free (outFilename);
+        { 
+            auto outData = std::ofstream(sOutFilename, std::ios_base::out | std::ios_base::binary);
+            RIFF::RIFFWriter writer;
 
-        writer.open(outData);
+            writer.open(outData);
 
-        // saveInternal(writer);
-        RIFFLoader::saveRIFFFile(writer, activeProject);
-        writer.close();
-        outData.close();
-    }
-    {
-        auto outData = std::ifstream(outFilename, std::ios_base::binary | std::ios_base::in);
-        char tmp[1024];
-        outData.read(tmp, 1024);
-        printByteArray(tmp, 1024);
-    }
+            // saveInternal(writer);
+            RIFFLoader::saveRIFFFile(writer, activeProject);
+            writer.close();
+            outData.close();
+        }
+        {
+            auto outData = std::ifstream(outFilename, std::ios_base::binary | std::ios_base::in);
+            char tmp[1024];
+            outData.read(tmp, 1024);
+            printByteArray(tmp, 1024);
+        }
+        }
     }
     
 }
@@ -91,11 +93,9 @@ void Instance::addMonospaceFont(const void * data, uint32_t size, const uint32_t
 
 void Instance::ProcessEvents(){
 
-
-
     sf::Event event;
 
-    updateSections = 0;
+    memset(&updateSections, 0, sizeof(updateSections));
 
     instrumentsToUpdate.clear();
 
@@ -108,7 +108,7 @@ void Instance::ProcessEvents(){
             
             //scale = std::max(static_cast<int>(std::ceil(event.size.height/(4*8*TILE_SIZE))), 1);
             
-            updateSections |= UPDATE_SCALE;
+            updateSections.scale = 1;
 
             //int width = std::ceil((event.size.width/scale)/TILE_SIZE);
 
@@ -125,13 +125,13 @@ void Instance::ProcessEvents(){
                 eventHandleInstList (7, -8, 0, true);
             else if (event.key.code == sf::Keyboard::E){
                 singleTileTrackerRender ^= 1;
-                updateSections |= UPDATE_TRACKER;
+                updateSections.tracker = 1;
             } else if (event.key.code == sf::Keyboard::Equal && event.key.control) {
                 scale++;
-                updateSections |= UPDATE_SCALE;
+                updateSections.scale = 1;
             } else if (event.key.code == sf::Keyboard::Hyphen && event.key.control && scale > 1) {
                 scale--;
-                updateSections |= UPDATE_SCALE;
+                updateSections.scale = 1;
             } else if (event.key.code == sf::Keyboard::Apostrophe) {
                 lowerHalfMode ^= 1;
                 forceUpdateAll = 1;
@@ -152,7 +152,7 @@ void Instance::ProcessEvents(){
                     selectionBounds[1] = lastMousePress.y  / (scale*TILE_SIZE);
                     selectionBounds[2] = event.mouseMove.x / (scale*TILE_SIZE);
                     selectionBounds[3] = event.mouseMove.y / (scale*TILE_SIZE);
-                    updateSections |= UPDATE_TRACKER_SELECTION;
+                    updateSections.tracker_selection = 1;
                 } else if (
                     lowerHalfMode == 1 &&
                     lastMousePress.y > scale*TILE_SIZE*8
@@ -172,30 +172,30 @@ void Instance::Update(){
     #pragma region ConditionalUpdates
 
     if (forceUpdateAll){
-        updateSections = 0xFFFFFFFFFFFFFFFF;
+        memset(&updateSections, true, sizeof(updateSections));
         instrumentsToUpdate.clear();
         forceUpdateAll = 0;
     }
 
-    if (updateSections & UPDATE_INST_POS)
+    if (updateSections.inst_pos)
         renderInstList();
 
-    if (updateSections & (UPDATE_INST_POS | UPDATE_SCALE))   
+    if (updateSections.inst_pos || updateSections.scale)   
         updateInstPage();
         
     switch (lowerHalfMode) {
         case 0:
-            if (updateSections & (UPDATE_SCALE | UPDATE_TRACKER)){
+            if (updateSections.tracker || updateSections.scale){
                 renderTracker();
                 updateTrackerPos();
                 renderBeatsTexture();
             }
-            if (updateSections & UPDATE_TRACKER_SELECTION)
+            if (updateSections.tracker_selection)
                 updateTrackerSelection();
             break;
 
         case 1:
-            if (updateSections & UPDATE_SCALE)
+            if (updateSections.scale)
                 updateTrackerPos();
             break;
 
@@ -267,7 +267,7 @@ void Instance::eventHandleInstList (int limit, int modifier, uint8_t replacement
     if (instrumentsToUpdate.back() != instSelected){
         instrumentsToUpdate.push_back(instSelected);
         instSelected = instrumentsToUpdate[instrumentsToUpdate.size()-2] & 0xFF;
-        updateSections |= UPDATE_INST_POS;
+        updateSections.inst_pos = 1;
     } else
         instrumentsToUpdate.pop_back();
 }
