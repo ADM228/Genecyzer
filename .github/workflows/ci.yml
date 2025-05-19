@@ -21,10 +21,10 @@ jobs:
             packages: libxrandr-dev libxcursor-dev libudev-dev libopenal-dev libflac-dev libvorbis-dev libgl1-mesa-dev libegl1-mesa-dev,
             flags: -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ }
         - { name: Linux GCC   (Packaged SFML),
-              os: ubuntu-24.04,
+              os: ubuntu-latest,
               packages: libsfml-dev }
         - { name: Linux Clang (Packaged SFML),
-              os: ubuntu-24.04,
+              os: ubuntu-latest,
               packages: libsfml-dev,
               flags: -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ }
         - { name: MacOS XCode,    os: macos-latest  }
