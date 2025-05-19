@@ -73,7 +73,7 @@ void printByteArray(const void * ptr, size_t size, size_t divide = 16) {
         }
         printf("| ");
         for (size_t j = 0; j < divide && idx < size; j++){
-            if (*((char * )ptr+idx) >= 0x20)
+            if (*((char * )ptr+idx) >= 0x20 && *((char * )ptr+idx) <= 0x7F)
                 printf("%c", *((char *)ptr+(idx++)));
             else 
                 { printf("�"); idx++; }
