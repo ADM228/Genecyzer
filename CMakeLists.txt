@@ -1,7 +1,9 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.28)
 project(Genecyzer LANGUAGES CXX C)
 
 # set(SFML_MANUAL_OVERRIDE TRUE)
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 if (NOT SFML_MANUAL_OVERRIDE)
 	set(SFML_STATIC_LIBRARIES FALSE)
@@ -12,7 +14,10 @@ include(FetchContent)
 if (NOT SFML_FOUND)
 	FetchContent_Declare(SFML
 		GIT_REPOSITORY https://github.com/SFML/SFML.git
-		GIT_TAG 2.6.1)
+		GIT_TAG 2.6.1
+		GIT_SHALLOW ON
+		EXCLUDE_FROM_ALL
+    	SYSTEM)
 	set(SFML_BUILD_NETWORK FALSE)
 
 endif()
@@ -126,9 +131,12 @@ endif()
 target_include_directories(Genecyzer PRIVATE src)
 target_link_libraries(Genecyzer PRIVATE sfml-graphics sfml-audio sfml-window sfml-system Font clip riff tinyfd)
 
-if (WIN32 AND BUILD_SHARED_LIBS)
-    add_custom_command(TARGET Genecyzer POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:Genecyzer> $<TARGET_FILE_DIR:Genecyzer> COMMAND_EXPAND_LISTS)
+if(WIN32)
+    add_custom_command(
+        TARGET Genecyzer
+        COMMENT "Copy OpenAL DLL"
+        PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${SFML_SOURCE_DIR}/extlibs/bin/$<IF:$<EQUAL:${CMAKE_SIZEOF_VOID_P},8>,x64,x86>/openal32.dll $<TARGET_FILE_DIR:Genecyzer>
+        VERBATIM)
 endif()
 
 # install(TARGETS Genecyzer CONFIGURATIONS Debug
