@@ -1,5 +1,5 @@
 #include <vector>
-#include "../Instance.hpp"
+#include "Instance.hpp"
 
 void Instance::renderInstList () {
     auto & instruments = activeProject.globalInstruments;    // TODO: global + local, accomodate here

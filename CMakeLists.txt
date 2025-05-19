@@ -123,7 +123,7 @@ else()
 	set_target_properties(incbin-tool PROPERTIES EXCLUDE_FROM_ALL True EXCLUDE_FROM_DEFAULT_BUILD True)
 endif()
 
-
+target_include_directories(Genecyzer PRIVATE src)
 target_link_libraries(Genecyzer PRIVATE sfml-graphics sfml-audio sfml-window sfml-system Font clip riff tinyfd)
 
 if (WIN32 AND BUILD_SHARED_LIBS)

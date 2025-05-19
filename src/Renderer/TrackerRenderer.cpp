@@ -1,7 +1,7 @@
-#include "../Instance.hpp"
+#include "Instance.hpp"
 
-#include "../Song.cpp"
-#include "../Instrument.cpp"
+#include "Song.cpp"
+#include "Instrument.cpp"
 
 void Instance::renderTracker () {
     
