@@ -17,7 +17,7 @@ jobs:
         platform:
         - { name: Windows VS2019, os: windows-2019  }
         - { name: Windows VS2022, os: windows-2022  }
-        - { name: Windows MinGW,  os: windows-2022, flags: -GNinja -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ }
+        # - { name: Windows MinGW,  os: windows-2022, flags: -GNinja -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ }
         - { name: Linux GCC   (Manual SFML compilation),
             os: ubuntu-latest,
             packages: libxrandr-dev libxcursor-dev libudev-dev libopenal-dev libflac-dev libvorbis-dev libgl1-mesa-dev libegl1-mesa-dev libfreetype-dev }
@@ -35,9 +35,9 @@ jobs:
         - { name: MacOS,          os: macos-latest  }
 
     steps:
-    - name: Install Windows Dependencies
-      if: runner.os == 'Windows'
-      run: choco install ninja
+    # - name: Install Windows Dependencies
+    #   if: runner.os == 'Windows'
+    #   run: choco install ninja
 
     - name: Install Linux Dependencies
       if: runner.os == 'Linux'
