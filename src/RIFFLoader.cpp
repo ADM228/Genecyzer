@@ -164,7 +164,7 @@ const char fileType     [5]     = "GCZR";
 const char software     [10]    = "Genecyzer";
 
 const char mainBranch   [9]     = "Release ";
-const char thisBranch   [9]     = "Dev Main";
+const char thisBranch   [9]     = "Spaghett";
 
 
 // Chunk IDs
