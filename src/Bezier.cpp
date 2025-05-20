@@ -42,7 +42,7 @@ void CubicBezier::calculateThin(std::array<sf::Vector2f, 4>& points, float preci
     lines.append(sf::Vertex(points[3], sf::Color::Red));
     #endif
 
-    #define lengthOfLine(begin, end) std::sqrt(std::pow(end.x-begin.x, 2)+std::pow(end.y-begin.y, 2))
+    #define lengthOfLine(begin, end) std::hypot(end.x-begin.x, end.y-begin.y)
 
     precision *= (lengthOfLine(points[0], points[1]) + lengthOfLine(points[2], points[1]) + lengthOfLine(points[3], points[2]));
     precision = std::min(precision, 512.f);
@@ -77,8 +77,8 @@ void CubicBezier::calculate(std::array<sf::Vector2f, 4>& points, float precision
     lines.append(sf::Vertex(points[3], sf::Color::Red));
     #endif
 
-    #define lengthOfLine(begin, end) std::sqrt(std::pow(end.x-begin.x, 2)+std::pow(end.y-begin.y, 2))
-    #define lengthOfVelocity(velocity) std::sqrt(std::pow(velocity.x, 2)+std::pow(velocity.y, 2))
+    #define lengthOfLine(begin, end) std::hypot(end.x-begin.x, end.y-begin.y)
+    #define lengthOfVelocity(velocity) std::hypot(velocity.x, velocity.y)
 
     precision *= (lengthOfLine(points[0], points[1]) + lengthOfLine(points[1], points[2]) + lengthOfLine(points[2], points[3]));
     precision = std::min(precision, 512.f);
