@@ -38,12 +38,12 @@ Instance::Instance() {
     selectionBounds[1] = 0;
     
 
-    auto filename = tinyfd_openFileDialog("Open a Genecyzer project file", NULL, 1, filter, "Genecyzer project file", 0);
-    if (filename == NULL) {
+    auto filenamePtr = tinyfd_openFileDialog("Open a Genecyzer project file", NULL, 1, filter, "Genecyzer project file", 0);
+    if (filenamePtr == NULL) {
         activeProject = Project::createDefault();
     } else {
-        std::string sfilename(filename);
-        free(filename); 
+        std::string filename(filenamePtr);
+        free(filenamePtr); 
         auto data = std::ifstream();
         data.open(filename, std::ios_base::binary | std::ios_base::in);
         auto file = RIFF::RIFFReader();

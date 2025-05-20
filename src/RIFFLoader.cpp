@@ -533,6 +533,7 @@ std::vector<uint8_t> encodeNoteStruct (std::vector<TrackerCell> pattern) {
 	}
 
 	//TODO COMPRESSION AGLORITHM
+	// Not applicable on spaghetti branch
 
 	return array;
 }
