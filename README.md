@@ -6,6 +6,12 @@
 
 Written in C++ with the [SFML framework](https://sfml-dev.org), it is (theoretically lmao) available on Windows, MacOS and Linux.  
 
+## This specific branch is only for fast dev time
+
+- It will only just barely work
+- The progress will be ported to `master` later, but only after moving to SFML 3 and adequately finishing libriff
+- The codebase of this specific branch is going to be complete spaghetti
+
 ### Features
 
 - None  
