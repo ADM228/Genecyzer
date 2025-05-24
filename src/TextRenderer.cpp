@@ -31,7 +31,7 @@ wrappedText wrapText(std::u32string text, int maxChars = -1, bool preprocess = 1
 #endif
 
 #pragma region Tables
-constexpr static uint16_t halfKatakanaTable[] {
+static constexpr uint16_t halfKatakanaTable[] {
                                                             0x2985, // U+FF5F                             ｟ 
     0x2986, 0x3002, 0x300C, 0x300D, 0x3001, 0x30FB, 0x30F2, 0x30A1, // U+FF60	｠  ｡   ｢   ｣   ､   ･   ｦ   ｧ 
     0x30A3, 0x30A5, 0x30A7, 0x30A9, 0x30E3, 0x30E5, 0x30E7, 0x30C3, // U+FF68   ｨ 	ｩ 	ｪ 	ｫ 	ｬ 	ｭ 	ｮ 	ｯ 
@@ -43,7 +43,7 @@ constexpr static uint16_t halfKatakanaTable[] {
     0x30EA, 0x30EB, 0x30EC, 0x30ED, 0x30EF, 0x30F3, 0x309B, 0x309C, // U+FF98	ﾘ 	ﾙ 	ﾚ 	ﾛ 	ﾜ 	ﾝ 	ﾞ 	ﾟ
     0x3164                                                          // U+FFA0 [HWHF]
 };
-constexpr static uint16_t modWidthSymbolTable[] {
+static constexpr uint16_t modWidthSymbolTable[] {
     0x00A2, 0x00A3, 0x00AC, 0x00AF, 0x00A6, 0x00A5, 0x20A9, 0x0000, // U+FFE0	￠  ￡  ￢  ￣  ￤  ￥  ￦ 
     0x2502, 0x2190, 0x2191, 0x2192, 0x2193, 0x25A0, 0x25CB, 0x0000  // U+FFE8	￨ 	￩ 	￪ 	￫ 	￬ 	￭ 	￮ 
 };

@@ -4,15 +4,6 @@
 #include "Instrument.cpp"
 
 void Instance::renderTracker () {
-    
-    #define ROW_SEPARATOR 0x04
-    #define COL_SEPARATOR 0x06
-
-    #define INTERSECTION_ALL4 0x05
-    #define INTERSECTION_NOUP 0x07
-    #define INTERSECTION_NORT 0x08
-
-    #define HEADER_HEIGHT 5
 
     #define TRACKER_ROW_WIDTH(effectColumns) trackerNoteWidth+1+2+(1+3)*effectColumns
 
