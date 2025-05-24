@@ -1,6 +1,7 @@
 #ifndef __INSTANCE_CPP_INCLUDED__
 #define __INSTANCE_CPP_INCLUDED__
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -27,16 +28,17 @@ constexpr uint16_t MOUSE_DOWN = 1;
 #define getGlobalBounds_bottom(sprite) (sprite.getGlobalBounds().top + sprite.getGlobalBounds().height)
 
 Instance::Instance() {
+    // Init all variables
+    selectionBounds.fill(-1);
+    forceUpdateAll = 1;
+    lastMousePress.position.x = 0;
+    lastMousePress.position.y = 0;
+
+    // Init graphics
     window.create(sf::VideoMode({200, 200}), "Genecyzer");
     window.setFramerateLimit(60);
     InstrumentView = sf::View(sf::FloatRect({0.f, 0.f}, {200.f, 200.f}));
     TrackerView = sf::View(sf::FloatRect({0.f, 0.f}, {200.f, 200.f}));
-    forceUpdateAll = 1;
-    lastMousePress.position.x = 0;
-    lastMousePress.position.y = 0;
-    selectionBounds[0] = 0;
-    selectionBounds[1] = 0;
-    
 
     auto filenamePtr = tinyfd_openFileDialog("Open a Genecyzer project file", NULL, 1, filter, "Genecyzer project file", 0);
     if (filenamePtr == NULL) {
@@ -57,27 +59,27 @@ Instance::Instance() {
         printByteArray(ptr, size, 16);
         free(ptr);
 
-        auto outFilename = tinyfd_saveFileDialog("Save the file", "outTest.gczr", 1, filter, "Genecyzer project file");
-        if (outFilename != NULL) {
-        std::string sOutFilename(outFilename);
-        free (outFilename);
-        { 
-            auto outData = std::ofstream(sOutFilename, std::ios_base::out | std::ios_base::binary);
-            RIFF::RIFFWriter writer;
+        auto outFilenamePtr = tinyfd_saveFileDialog("Save the file", "outTest.gczr", 1, filter, "Genecyzer project file");
+        if (outFilenamePtr != NULL) {
+            std::string outFilename(outFilenamePtr);
+            { 
+                auto outData = std::ofstream(outFilename, std::ios_base::out | std::ios_base::binary);
+                RIFF::RIFFWriter writer;
 
-            writer.open(outData);
+                writer.open(outData);
 
-            // saveInternal(writer);
-            RIFFLoader::saveRIFFFile(writer, activeProject);
-            writer.close();
-            outData.close();
-        }
-        {
-            auto outData = std::ifstream(outFilename, std::ios_base::binary | std::ios_base::in);
-            char tmp[1024];
-            outData.read(tmp, 1024);
-            printByteArray(tmp, 1024);
-        }
+                // saveInternal(writer);
+                RIFFLoader::saveRIFFFile(writer, activeProject);
+                writer.close();
+                outData.close();
+            }
+            {
+                auto outData = std::ifstream(outFilename, std::ios_base::binary | std::ios_base::in);
+                char tmp[1024];
+                outData.read(tmp, 1024);
+                printByteArray(tmp, 1024);
+            }
+            free (outFilenamePtr); // crashes, wtf???
         }
     }
     

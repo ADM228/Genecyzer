@@ -42,7 +42,7 @@ class TrackerCell {
         const bool operator==(const TrackerCell & other) const;
         const bool operator!=(const TrackerCell & other) const;
     private:
-        uint8_t flags;
+        uint8_t flags = 0;  // Value not undefined
         constexpr static uint32_t singleNoteTileTable[] {
             0x43, 0x1B, 0x44, 0x1C, 0x45,               // C, C#, D, D#, E
             0x46, 0x1D, 0x47, 0x1E, 0x41, 0x1F, 0x42    // F, F#, G, G#, A, A#, B

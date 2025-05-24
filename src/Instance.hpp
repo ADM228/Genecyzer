@@ -3,6 +3,7 @@
 
 #include <SFML/Graphics.hpp>
 
+#include <array>
 #include <cstdint>
 #include <vector>
 
@@ -66,7 +67,7 @@ class Instance {
         } updateSections;
 
         std::vector<uint8_t> instrumentsToUpdate;
-        int selectionBounds[4];
+        std::array<int, 4> selectionBounds;
         #pragma endregion
 
         sf::RenderWindow window;
@@ -77,7 +78,7 @@ class Instance {
 
         Project activeProject;
 
-        uint16_t mouseFlags;
+        uint16_t mouseFlags = 0;
 
         sf::Event::MouseButtonPressed lastMousePress;
 
