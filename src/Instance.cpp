@@ -1,6 +1,7 @@
 #ifndef __INSTANCE_CPP_INCLUDED__
 #define __INSTANCE_CPP_INCLUDED__
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -27,16 +28,17 @@ constexpr uint16_t MOUSE_DOWN = 1;
 #define getGlobalBounds_bottom(sprite) (sprite.getGlobalBounds().top + sprite.getGlobalBounds().height)
 
 Instance::Instance() {
+    // Init all variables
+    selectionBounds.fill(-1);
+    forceUpdateAll = 1;
+    lastMousePress.x = 0;
+    lastMousePress.y = 0;
+    
+    // Init graphics
     window.create(sf::VideoMode(200, 200), "Genecyzer");
     window.setFramerateLimit(60);
     InstrumentView.reset(sf::FloatRect(0.f, 0.f, 200.f, 200.f));
     TrackerView.reset(sf::FloatRect(0.f,0.f,200.f,200.f));
-    forceUpdateAll = 1;
-    lastMousePress.x = 0;
-    lastMousePress.y = 0;
-    selectionBounds[0] = 0;
-    selectionBounds[1] = 0;
-    
 
     auto filenamePtr = tinyfd_openFileDialog("Open a Genecyzer project file", NULL, 1, filter, "Genecyzer project file", 0);
     if (filenamePtr == NULL) {
