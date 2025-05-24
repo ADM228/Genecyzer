@@ -40,49 +40,7 @@ Instance::Instance() {
     InstrumentView = sf::View(sf::FloatRect({0.f, 0.f}, {200.f, 200.f}));
     TrackerView = sf::View(sf::FloatRect({0.f, 0.f}, {200.f, 200.f}));
 
-    auto filenamePtr = tinyfd_openFileDialog("Open a Genecyzer project file", NULL, 1, filter, "Genecyzer project file", 0);
-    if (filenamePtr == NULL) {
-        activeProject = Project::createDefault();
-    } else {
-        std::string filename(filenamePtr);
-        free(filenamePtr); 
-        auto data = std::ifstream();
-        data.open(filename, std::ios_base::binary | std::ios_base::in);
-        auto file = RIFF::RIFFReader();
-        file.open(data);
-        RIFFLoader::loadRIFFFile(file, activeProject);
-
-        size_t size = 0;
-        RIFF::RIFFWriter tmp; tmp.openMem();
-        RIFFLoader::saveRIFFFile(tmp, activeProject);
-        tmp.close(); auto ptr = tmp().fh; size = tmp().size;
-        printByteArray(ptr, size, 16);
-        free(ptr);
-
-        auto outFilenamePtr = tinyfd_saveFileDialog("Save the file", "outTest.gczr", 1, filter, "Genecyzer project file");
-        if (outFilenamePtr != NULL) {
-            std::string outFilename(outFilenamePtr);
-            { 
-                auto outData = std::ofstream(outFilename, std::ios_base::out | std::ios_base::binary);
-                RIFF::RIFFWriter writer;
-
-                writer.open(outData);
-
-                // saveInternal(writer);
-                RIFFLoader::saveRIFFFile(writer, activeProject);
-                writer.close();
-                outData.close();
-            }
-            {
-                auto outData = std::ifstream(outFilename, std::ios_base::binary | std::ios_base::in);
-                char tmp[1024];
-                outData.read(tmp, 1024);
-                printByteArray(tmp, 1024);
-            }
-            free (outFilenamePtr); // crashes, wtf???
-        }
-    }
-    
+    if (openFileIntoProject()) saveProjectToFile();
 }
 
 void Instance::addMonospaceFont(const void * data, uint32_t size, std::vector<uint32_t> codepages){
@@ -272,5 +230,44 @@ void Instance::eventHandleInstList (int limit, int modifier, uint8_t replacement
     } else
         instrumentsToUpdate.pop_back();
 }
+
+#pragma region fileOps
+
+bool Instance::openFileIntoProject () {
+    auto filenamePtr = tinyfd_openFileDialog("Open a Genecyzer project file", NULL, 1, filter, "Genecyzer project file", 0);
+    if (filenamePtr == NULL) {
+        return false;
+    }
+    std::string filename(filenamePtr); free(filenamePtr); 
+    auto data = std::ifstream(filename, std::ios_base::binary | std::ios_base::in);
+    auto file = RIFF::RIFFReader();
+    file.open(data);
+    RIFFLoader::loadRIFFFile(file, activeProject);
+
+    return true;
+}
+
+bool Instance::saveProjectToFile () {
+    auto outFilenamePtr = tinyfd_saveFileDialog("Save the file", "outTest.gczr", 1, filter, "Genecyzer project file");
+    if (outFilenamePtr == NULL) {
+        return false;
+    }
+
+    std::string outFilename(outFilenamePtr);
+    free (outFilenamePtr);
+    auto outData = std::ofstream(outFilename, std::ios_base::out | std::ios_base::binary);
+    RIFF::RIFFWriter writer;
+
+    writer.open(outData);
+
+    // saveInternal(writer);
+    RIFFLoader::saveRIFFFile(writer, activeProject);
+    writer.close();
+    outData.close();
+
+    return true;
+}
+
+#pragma endregion
 
 #endif // __INSTANCE_CPP_INCLUDED__

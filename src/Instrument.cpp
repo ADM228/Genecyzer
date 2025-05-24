@@ -35,7 +35,7 @@ class Instrument {
         uint8_t getPalette() const;
 
     private:
-        uint32_t name[INSTRUMENT_NAME_LENGTH];
+        std::array<uint32_t, INSTRUMENT_NAME_LENGTH> name;
         uint8_t palette;
 
         std::array<Macro, 5> macros;
@@ -46,9 +46,7 @@ class Instrument {
 #pragma region instrumentImplementation
 
 Instrument::Instrument(){
-    for (auto & i : name){
-        i = 0x20;   // Space
-    }
+    name.fill(' ');
     this->palette = 7;
 }
 
@@ -58,7 +56,7 @@ void Instrument::setName(std::string name){
 }
 
 void Instrument::setName(std::u32string name){
-    std::copy_n(name.data(), std::min((size_t)INSTRUMENT_NAME_LENGTH, name.size()), this->name);
+    std::copy_n(name.data(), std::min((size_t)INSTRUMENT_NAME_LENGTH, name.size()), this->name.begin());
 }
 
 std::string Instrument::getName() const{

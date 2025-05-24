@@ -7,8 +7,6 @@
 #ifndef __MODULAR_SYNTH_INCLUDED__
 #define __MODULAR_SYNTH_INCLUDED__
 
-#define MSB_STATE_ALIVE 0x00
-#define MSB_STATE_DEATH 0xFF
 
 class ModSynthBezier : public CubicBezier {
     public:
@@ -16,8 +14,9 @@ class ModSynthBezier : public CubicBezier {
         void updatePosition(sf::Vector2f position, bool end);
         void calculate(float precision, float lineWidth, bool thin);
 
-        uint_fast8_t state;
+        enum class State { Alive, Dead };
 
+        State state;
     private:
         std::array<sf::Vector2f, 2> position;
 };
@@ -132,7 +131,7 @@ void ModSynthElement::connectOutputBezier(ModSynthBezier & bezier) {
 
 void ModSynthElement::updateBeziers() {
     for (size_t i = 0; i < outputs.size(); i++) {
-        if (outputs[i]->state == MSB_STATE_DEATH) {
+        if (outputs[i]->state == ModSynthBezier::State::Dead) {
             std::swap(outputs[i], outputs.back());
             outputs.pop_back();
         };

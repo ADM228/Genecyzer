@@ -570,44 +570,29 @@ TrackerPattern decodePatternStruct (std::vector<uint8_t> chunkData) {
 
 
 std::vector<uint8_t> encodePatternStruct (TrackerPattern pattern) {
-	std::vector<uint8_t> array (sizeof(uint16_t)*8+sizeof(uint32_t));
-
-	size_t offset = 0;
-	auto * ptr = array.data();	
+	std::vector<uint8_t> array;
 
 	// Row amount
-	BitConverter::writeBytes(ptr+offset, (uint32_t)pattern.rows);
-	offset += sizeof(uint32_t);
+	array += BitConverter::toByteArray((uint32_t)pattern.rows);
 
 	// Put the rows
-	for (size_t i = 0; i < 8; i++, offset+=sizeof(uint16_t))
-		BitConverter::writeBytes(ptr+offset, pattern.cells[i]);
+	for (auto & i : pattern.cells)
+		array += BitConverter::toByteArray(i);
 
 	// Major beats
 	auto sizeOfData = pattern.beats_major.size();
-	auto sizeOfSize = Var16::getSize(sizeOfData);
-	array.resize(array.size()+sizeOfSize+sizeOfData*sizeof(uint16_t));
-	ptr = array.data();	// Update cuz might have moved
+	array += Var16::encode(sizeOfData);
 
-	Var16::writeBytes(ptr+offset, sizeOfData);
-	offset += sizeOfSize;
-
-	for (size_t i = 0; i < sizeOfData; i++, offset+=sizeof(uint16_t))
-		BitConverter::writeBytes(ptr+offset, pattern.beats_major[i]);
+	for (auto & i : pattern.beats_major)
+		array += BitConverter::toByteArray(i);
 
 	// Minor beats
 	sizeOfData = pattern.beats_minor.size();
-	sizeOfSize = Var16::getSize(sizeOfData);
-
-	array.resize(array.size()+sizeOfSize+sizeOfData*sizeof(uint16_t));
-	ptr = array.data();	// Update cuz might have moved
-
-	Var16::writeBytes(ptr+offset, sizeOfData);
-	offset += sizeOfSize;
-
-	for (size_t i = 0; i < sizeOfData; i++, offset+=sizeof(uint16_t))
-		BitConverter::writeBytes(ptr+offset, pattern.beats_minor[i]);
+	array += Var16::encode(sizeOfData);
 	
+	for (auto & i : pattern.beats_minor)
+		array += BitConverter::toByteArray(i);
+
 	return array;
 }
 

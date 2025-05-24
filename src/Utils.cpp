@@ -10,6 +10,7 @@
 
 #include <string>
 #include <locale>
+#include <vector>
 
 // utility wrapper to adapt locale-bound facets for wstring/wbuffer convert
 template<class Facet>
@@ -37,6 +38,18 @@ std::u32string To_UTF32(const std::string &s)
 // Uh oh seems like it's more of a general utils file now
 template<std::size_t N, class T>
 constexpr std::size_t countof(T(&)[N]) { return N; }
+
+template <class T>
+std::vector<T>& operator+=(std::vector<T>& lhs, std::vector<T> l) {
+    lhs.insert(lhs.end(), l.begin(), l.end());
+    return lhs;
+}
+
+template <std::size_t N, class T>
+std::vector<T>& operator+=(std::vector<T>& lhs, std::array<T, N> l) {
+    lhs.insert(lhs.end(), l.begin(), l.end());
+    return lhs;
+}
 
 void printByteArray(const void * ptr, size_t size, size_t divide = 16) {
     if (divide == 0) divide = size;
