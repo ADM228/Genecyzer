@@ -29,6 +29,7 @@ class Instance {
 
         bool isWindowOpen(){ return window.isOpen(); };
 
+
     protected:
         void eventHandleInstList (int, int, uint8_t, bool);
         void renderInstList();
@@ -37,6 +38,11 @@ class Instance {
         void updateTrackerPos();
         void updateTrackerSelection();
         void renderBeatsTexture();
+
+        bool openFileIntoProject();
+        bool saveProjectToFile();
+
+        bool saveSongToSNESFMData();
 
     protected:
 
