@@ -38,6 +38,17 @@ class Instance {
         void updateTrackerSelection();
         void renderBeatsTexture();
 
+    protected:
+
+        static constexpr uint8_t ROW_SEPARATOR = 0x04;
+        static constexpr uint8_t COL_SEPARATOR = 0x06;
+
+        static constexpr uint8_t INTERSECTION_ALL4 = 0x05;
+        static constexpr uint8_t INTERSECTION_NOUP = 0x07;
+        static constexpr uint8_t INTERSECTION_NORT = 0x08;
+
+        static constexpr uint8_t HEADER_HEIGHT = 5;
+
     private:
         uint32_t currentSong = 0;
         uint8_t instSelected = 0;

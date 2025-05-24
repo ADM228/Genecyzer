@@ -13,17 +13,6 @@
 
 #pragma region classDefinitions
 
-#define MAX_NOTE    0x5F
-#define KEY_OFF     0xFE
-#define EMPTY_NOTE  0xFF
-
-#define SPACE       0x20    // space
-#define KEYOFF      0x23    // #
-#define EMPTY       0x2E    // .
-#define NOATTACK    0x1A    // | but very left-aligned
-#define SHARP       0x23    // #
-#define NOSHARP     0x2D    // -
-
 class TrackerCell {
     public:
         TrackerCell();
@@ -41,22 +30,34 @@ class TrackerCell {
 
         const bool operator==(const TrackerCell & other) const;
         const bool operator!=(const TrackerCell & other) const;
+
+        static constexpr uint8_t MAX_NOTE    = 0x5F;
+        static constexpr uint8_t KEY_OFF     = 0xFE;
+        static constexpr uint8_t EMPTY_NOTE  = 0xFF;
+
+        static constexpr uint8_t SPACE       = 0x20;    // space
+        static constexpr uint8_t KEYOFF      = 0x23;    // #
+        static constexpr uint8_t EMPTY       = 0x2E;    // .
+        static constexpr uint8_t NOATTACK    = 0x1A;    // | but very left-aligned
+        static constexpr uint8_t SHARP       = 0x23;    // #
+        static constexpr uint8_t NOSHARP     = 0x2D;    // -
     private:
         uint8_t flags = 0;  // Value not undefined
-        constexpr static uint32_t singleNoteTileTable[] {
-            0x43, 0x1B, 0x44, 0x1C, 0x45,               // C, C#, D, D#, E
-            0x46, 0x1D, 0x47, 0x1E, 0x41, 0x1F, 0x42    // F, F#, G, G#, A, A#, B
+
+        static constexpr uint32_t singleNoteTileTable[] {
+            'C', 0x1B, 'D', 0x1C, 'E',              // C, C#, D, D#, E
+            'F', 0x1D, 'G', 0x1E, 'A', 0x1F, 'B'    // F, F#, G, G#, A, A#, B
         };
-        constexpr static uint32_t doubleNoteTileTable[] {
-            0x43, 0x43, 0x44, 0x44, 0x45,               // C, C#, D, D#, E
-            0x46, 0x46, 0x47, 0x47, 0x41, 0x41, 0x42,   // F, F#, G, G#, A, A#, B
+        static constexpr uint32_t doubleNoteTileTable[] {
+            'C', 'C', 'D', 'D', 'E',                // C, C#, D, D#, E
+            'F', 'F', 'G', 'G', 'A', 'A', 'B',      // F, F#, G, G#, A, A#, B
             NOSHARP, SHARP, NOSHARP,  SHARP, NOSHARP,  
             NOSHARP, SHARP, NOSHARP,  SHARP, NOSHARP, SHARP, NOSHARP
         };
-        constexpr static uint32_t emptyRow[] {
+        static constexpr uint32_t emptyRow[] {
             EMPTY, EMPTY,  EMPTY,  SPACE,  EMPTY,  EMPTY   // ... ..
         };
-        constexpr static uint32_t keyOffRow[] {
+        static constexpr uint32_t keyOffRow[] {
             KEYOFF, KEYOFF, KEYOFF, SPACE,  EMPTY,  EMPTY   // ### ..
         };
 };

@@ -9,17 +9,6 @@
 
 constexpr unsigned int TILE_SIZE = 8;
 
-constexpr unsigned int HFLIP = 0x01;
-constexpr unsigned int VFLIP = 0x02;
-constexpr unsigned int FLIPMASK = 0x03;
-
-constexpr unsigned int REDMASK = 0x10;
-constexpr unsigned int GRNMASK = 0x20;
-constexpr unsigned int BLUMASK = 0x40;
-constexpr unsigned int PALMASK = 0x70;
-
-constexpr unsigned int INVMASK = 0x80;
-
 struct Tile {
     uint32_t tileIndex;
     uint8_t flip_palette;
@@ -272,6 +261,16 @@ class TileMatrix : public sf::Drawable {
         const std::vector<Tile>& operator[](std::size_t idx) const { return tiles[idx]; }
 
         #pragma endregion
+
+        static constexpr uint8_t HFLIP = 0x01;
+        static constexpr uint8_t VFLIP = 0x02;
+        static constexpr uint8_t FLIPMASK = 0x03;
+
+        static constexpr uint8_t REDMASK = 0x10;
+        static constexpr uint8_t GRNMASK = 0x20;
+        static constexpr uint8_t BLUMASK = 0x40;
+        static constexpr uint8_t PALMASK = 0x70;
+        static constexpr uint8_t INVMASK = 0x80;
 
     private:
 

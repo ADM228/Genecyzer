@@ -383,15 +383,16 @@ Song loadSongFromRIFF(RIFF::RIFFReader & file) {
 	return song;
 };
 
-#define REPEAT_DEFAULT_CELL 253
 
-#define ATTACK 7
-#define INSTRUMENT 6
-#define EFFECTS 5
-#define SET_DEFAULT 4
-#define NOTE_REPEAT 3
-#define INST_REPEAT 2
-#define FLAG_REPEAT 1
+constexpr uint8_t REPEAT_DEFAULT_CELL = 253;
+
+constexpr uint8_t ATTACK = 7;
+constexpr uint8_t INSTRUMENT = 6;
+constexpr uint8_t EFFECTS = 5;
+constexpr uint8_t SET_DEFAULT = 4;
+constexpr uint8_t NOTE_REPEAT = 3;
+constexpr uint8_t INST_REPEAT = 2;
+constexpr uint8_t FLAG_REPEAT = 1;
 
 std::vector<TrackerCell> decodeNoteStruct (std::vector<uint8_t> chunkData) {
 	// Accepts chunk data directly from RIFF::RIFFReader::ReadChunkData()
@@ -423,7 +424,9 @@ std::vector<TrackerCell> decodeNoteStruct (std::vector<uint8_t> chunkData) {
 		if (noteValue == REPEAT_DEFAULT_CELL) {
 			array.push_back(defaultCell);
 			continue;
-		} else if (noteValue >= 0 && noteValue <= MAX_NOTE || noteValue == EMPTY_NOTE || noteValue == KEY_OFF) cell.noteValue = noteValue;
+		} else if (noteValue >= 0 && noteValue <= TrackerCell::MAX_NOTE ||
+			noteValue == TrackerCell::EMPTY_NOTE ||
+			noteValue == TrackerCell::KEY_OFF) cell.noteValue = noteValue;
 
 		// 2. Parse the flags byte
 		uint8_t flagsByte;
