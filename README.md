@@ -35,6 +35,7 @@ Written in C++ with the [SFML framework](https://sfml-dev.org), it is (theoretic
 - The [clip library](https://github.com/dacap/clip)
 - [libriff-X](https://github.com/ADM228/libriff-X)
 - [tinyfiledialogs](http://tinyfiledialogs.sourceforge.net)
+- [A constexpr implementation of xxHash](https://github.com/ekpyron/xxhashct)
 
 # FAQ
 
