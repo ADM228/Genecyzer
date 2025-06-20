@@ -238,7 +238,7 @@ bool Instance::openFileIntoProject () {
     if (filenamePtr == NULL) {
         return false;
     }
-    std::string filename(filenamePtr); free(filenamePtr); 
+    std::string filename(filenamePtr);
     auto data = std::ifstream(filename, std::ios_base::binary | std::ios_base::in);
     auto file = RIFF::RIFFReader();
     file.open(data);
@@ -254,7 +254,6 @@ bool Instance::saveProjectToFile () {
     }
 
     std::string outFilename(outFilenamePtr);
-    free (outFilenamePtr);
     auto outData = std::ofstream(outFilename, std::ios_base::out | std::ios_base::binary);
     RIFF::RIFFWriter writer;
 
