@@ -27,13 +27,13 @@ constexpr uint16_t MOUSE_DOWN = 1;
 #define getGlobalBounds_bottom(sprite) (sprite.getGlobalBounds().top + sprite.getGlobalBounds().height)
 
 Instance::Instance() {
-    window.create(sf::VideoMode(200, 200), "Genecyzer");
+    window.create(sf::VideoMode(sf::Vector2u(200, 200)), "Genecyzer");
     window.setFramerateLimit(60);
-    InstrumentView.reset(sf::FloatRect(0.f, 0.f, 200.f, 200.f));
-    TrackerView.reset(sf::FloatRect(0.f,0.f,200.f,200.f));
+    InstrumentView = sf::View(sf::FloatRect(sf::Vector2f(0.f, 0.f), sf::Vector2f(200.f, 200.f)));
+    TrackerView = sf::View(sf::FloatRect(sf::Vector2f(0.f, 0.f), sf::Vector2f(200.f, 200.f)));
     forceUpdateAll = 1;
-    lastMousePress.x = 0;
-    lastMousePress.y = 0;
+    lastMousePress.position.x = 0;
+    lastMousePress.position.y = 0;
     selectionBounds[0] = 0;
     selectionBounds[1] = 0;
     
@@ -93,18 +93,16 @@ void Instance::addMonospaceFont(const void * data, uint32_t size, const uint32_t
 
 void Instance::ProcessEvents(){
 
-    sf::Event event;
-
     memset(&updateSections, 0, sizeof(updateSections));
 
     instrumentsToUpdate.clear();
 
-    while (window.pollEvent(event))
+    while (const std::optional event = window.pollEvent())
     {
 
-        if (event.type == sf::Event::Closed)
+        if (event->is<sf::Event::Closed>())
             window.close();
-        else if (event.type == sf::Event::Resized){
+        else if (event->is<sf::Event::Resized>()){
             
             //scale = std::max(static_cast<int>(std::ceil(event.size.height/(4*8*TILE_SIZE))), 1);
             
@@ -113,56 +111,57 @@ void Instance::ProcessEvents(){
             //int width = std::ceil((event.size.width/scale)/TILE_SIZE);
 
 
-        } else if (event.type == sf::Event::KeyPressed){
+        } else if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()){
             
-            if (event.key.code == sf::Keyboard::Down)
+            if (keyPressed->scancode == sf::Keyboard::Scancode::Down)
                 eventHandleInstList (255, +1, 255, false);
-            else if (event.key.code == sf::Keyboard::Up)
+            else if (keyPressed->scancode == sf::Keyboard::Scancode::Up)
                 eventHandleInstList (0, -1, 0, true);
-            else if (event.key.code == sf::Keyboard::Right)
+            else if (keyPressed->scancode == sf::Keyboard::Scancode::Right)
                 eventHandleInstList (256-8, +8, 255, false);
-            else if (event.key.code == sf::Keyboard::Left)
+            else if (keyPressed->scancode == sf::Keyboard::Scancode::Left)
                 eventHandleInstList (7, -8, 0, true);
-            else if (event.key.code == sf::Keyboard::E){
+            else if (keyPressed->scancode == sf::Keyboard::Scancode::E){
                 singleTileTrackerRender ^= 1;
                 updateSections.tracker = 1;
-            } else if (event.key.code == sf::Keyboard::Equal && event.key.control) {
+            } else if (keyPressed->scancode == sf::Keyboard::Scancode::Equal && keyPressed->control) {
                 scale++;
                 updateSections.scale = 1;
-            } else if (event.key.code == sf::Keyboard::Hyphen && event.key.control && scale > 1) {
+            } else if (keyPressed->scancode == sf::Keyboard::Scancode::Hyphen && keyPressed->control && scale > 1) {
                 scale--;
                 updateSections.scale = 1;
-            } else if (event.key.code == sf::Keyboard::Apostrophe) {
+            } else if (keyPressed->scancode == sf::Keyboard::Scancode::Apostrophe) {
                 lowerHalfMode ^= 1;
                 forceUpdateAll = 1;
             }
-        } else if (event.type == sf::Event::MouseButtonPressed) {
-            lastMousePress = event.mouseButton;
+        } else if (const auto* mouseEvent = event->getIf<sf::Event::MouseButtonPressed>()) {
+            lastMousePress = *mouseEvent;
             // do sumn for time
-            if (event.mouseButton.button == sf::Mouse::Left) mouseFlags |= MOUSE_DOWN;
-        } else if (event.type == sf::Event::MouseMoved || event.type == sf::Event::TouchMoved) {
+            if (mouseEvent->button == sf::Mouse::Button::Left) mouseFlags |= MOUSE_DOWN;
+        } else if ( const auto* mouseMoveEvent = event->getIf<sf::Event::MouseMoved>()) {
+            //  || (const auto* touchMoveEvent = event->getIf<sf::Event::TouchMoved>())
             if (mouseFlags & MOUSE_DOWN) {
                 // determine region
                 if (
                     lowerHalfMode == 0 &&
-                    lastMousePress.y > scale*TILE_SIZE*(8+5) &&
-                    lastMousePress.x > scale*TILE_SIZE*(3+1)
+                    lastMousePress.position.y > scale*TILE_SIZE*(8+5) &&
+                    lastMousePress.position.x > scale*TILE_SIZE*(3+1)
                 ) {
-                    selectionBounds[0] = lastMousePress.x  / (scale*TILE_SIZE);
-                    selectionBounds[1] = lastMousePress.y  / (scale*TILE_SIZE);
-                    selectionBounds[2] = event.mouseMove.x / (scale*TILE_SIZE);
-                    selectionBounds[3] = event.mouseMove.y / (scale*TILE_SIZE);
+                    selectionBounds[0] = lastMousePress.position.x  / (scale*TILE_SIZE);
+                    selectionBounds[1] = lastMousePress.position.y  / (scale*TILE_SIZE);
+                    selectionBounds[2] = mouseMoveEvent->position.x / (scale*TILE_SIZE);
+                    selectionBounds[3] = mouseMoveEvent->position.y / (scale*TILE_SIZE);
                     updateSections.tracker_selection = 1;
                 } else if (
                     lowerHalfMode == 1 &&
-                    lastMousePress.y > scale*TILE_SIZE*8
+                    lastMousePress.position.y > scale*TILE_SIZE*8
                 ) {
-                    selectionBounds[0] = event.mouseMove.x;
-                    selectionBounds[1] = event.mouseMove.y;
+                    selectionBounds[0] = mouseMoveEvent->position.x;
+                    selectionBounds[1] = mouseMoveEvent->position.y;
                 }
             }
-        } else if (event.type == sf::Event::MouseButtonReleased) {
-            if (event.mouseButton.button == sf::Mouse::Left) mouseFlags &= ~MOUSE_DOWN;
+        } else if (const auto* mouseEvent = event->getIf<sf::Event::MouseButtonReleased>()) {
+            if (mouseEvent->button == sf::Mouse::Button::Left) mouseFlags &= ~MOUSE_DOWN;
         }
     }
 }
@@ -216,9 +215,9 @@ void Instance::Update(){
             window.draw(trackerMatrix);
 
             auto beats = sf::RectangleShape(sf::Vector2f(beatsTexture.getSize().x, beatsTexture.getSize().y));
-            beats.setPosition(0, 5*TILE_SIZE);
+            beats.setPosition(sf::Vector2f(0, 5*TILE_SIZE));
             beats.setTexture(&beatsTexture);
-            beats.setScale(2, TILE_SIZE);
+            beats.setScale(sf::Vector2f(2, TILE_SIZE));
             window.draw(beats);
             break;
         }

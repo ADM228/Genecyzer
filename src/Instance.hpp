@@ -48,7 +48,11 @@ class Instance {
 
         int debug = 0;
 
-        sf::Sprite instrumentSprite;
+        sf::Texture instrumentTexture;
+        TileMatrix trackerMatrix;
+        sf::Texture beatsTexture;
+
+        sf::Sprite instrumentSprite {instrumentTexture};
 
         #pragma region Update
         bool forceUpdateAll = 0;
@@ -71,15 +75,11 @@ class Instance {
 
         ChrFont font;
 
-        sf::Texture instrumentTexture;
-        TileMatrix trackerMatrix;
-        sf::Texture beatsTexture;
-
         Project activeProject;
 
         uint16_t mouseFlags;
 
-        sf::Event::MouseButtonEvent lastMousePress;
+        sf::Event::MouseButtonPressed lastMousePress;
 
         ModSynthBezier bezierTest;
 };

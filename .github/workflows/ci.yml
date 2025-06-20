@@ -20,18 +20,18 @@ jobs:
         # - { name: Windows MinGW,  os: windows-2022, flags: -GNinja -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ }
         - { name: Linux GCC   (Manual SFML compilation),
             os: ubuntu-latest,
-            packages: libxrandr-dev libxcursor-dev libudev-dev libopenal-dev libflac-dev libvorbis-dev libgl1-mesa-dev libegl1-mesa-dev libfreetype-dev }
+            packages: libxrandr-dev libxcursor-dev libxi-dev libudev-dev libflac-dev libvorbis-dev libgl1-mesa-dev libegl1-mesa-dev libfreetype-dev }
         - { name: Linux Clang (Manual SFML compilation),
             os: ubuntu-latest,
-            packages: libxrandr-dev libxcursor-dev libudev-dev libopenal-dev libflac-dev libvorbis-dev libgl1-mesa-dev libegl1-mesa-dev libfreetype-dev,
+            packages: libxrandr-dev libxcursor-dev libxi-dev libudev-dev libflac-dev libvorbis-dev libgl1-mesa-dev libegl1-mesa-dev libfreetype-dev,
             flags: -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ }
-        - { name: Linux GCC   (Packaged SFML),
-              os: ubuntu-latest,
-              packages: libsfml-dev }
-        - { name: Linux Clang (Packaged SFML),
-              os: ubuntu-latest,
-              packages: libsfml-dev,
-              flags: -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ }
+        # - { name: Linux GCC   (Packaged SFML),
+        #       os: ubuntu-latest,
+        #       packages: libsfml-dev }
+        # - { name: Linux Clang (Packaged SFML),
+        #       os: ubuntu-latest,
+        #       packages: libsfml-dev,
+        #       flags: -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ }
         - { name: MacOS,          os: macos-latest  }
 
     steps:

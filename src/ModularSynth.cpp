@@ -58,8 +58,8 @@ void ModSynthBezier::calculate(float precision, float lineWidth, bool thin) {
         center = sf::VertexArray();
         lines = sf::VertexArray();
         #endif
-        vertices = sf::VertexArray(sf::Points);
-        vertices.append(position[0]);
+        vertices = sf::VertexArray(sf::PrimitiveType::Points);
+        vertices.append(sf::Vertex{position[0]});
     } else if (position[0].x == position[1].x || position[0].y == position[1].y) {
         // Type 2: Straight line
         #ifdef BEZIER_DEBUG
@@ -67,27 +67,27 @@ void ModSynthBezier::calculate(float precision, float lineWidth, bool thin) {
         lines = sf::VertexArray(sf::Lines);
         #endif
         if (thin){
-            vertices = sf::VertexArray(sf::Lines);
+            vertices = sf::VertexArray(sf::PrimitiveType::Lines);
 
-            vertices.append(sf::Vertex(position[0], color));
-            vertices.append(sf::Vertex(position[1], color));
+            vertices.append(sf::Vertex{position[0], color});
+            vertices.append(sf::Vertex{position[1], color});
         } else {
-            vertices = sf::VertexArray(sf::TriangleStrip);
+            vertices = sf::VertexArray(sf::PrimitiveType::TriangleStrip);
 
             sf::Vector2f velocity = position[1] - position[0];
             velocity /= lengthOfLine(position[0], position[1]);
             velocity *= (lineWidth / 2);
             velocity = perpendiculate(velocity);
 
-            vertices.append(sf::Vertex(position[0]+velocity, color));
-            vertices.append(sf::Vertex(position[0]-velocity, color));
-            vertices.append(sf::Vertex(position[1]+velocity, color));
-            vertices.append(sf::Vertex(position[1]-velocity, color));
+            vertices.append(sf::Vertex{position[0]+velocity, color});
+            vertices.append(sf::Vertex{position[0]-velocity, color});
+            vertices.append(sf::Vertex{position[1]+velocity, color});
+            vertices.append(sf::Vertex{position[1]-velocity, color});
             #ifdef BEZIER_DEBUG
-            center.append(sf::Vertex(position[0], sf::Color::Red));
-            center.append(sf::Vertex(position[1], sf::Color::Red));
-            lines.append(sf::Vertex(position[0], sf::Color::Red));
-            lines.append(sf::Vertex(position[1], sf::Color::Red));
+            center.append(sf::Vertex{position[0], sf::Color::Red});
+            center.append(sf::Vertex{position[1], sf::Color::Red});
+            lines.append(sf::Vertex{position[0], sf::Color::Red});
+            lines.append(sf::Vertex{position[1], sf::Color::Red});
             #endif
         }
         

@@ -86,8 +86,14 @@ void Instance::renderTracker () {
 
 
 void Instance::updateTrackerPos () {
-    TrackerView.reset(sf::FloatRect(0, 0, window.getSize().x, (double)window.getSize().y/scale));
-    TrackerView.setViewport(sf::FloatRect(0.f, (double)(INST_HEIGHT*TILE_SIZE*scale)/(double)window.getSize().y, scale, 1));
+    TrackerView = sf::View(sf::FloatRect(
+        sf::Vector2f(0, 0),
+        sf::Vector2f(window.getSize().x, (double)window.getSize().y/scale)
+    ));
+    TrackerView.setViewport(sf::FloatRect(
+        sf::Vector2f(0.f, (double)(INST_HEIGHT*TILE_SIZE*scale)/(double)window.getSize().y),
+        sf::Vector2f(scale, 1)
+    ));
 }
 
 void Instance::updateTrackerSelection () {
@@ -202,7 +208,7 @@ void Instance::renderBeatsTexture() {
         }
     }
 
-    beatsTexture.create(trackerMatrix.getWidth()*TILE_SIZE/2, rows);
+    beatsTexture.resize(sf::Vector2u(trackerMatrix.getWidth()*TILE_SIZE/2, rows));
     beatsTexture.update(pixels);
 
     delete[] colors;

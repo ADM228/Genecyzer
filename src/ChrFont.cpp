@@ -101,8 +101,11 @@ void ChrFont::init_common(const void* __chrData, uint32_t size, bool inverted){
             }
         }
     }
-    texture.create(inverted?2*TILE_SIZE:TILE_SIZE,TILE_SIZE*amount);
-    texture.update(pixels, inverted?2*TILE_SIZE:TILE_SIZE, TILE_SIZE*amount, 0, 0);
+    texture.resize(sf::Vector2u{
+        static_cast<unsigned int>(inverted ? 2*TILE_SIZE : TILE_SIZE),
+        TILE_SIZE*amount
+    });
+    texture.update(pixels);
     texture.setSmooth(false);
 
     delete[] pixels;

@@ -534,29 +534,29 @@ void TileMatrix::draw(sf::RenderTarget& target, sf::RenderStates states) const {
                 flip_palette&GRNMASK?255:0,
                 flip_palette&BLUMASK?255:0);
             sf::Vertex vertices[4] = {
-                sf::Vertex(sf::Vector2f(x+j*TILE_SIZE,            y+i*TILE_SIZE),
+                sf::Vertex{sf::Vector2f(x+j*TILE_SIZE,            y+i*TILE_SIZE),
                     color, texturePos+sf::Vector2f(
                         flip_palette&HFLIP?TILE_SIZE:0,
                         flip_palette&VFLIP?TILE_SIZE:0)
-                    ),
-                sf::Vertex(sf::Vector2f(x+j*TILE_SIZE+TILE_SIZE,  y+i*TILE_SIZE),
+                    },
+                sf::Vertex{sf::Vector2f(x+j*TILE_SIZE+TILE_SIZE,  y+i*TILE_SIZE),
                     color, texturePos+sf::Vector2f(
                         flip_palette&HFLIP?0:TILE_SIZE,
                         flip_palette&VFLIP?TILE_SIZE:0)
-                    ),
-                sf::Vertex(sf::Vector2f(x+j*TILE_SIZE+TILE_SIZE,  y+i*TILE_SIZE+TILE_SIZE),
+                    },
+                sf::Vertex{sf::Vector2f(x+j*TILE_SIZE+TILE_SIZE,  y+i*TILE_SIZE+TILE_SIZE),
                     color, texturePos+sf::Vector2f(
                         flip_palette&HFLIP?0:TILE_SIZE,
                         flip_palette&VFLIP?0:TILE_SIZE)
-                    ),
-                sf::Vertex(sf::Vector2f(x+j*TILE_SIZE,            y+i*TILE_SIZE+TILE_SIZE),
+                    },
+                sf::Vertex{sf::Vector2f(x+j*TILE_SIZE,            y+i*TILE_SIZE+TILE_SIZE),
                     color, texturePos+sf::Vector2f(
                         flip_palette&HFLIP?TILE_SIZE:0,
                         flip_palette&VFLIP?0:TILE_SIZE)
-                    )
+                    }
             };
 
-            target.draw(vertices, 4, sf::TriangleFan, states);
+            target.draw(vertices, 4, sf::PrimitiveType::TriangleFan, states);
         }
     }
 }
@@ -566,7 +566,10 @@ sf::Texture TileMatrix::renderToTexture(sf::Texture texture){
     uint8_t flip_palette;
     sf::Color color;
     sf::RenderTexture target;
-    target.create(width*TILE_SIZE, height*TILE_SIZE);
+    target.resize(sf::Vector2u{
+        static_cast<unsigned int>(width*TILE_SIZE),
+        static_cast<unsigned int>(height*TILE_SIZE)
+    });
     for (uint16_t i = 0; i < tiles.size(); i++){
         uint16_t y = height - i - 1;
         for (uint16_t j = 0; j < tiles[i].size(); j++){
@@ -580,27 +583,28 @@ sf::Texture TileMatrix::renderToTexture(sf::Texture texture){
                 flip_palette&GRNMASK?255:0,
                 flip_palette&BLUMASK?255:0);
             sf::Vertex vertices[4] = {
-                sf::Vertex(sf::Vector2f(j*TILE_SIZE,            y*TILE_SIZE+TILE_SIZE),
+                sf::Vertex{sf::Vector2f(j*TILE_SIZE,            y*TILE_SIZE+TILE_SIZE),
                     color, texturePos+sf::Vector2f(
                         flip_palette&HFLIP?TILE_SIZE:0,
                         flip_palette&VFLIP?TILE_SIZE:0)
-                    ),
-                sf::Vertex(sf::Vector2f(j*TILE_SIZE+TILE_SIZE,  y*TILE_SIZE+TILE_SIZE),
+                    },
+                sf::Vertex{sf::Vector2f(j*TILE_SIZE+TILE_SIZE,  y*TILE_SIZE+TILE_SIZE),
                     color, texturePos+sf::Vector2f(
                         flip_palette&HFLIP?0:TILE_SIZE,
                         flip_palette&VFLIP?TILE_SIZE:0)
-                    ),
-                sf::Vertex(sf::Vector2f(j*TILE_SIZE+TILE_SIZE,  y*TILE_SIZE),
+                    },
+                sf::Vertex{sf::Vector2f(j*TILE_SIZE+TILE_SIZE,  y*TILE_SIZE),
                     color, texturePos+sf::Vector2f(
                         flip_palette&HFLIP?0:TILE_SIZE,
                         flip_palette&VFLIP?0:TILE_SIZE)
-                    ),
-                sf::Vertex(sf::Vector2f(j*TILE_SIZE,            y*TILE_SIZE),
+                    },
+                sf::Vertex{sf::Vector2f(j*TILE_SIZE,            y*TILE_SIZE),
                     color, texturePos+sf::Vector2f(
                         flip_palette&HFLIP?TILE_SIZE:0,
-                        flip_palette&VFLIP?0:TILE_SIZE))
+                        flip_palette&VFLIP?0:TILE_SIZE)
+                    }
             };
-            target.draw(vertices, 4, sf::TriangleFan, sf::RenderStates(&texture));
+            target.draw(vertices, 4, sf::PrimitiveType::TriangleFan, sf::RenderStates(&texture));
         }
     }
     return target.getTexture();
