@@ -33,31 +33,36 @@ class CubicBezier : public sf::Drawable
 
 void CubicBezier::calculateThin(std::array<sf::Vector2f, 4>& points, float precision) {
     vertices = sf::VertexArray(sf::PrimitiveType::LineStrip);
+
     #ifdef BEZIER_DEBUG
-    lines = sf::VertexArray(sf::LineStrip);
-    center = sf::VertexArray();
-    lines.append(sf::Vertex(points[0], sf::Color::Red));
-    lines.append(sf::Vertex(points[1], sf::Color::Red));
-    lines.append(sf::Vertex(points[2], sf::Color::Red));
-    lines.append(sf::Vertex(points[3], sf::Color::Red));
+        lines = sf::VertexArray(sf::PrimitiveType::LineStrip);
+        center = sf::VertexArray();
+        lines.append({points[0], sf::Color::Red});
+        lines.append({points[1], sf::Color::Red});
+        lines.append({points[2], sf::Color::Red});
+        lines.append({points[3], sf::Color::Red});
     #endif
 
-    #define lengthOfLine(begin, end) std::sqrt(std::pow(end.x-begin.x, 2)+std::pow(end.y-begin.y, 2))
+    precision *= (
+        (points[0] - points[1]).length() + 
+        (points[1] - points[2]).length() + 
+        (points[2] - points[3]).length());
 
-    precision *= (lengthOfLine(points[0], points[1]) + lengthOfLine(points[2], points[1]) + lengthOfLine(points[3], points[2]));
     precision = std::min(precision, 512.f);
     int limit = static_cast<int>(precision+1);
     precision = 1.f/precision;
-    float precision2 = precision*precision;
-    float precision3 = precision2*precision;
 
     // pol0 is just points[0]
-    sf::Vector2f pol1 = points[0] *-3 + points[1] * 3;
-    sf::Vector2f pol2 = points[0] * 3 + points[1] *-6 + points[2] * 3;
-    sf::Vector2f pol3 = points[0] *-1 + points[1] * 3 + points[2] *-3 + points[3];
+    sf::Vector2f pol1 = points[0] *-3.f + points[1] * 3.f;
+    sf::Vector2f pol2 = points[0] * 3.f + points[1] *-6.f + points[2] * 3.f;
+    sf::Vector2f pol3 = points[0] *-1.f + points[1] * 3.f + points[2] *-3.f + points[3];
 
+    float t, t2, t3;
     for (int f = 0; f <= limit; f++) {
-        float t = std::min(precision*f, 1.f), t2 = std::min(precision2*(f*f), 1.f), t3 = std::min(precision3*(f*f*f), 1.f);
+        t = precision*f;
+        t2 = std::min(t*t, 1.f);
+        t3 = std::min(t2*t, 1.f);
+        t = std::min(t, 1.f);
         vertices.append(sf::Vertex{points[0] + t * pol1 + t2 * pol2 + t3 * pol3, color});
     }
 }
@@ -68,39 +73,43 @@ void CubicBezier::calculate(std::array<sf::Vector2f, 4>& points, float precision
     if (precision <= 0) precision = 1.f/1024;
     lineWidth /= 2;
     vertices = sf::VertexArray(sf::PrimitiveType::TriangleStrip);
+
     #ifdef BEZIER_DEBUG
-    lines = sf::VertexArray(sf::PrimitiveType::LineStrip);
-    center = sf::VertexArray();
-    lines.append(sf::Vertex(points[0], sf::Color::Red));
-    lines.append(sf::Vertex(points[1], sf::Color::Red));
-    lines.append(sf::Vertex(points[2], sf::Color::Red));
-    lines.append(sf::Vertex(points[3], sf::Color::Red));
+        lines = sf::VertexArray(sf::PrimitiveType::LineStrip);
+        center = sf::VertexArray();
+        lines.append({points[0], sf::Color::Red});
+        lines.append({points[1], sf::Color::Red});
+        lines.append({points[2], sf::Color::Red});
+        lines.append({points[3], sf::Color::Red});
     #endif
 
-    #define lengthOfLine(begin, end) std::sqrt(std::pow(end.x-begin.x, 2)+std::pow(end.y-begin.y, 2))
-    #define lengthOfVelocity(velocity) std::sqrt(std::pow(velocity.x, 2)+std::pow(velocity.y, 2))
+    precision *= (
+        (points[0] - points[1]).length() + 
+        (points[1] - points[2]).length() + 
+        (points[2] - points[3]).length());
 
-    precision *= (lengthOfLine(points[0], points[1]) + lengthOfLine(points[1], points[2]) + lengthOfLine(points[2], points[3]));
     precision = std::min(precision, 512.f);
     int limit = static_cast<int>(precision+1);
     precision = 1.f/precision;
-    float precision2 = precision*precision;
-    float precision3 = precision2*precision;
 
     sf::Vector2f prevPoint = points[0], velocity;
 
     // pol0 is just points[0]
-    sf::Vector2f pol1 = points[0] *-3 + points[1] * 3;
-    sf::Vector2f pol2 = points[0] * 3 + points[1] *-6 + points[2] * 3;
-    sf::Vector2f pol3 = points[0] *-1 + points[1] * 3 + points[2] *-3 + points[3];
+    sf::Vector2f pol1 = points[0] *-3.f + points[1] * 3.f;
+    sf::Vector2f pol2 = points[0] * 3.f + points[1] *-6.f + points[2] * 3.f;
+    sf::Vector2f pol3 = points[0] *-1.f + points[1] * 3.f + points[2] *-3.f + points[3];
 
+    float t, t2, t3;
     for (int f = 0; f <= limit; f++) {
-        float t = std::min(precision*f, 1.f), t2 = std::min(precision2*(f*f), 1.f), t3 = std::min(precision3*(f*f*f), 1.f);
+        t = precision*f;
+        t2 = std::min(t*t, 1.f);
+        t3 = std::min(t2*t, 1.f);
+        t = std::min(t, 1.f);
+
         auto point = points[0] + t * pol1 + t2 * pol2 + t3 * pol3;    // Center point
         velocity = point - prevPoint;
-        velocity /= lengthOfVelocity(velocity);
-        velocity *= lineWidth;
-        velocity = perpendiculate(velocity);
+        if (velocity.length() != 0)
+            velocity = velocity.normalized().perpendicular() * lineWidth;
         vertices.append(sf::Vertex{prevPoint+velocity, color});
         vertices.append(sf::Vertex{prevPoint-velocity, color});
         prevPoint = point;

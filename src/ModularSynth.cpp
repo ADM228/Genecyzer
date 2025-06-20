@@ -63,8 +63,8 @@ void ModSynthBezier::calculate(float precision, float lineWidth, bool thin) {
     } else if (position[0].x == position[1].x || position[0].y == position[1].y) {
         // Type 2: Straight line
         #ifdef BEZIER_DEBUG
-        center = sf::VertexArray();
-        lines = sf::VertexArray(sf::Lines);
+            center = sf::VertexArray();
+            lines = sf::VertexArray(sf::PrimitiveType::Lines);
         #endif
         if (thin){
             vertices = sf::VertexArray(sf::PrimitiveType::Lines);
@@ -75,9 +75,7 @@ void ModSynthBezier::calculate(float precision, float lineWidth, bool thin) {
             vertices = sf::VertexArray(sf::PrimitiveType::TriangleStrip);
 
             sf::Vector2f velocity = position[1] - position[0];
-            velocity /= lengthOfLine(position[0], position[1]);
-            velocity *= (lineWidth / 2);
-            velocity = perpendiculate(velocity);
+            velocity = velocity.normalized().perpendicular() * (lineWidth / 2);
 
             vertices.append(sf::Vertex{position[0]+velocity, color});
             vertices.append(sf::Vertex{position[0]-velocity, color});

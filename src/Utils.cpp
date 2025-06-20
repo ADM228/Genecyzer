@@ -38,28 +38,6 @@ std::u32string To_UTF32(const std::string &s)
 template<std::size_t N, class T>
 constexpr std::size_t countof(T(&)[N]) { return N; }
 
-
-template <typename T, typename U>
-inline sf::Vector2<T>& operator/=(sf::Vector2<T> &left, U right) {
-    left = sf::Vector2<T>(left.x/right, left.y/right);
-    return left;
-}
-
-template <typename T, typename U>
-inline sf::Vector2<T> operator*(sf::Vector2<T>& left, U right) {
-    return sf::Vector2<T>(left.x*right, left.y*right);
-}
-
-template <typename T, typename U>
-inline sf::Vector2<T> operator/(sf::Vector2<T>& left, U right) {
-    return sf::Vector2f(left.x/right, left.y/right);
-}
-
-template <typename T>
-sf::Vector2<T> perpendiculate(sf::Vector2<T>& vector) {
-    return sf::Vector2<T>(vector.y, -vector.x);
-}
-
 void printByteArray(const void * ptr, size_t size, size_t divide = 16) {
     if (divide == 0) divide = size;
     size_t repeats = (size_t)std::ceil((long double)size/(long double)divide);
