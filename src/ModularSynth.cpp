@@ -108,8 +108,8 @@ void ModSynthBezier::calculate(float precision, float lineWidth, bool thin) {
 
             // (also works upside down)
 
-            points[1] = sf::Vector2f(position[1].x, position[0].y);
-            points[2] = sf::Vector2f(position[0].x, position[1].y);
+            points[1] = {position[1].x, position[0].y};
+            points[2] = {position[0].x, position[1].y};
         } else {
             // Type 4: 1 horizontal, 2 vertical lines
 
@@ -120,8 +120,8 @@ void ModSynthBezier::calculate(float precision, float lineWidth, bool thin) {
 
             // (also works upside down)
 
-            points[1] = sf::Vector2f(position[0].x, position[1].y);
-            points[2] = sf::Vector2f(position[1].x, position[0].y);
+            points[1] = {position[0].x, position[1].y};
+            points[2] = {position[1].x, position[0].y};
         }
 
         CubicBezier::calculate(points, precision, lineWidth, thin);

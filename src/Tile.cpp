@@ -7,17 +7,18 @@
 #ifndef __TILE_INCLUDED__
 #define __TILE_INCLUDED__
 
-#define TILE_SIZE 8
+constexpr unsigned int TILE_SIZE = 8;
 
-#define HFLIP 0x01
-#define VFLIP 0x02
-#define FLIPMASK 0x03
+constexpr unsigned int HFLIP = 0x01;
+constexpr unsigned int VFLIP = 0x02;
+constexpr unsigned int FLIPMASK = 0x03;
 
-#define REDMASK 0x10
-#define GRNMASK 0x20
-#define BLUMASK 0x40
-#define PALMASK 0x70
-#define INVMASK 0x80
+constexpr unsigned int REDMASK = 0x10;
+constexpr unsigned int GRNMASK = 0x20;
+constexpr unsigned int BLUMASK = 0x40;
+constexpr unsigned int PALMASK = 0x70;
+
+constexpr unsigned int INVMASK = 0x80;
 
 struct Tile {
     uint32_t tileIndex;
@@ -525,10 +526,7 @@ void TileMatrix::draw(sf::RenderTarget& target, sf::RenderStates states) const {
     for (uint16_t i = 0; i < tiles.size() && i*TILE_SIZE < target.getSize().y; i++){
         for (uint16_t j = 0; j < tiles[i].size() && j*TILE_SIZE < target.getSize().x; j++){
             flip_palette = tiles[i][j].flip_palette;
-            texturePos = {
-                static_cast<float>(flip_palette&INVMASK?TILE_SIZE:0),
-                static_cast<float>((tiles[i][j].tileIndex) << 3)
-            };
+            texturePos = sf::Vector2f(flip_palette&INVMASK?TILE_SIZE:0, (tiles[i][j].tileIndex) << 3);
             color = sf::Color(
                 flip_palette&REDMASK?255:0,
                 flip_palette&GRNMASK?255:0,
@@ -566,18 +564,15 @@ sf::Texture TileMatrix::renderToTexture(sf::Texture texture){
     uint8_t flip_palette;
     sf::Color color;
     sf::RenderTexture target;
-    target.resize(sf::Vector2u{
-        static_cast<unsigned int>(width*TILE_SIZE),
-        static_cast<unsigned int>(height*TILE_SIZE)
-    });
+    target.resize({width*TILE_SIZE, height*TILE_SIZE});
     for (uint16_t i = 0; i < tiles.size(); i++){
         uint16_t y = height - i - 1;
         for (uint16_t j = 0; j < tiles[i].size(); j++){
             flip_palette = tiles[i][j].flip_palette;
-            texturePos = {
-                static_cast<float>(flip_palette&INVMASK?TILE_SIZE:0),
-                static_cast<float>((tiles[i][j].tileIndex) << 3)
-            };
+            texturePos = sf::Vector2f(
+                flip_palette&INVMASK?TILE_SIZE:0,
+                (tiles[i][j].tileIndex) << 3
+            );
             color = sf::Color(
                 flip_palette&REDMASK?255:0,
                 flip_palette&GRNMASK?255:0,

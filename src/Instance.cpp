@@ -27,10 +27,10 @@ constexpr uint16_t MOUSE_DOWN = 1;
 #define getGlobalBounds_bottom(sprite) (sprite.getGlobalBounds().top + sprite.getGlobalBounds().height)
 
 Instance::Instance() {
-    window.create(sf::VideoMode(sf::Vector2u(200, 200)), "Genecyzer");
+    window.create(sf::VideoMode({200, 200}), "Genecyzer");
     window.setFramerateLimit(60);
-    InstrumentView = sf::View(sf::FloatRect(sf::Vector2f(0.f, 0.f), sf::Vector2f(200.f, 200.f)));
-    TrackerView = sf::View(sf::FloatRect(sf::Vector2f(0.f, 0.f), sf::Vector2f(200.f, 200.f)));
+    InstrumentView = sf::View(sf::FloatRect({0.f, 0.f}, {200.f, 200.f}));
+    TrackerView = sf::View(sf::FloatRect({0.f, 0.f}, {200.f, 200.f}));
     forceUpdateAll = 1;
     lastMousePress.position.x = 0;
     lastMousePress.position.y = 0;
@@ -215,9 +215,9 @@ void Instance::Update(){
             window.draw(trackerMatrix);
 
             auto beats = sf::RectangleShape(sf::Vector2f(beatsTexture.getSize().x, beatsTexture.getSize().y));
-            beats.setPosition(sf::Vector2f(0, 5*TILE_SIZE));
+            beats.setPosition({0, 5*TILE_SIZE});
             beats.setTexture(&beatsTexture);
-            beats.setScale(sf::Vector2f(2, TILE_SIZE));
+            beats.setScale({2, TILE_SIZE});
             window.draw(beats);
             break;
         }

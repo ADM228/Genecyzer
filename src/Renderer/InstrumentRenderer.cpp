@@ -46,7 +46,7 @@ void Instance::renderInstList () {
 
         instrumentSprite.setTextureRect(sf::IntRect(
             sf::Vector2i{0, 0},
-            sf::Vector2i{static_cast<int>(instrumentTexture.getSize().x), static_cast<int>(instrumentTexture.getSize().y)}
+            sf::Vector2i(instrumentTexture.getSize().x, instrumentTexture.getSize().y)
         ));
         instrumentSprite.setTexture(instrumentTexture);
     } else {    // Only update certain instruments
@@ -73,10 +73,9 @@ void Instance::renderInstList () {
             string.resize(INST_ENTRY_WIDTH, 1);
             string.fillInvert(instNumber == instSelected);
             string.fillPaletteRect(0, 0, INST_ENTRY_WIDTH, 1, palette);
-            instrumentTexture.update(string.renderToTexture(font.texture), sf::Vector2u{
-                static_cast<unsigned int>((instNumber&0xF8)<<(1+3)), 
-                static_cast<unsigned int>((instNumber&0x07)<<3)
-            });
+            instrumentTexture.update(string.renderToTexture(font.texture), sf::Vector2u(
+                (instNumber&0xF8)<<(1+3), (instNumber&0x07)<<3
+            ));
         }
     }
 }
@@ -86,10 +85,7 @@ void Instance::updateInstPage () {
     if (((instSelected&0xF8)+TILE_SIZE/2)*INST_ENTRY_WIDTH*scale*2 < window.getSize().x && window.getSize().x >= TILE_SIZE*INST_ENTRY_WIDTH*scale)
         // = (IS>>3)*TILE_SIZE*INST_ENTRY_WIDTH*scale < winWidth/2 - TILE_SIZE*INST_ENTRY_WIDTH*scale/2
         // Align left
-        InstrumentView = sf::View(sf::FloatRect(
-            sf::Vector2f(0, 0),
-            sf::Vector2f(window.getSize().x, INST_HEIGHT*TILE_SIZE)
-        ));
+        InstrumentView = sf::View(sf::FloatRect({0, 0}, {(float)window.getSize().x, INST_HEIGHT*TILE_SIZE}));
     else if ((32*TILE_SIZE-(instSelected&0xF8)-TILE_SIZE/2)*INST_ENTRY_WIDTH*scale*2 < window.getSize().x && window.getSize().x >= TILE_SIZE*INST_ENTRY_WIDTH*scale)
         // = (32-IS>>3)*TILE_SIZE*INST_ENTRY_WIDTH*scale < winWidth/2 + TILE_SIZE*INST_ENTRY_WIDTH*scale/2
         // Align right
@@ -98,14 +94,12 @@ void Instance::updateInstPage () {
             sf::Vector2f(window.getSize().x, INST_HEIGHT*TILE_SIZE)
         ));
     else
-        InstrumentView = sf::View(sf::FloatRect(
-            sf::Vector2f(
+        InstrumentView = sf::View(sf::FloatRect({(float)(
                     ((instSelected>>3)+1)*TILE_SIZE*INST_ENTRY_WIDTH - 
-                    (window.getSize().x/(double)(scale*2))-TILE_SIZE*8,
-                0),
-            sf::Vector2f(window.getSize().x, INST_HEIGHT*TILE_SIZE)));
+                    (window.getSize().x/(double)(scale*2))-TILE_SIZE*8), 0},
+            {(float)window.getSize().x, INST_HEIGHT*TILE_SIZE}));
+
     InstrumentView.setViewport(sf::FloatRect(
-        sf::Vector2f(0, 0), 
-        sf::Vector2f(scale, (double)(INST_HEIGHT*TILE_SIZE)/window.getSize().y*scale)
+        {0, 0}, sf::Vector2f(scale, (double)(INST_HEIGHT*TILE_SIZE)/window.getSize().y*scale)
     ));
 }

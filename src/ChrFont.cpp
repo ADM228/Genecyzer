@@ -1,13 +1,13 @@
 #pragma region header
 
 #include <SFML/Graphics.hpp>
+#include "Tile.cpp"
 #include <vector>
 
 #ifndef __CHRFONT_INCLUDED__
 #define __CHRFONT_INCLUDED__
 
-#define TILE_SIZE 8
-#define COLORS 4
+constexpr unsigned int COLORS = 4;
 
 class ChrFont {
     public:
@@ -101,10 +101,7 @@ void ChrFont::init_common(const void* __chrData, uint32_t size, bool inverted){
             }
         }
     }
-    texture.resize(sf::Vector2u{
-        static_cast<unsigned int>(inverted ? 2*TILE_SIZE : TILE_SIZE),
-        TILE_SIZE*amount
-    });
+    texture.resize({inverted ? 2*TILE_SIZE : TILE_SIZE, TILE_SIZE*amount});
     texture.update(pixels);
     texture.setSmooth(false);
 
