@@ -82,7 +82,7 @@ void Instance::updateTrackerPos () {
         sf::Vector2f(window.getSize().x, (double)window.getSize().y/scale)
     ));
     TrackerView.setViewport(sf::FloatRect(
-        sf::Vector2f(0.f, (double)(INST_HEIGHT*TILE_SIZE*scale)/(double)window.getSize().y),
+        sf::Vector2f(0.f, (double)(INST_ENTRIES_PER_COLUMN*TILE_SIZE*scale)/(double)window.getSize().y),
         sf::Vector2f(scale, 1)
     ));
 }

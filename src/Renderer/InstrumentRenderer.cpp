@@ -8,14 +8,14 @@ void Instance::renderInstList () {
     if (instrumentsToUpdate.size() == 0){   // Update the entire list
 
 
-        TileMatrix instrumentMatrix = TileMatrix(INST_WIDTH, INST_HEIGHT, 0x20);
+        TileMatrix instrumentMatrix = TileMatrix(INST_WIDTH, INST_ENTRIES_PER_COLUMN, 0x20);
         uint8_t instNumber;
         uint8_t palette;
 
 
-        for (int i = 0; i < INST_WIDTH; i+=INST_ENTRY_WIDTH){
-            instNumber = i>>1;
-            for (int j = 0; j < INST_HEIGHT; j++){
+        for (int i = 0; i < INST_COLUMNS; i++){
+            instNumber = i * INST_ENTRIES_PER_COLUMN;
+            for (int j = 0; j < INST_ENTRIES_PER_COLUMN; j++){
                 std::string output;
                 if (instNumber < instruments.size()){
                     char numchar[5];
@@ -35,13 +35,12 @@ void Instance::renderInstList () {
                 string.resize(INST_ENTRY_WIDTH, 1);
                 string.fillInvert(instNumber == instSelected);
                 string.fillPaletteRect(0, 0, INST_ENTRY_WIDTH, 1, palette);
-                instrumentMatrix.copyRect(i, j, INST_ENTRY_WIDTH, 1, &string, 0, 0);
+                instrumentMatrix.copyRect(i * INST_ENTRY_WIDTH, j, INST_ENTRY_WIDTH, 1, &string, 0, 0);
                 instNumber++;
             }
         }
 
-        instrumentTexture.resize(sf::Vector2u{INST_WIDTH*TILE_SIZE, INST_HEIGHT*TILE_SIZE});
-        // instrumentTexture->update((new TileMatrix(1, INST_HEIGHT, 0x20))->renderToTexture(font->texture), INST_WIDTH*TILE_SIZE, 0);
+        instrumentTexture.resize(sf::Vector2u{INST_WIDTH*TILE_SIZE, INST_ENTRIES_PER_COLUMN*TILE_SIZE});
         instrumentTexture.update(instrumentMatrix.renderToTexture(font.texture));
 
         instrumentSprite.setTextureRect(sf::IntRect(
@@ -74,7 +73,8 @@ void Instance::renderInstList () {
             string.fillInvert(instNumber == instSelected);
             string.fillPaletteRect(0, 0, INST_ENTRY_WIDTH, 1, palette);
             instrumentTexture.update(string.renderToTexture(font.texture), sf::Vector2u(
-                (instNumber&0xF8)<<(1+3), (instNumber&0x07)<<3
+                (instNumber / INST_ENTRIES_PER_COLUMN) * INST_ENTRY_WIDTH * TILE_SIZE,
+                (instNumber % INST_ENTRIES_PER_COLUMN) * TILE_SIZE
             ));
         }
     }
@@ -82,24 +82,46 @@ void Instance::renderInstList () {
 
 
 void Instance::updateInstPage () {
-    if (((instSelected&0xF8)+TILE_SIZE/2)*INST_ENTRY_WIDTH*scale*2 < window.getSize().x && window.getSize().x >= TILE_SIZE*INST_ENTRY_WIDTH*scale)
-        // = (IS>>3)*TILE_SIZE*INST_ENTRY_WIDTH*scale < winWidth/2 - TILE_SIZE*INST_ENTRY_WIDTH*scale/2
+    if (
+        ((instSelected&0xF8)+TILE_SIZE/2)*INST_ENTRY_WIDTH*scale*2 < window.getSize().x &&
+        window.getSize().x >= TILE_SIZE*INST_ENTRY_WIDTH*scale
+    )
+        // (columnIdx + 1/2) * TILE_SIZE * INST_ENTRY_WIDTH * scale < windowWidth/2
+        // i.e. if the center X of the column < center X of window
+        // And the window width > than one instrument column
+
         // Align left
-        InstrumentView = sf::View(sf::FloatRect({0, 0}, {(float)window.getSize().x, INST_HEIGHT*TILE_SIZE}));
-    else if ((32*TILE_SIZE-(instSelected&0xF8)-TILE_SIZE/2)*INST_ENTRY_WIDTH*scale*2 < window.getSize().x && window.getSize().x >= TILE_SIZE*INST_ENTRY_WIDTH*scale)
-        // = (32-IS>>3)*TILE_SIZE*INST_ENTRY_WIDTH*scale < winWidth/2 + TILE_SIZE*INST_ENTRY_WIDTH*scale/2
+        InstrumentView = sf::View(sf::FloatRect(
+            {0, 0}, 
+            {(float)window.getSize().x, INST_ENTRIES_PER_COLUMN*TILE_SIZE}
+        ));
+
+    else if (
+        (INST_COLUMNS*TILE_SIZE-(instSelected&0xF8)-TILE_SIZE/2)*INST_ENTRY_WIDTH*scale*2 < window.getSize().x &&
+        window.getSize().x >= TILE_SIZE*INST_ENTRY_WIDTH*scale
+    )
+        // (INST_COLUMNS - (columnIdx + 1/2)) * TILE_SIZE * INST_ENTRY_WIDTH * scale < windowWidth/2
+        // i.e. if the distance between the right edge and the center X of the column <
+        // < center X of window
+        // And the window width > than one instrument column
+        
         // Align right
         InstrumentView = sf::View(sf::FloatRect(
-            sf::Vector2f(32*TILE_SIZE*INST_ENTRY_WIDTH-(window.getSize().x/(double)scale), 0),
-            sf::Vector2f(window.getSize().x, INST_HEIGHT*TILE_SIZE)
+            sf::Vector2f(INST_WIDTH*TILE_SIZE-(window.getSize().x/(double)scale), 0),
+            sf::Vector2f(window.getSize().x, INST_ENTRIES_PER_COLUMN*TILE_SIZE)
         ));
     else
-        InstrumentView = sf::View(sf::FloatRect({(float)(
-                    ((instSelected>>3)+1)*TILE_SIZE*INST_ENTRY_WIDTH - 
-                    (window.getSize().x/(double)(scale*2))-TILE_SIZE*8), 0},
-            {(float)window.getSize().x, INST_HEIGHT*TILE_SIZE}));
+        // Center the window around the selected column
+        // Left X: ((columnIdx + 1/2) * TILE_SIZE * INST_ENTRY_WIDTH) - ((windowWidth / 2) / scale)
+        // i.e. center X of column - center X of window / scale
+        // The rest are obvious
+        InstrumentView = sf::View(sf::FloatRect(sf::Vector2f((
+                ((instSelected>>3)+1)*TILE_SIZE*INST_ENTRY_WIDTH - 
+                TILE_SIZE*(int)(INST_ENTRY_WIDTH / 2) -
+                (window.getSize().x/(double)(scale*2))), 0),
+            sf::Vector2f(window.getSize().x, INST_ENTRIES_PER_COLUMN*TILE_SIZE)));
 
     InstrumentView.setViewport(sf::FloatRect(
-        {0, 0}, sf::Vector2f(scale, (double)(INST_HEIGHT*TILE_SIZE)/window.getSize().y*scale)
+        {0, 0}, sf::Vector2f(scale, (double)(INST_ENTRIES_PER_COLUMN*TILE_SIZE)/window.getSize().y*scale)
     ));
 }

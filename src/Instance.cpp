@@ -41,6 +41,7 @@ Instance::Instance() {
     TrackerView = sf::View(sf::FloatRect({0.f, 0.f}, {200.f, 200.f}));
 
     if (openFileIntoProject()) saveProjectToFile();
+    else activeProject = Project::createDefault();
 }
 
 void Instance::addMonospaceFont(const void * data, uint32_t size, std::vector<uint32_t> codepages){

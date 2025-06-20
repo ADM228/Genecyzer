@@ -12,10 +12,11 @@
 #include "Project.cpp"
 #include "ModularSynth.cpp"
 
-#define INST_ENTRY_WIDTH 16
-#define TILE_SIZE 8
-#define INST_WIDTH  512
-#define INST_HEIGHT 8
+constexpr unsigned int MAX_INST_COUNT = 256;
+constexpr unsigned int INST_ENTRY_WIDTH = 16;
+constexpr unsigned int INST_ENTRIES_PER_COLUMN = 8;
+constexpr unsigned int INST_COLUMNS = MAX_INST_COUNT / INST_ENTRIES_PER_COLUMN;
+constexpr unsigned int INST_WIDTH = INST_COLUMNS * INST_ENTRY_WIDTH;
 
 class Instance {
 
