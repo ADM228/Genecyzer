@@ -26,7 +26,6 @@ Written in C++ with the [SFML framework](https://sfml-dev.org), it is (theoretic
 
 - The wonderful [SFML framework](https://sfml-dev.org)
 - The [cmake-incbin wrapper](https://github.com/morswin22/cmake-incbin) of the [incbin utility](https://github.com/graphitemaster/incbin) to include the font
-- The [clip library](https://github.com/dacap/clip)
 - [libriff-X](https://github.com/ADM228/libriff-X)
 - [tinyfiledialogs](http://tinyfiledialogs.sourceforge.net)
 

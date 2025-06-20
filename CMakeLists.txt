@@ -19,23 +19,15 @@ if (NOT SFML_FOUND)
 		EXCLUDE_FROM_ALL
     	SYSTEM)
 	set(SFML_BUILD_NETWORK FALSE)
-
 endif()
 
 FetchContent_Declare(incbin
 	GIT_REPOSITORY https://github.com/morswin22/cmake-incbin.git
 	GIT_TAG main)
 
-cmake_policy(SET CMP0077 NEW)
-set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
-FetchContent_Declare(clip
-	GIT_REPOSITORY https://github.com/dacap/clip.git
-	GIT_TAG v1.6)
-set(CLIP_EXAMPLES OFF)
-set(CLIP_TESTS OFF)
-if (UNIX AND NOT APPLE)
-	set(CLIP_X11_WITH_PNG OFF)
-endif()
+# FetchContent_Declare(clip
+# 	GIT_REPOSITORY https://github.com/dacap/clip.git
+# 	GIT_TAG v1.10)
 
 set(RIFF_STATIC_LIBRARIES TRUE)
 set(RIFF_WRITE TRUE)
@@ -53,8 +45,8 @@ endif()
 message("* Getting incbin...")
 FetchContent_MakeAvailable(incbin)
 
-message("* Getting clip...")
-FetchContent_MakeAvailable(clip)
+#message("* Getting clip...")
+#FetchContent_MakeAvailable(clip)
 
 message("* Getting libriff...")
 FetchContent_MakeAvailable(riff)
@@ -62,11 +54,11 @@ FetchContent_MakeAvailable(riff)
 message("* Libraries acquired")
 
 set(BUILD_SHARED_LIBS FALSE)
-set(CLIP_EXAMPLES FALSE)
-set(CLIP_TESTS FALSE)
-if (UNIX AND NOT APPLE)
-	set(CLIP_X11_WITH_PNG FALSE)
-endif()
+# set(CLIP_EXAMPLES FALSE)
+# set(CLIP_TESTS FALSE)
+# if (UNIX AND NOT APPLE)
+# 	set(CLIP_X11_WITH_PNG FALSE)
+# endif()
 
 include(ExternalProject)
 ExternalProject_Add(SNESFM
@@ -129,7 +121,7 @@ else()
 endif()
 
 target_include_directories(Genecyzer PRIVATE src)
-target_link_libraries(Genecyzer PRIVATE SFML::Graphics SFML::Audio SFML::Window SFML::System Font clip riff tinyfd)
+target_link_libraries(Genecyzer PRIVATE SFML::Graphics SFML::Audio Font riff tinyfd)
 
 # install(TARGETS Genecyzer CONFIGURATIONS Debug
 	# RUNTIME DESTINATION ${CMAKE_BINARY_DIR}/bin/Debug)
