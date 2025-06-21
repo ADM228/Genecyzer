@@ -11,6 +11,7 @@
 #include "Tile.cpp"
 #include "Project.cpp"
 #include "ModularSynth.cpp"
+#include "CachedTile.cpp"
 
 constexpr unsigned int MAX_INST_COUNT = 256;
 constexpr unsigned int INST_ENTRY_WIDTH = 16;
@@ -39,6 +40,7 @@ class Instance {
         void updateTrackerPos();
         void updateTrackerSelection();
         void renderBeatsTexture();
+        void updateBeatsSprite();
 
         bool openFileIntoProject();
         bool saveProjectToFile();
@@ -68,10 +70,9 @@ class Instance {
         int debug = 0;
 
         sf::Texture instrumentTexture;
-        TileMatrix trackerMatrix;
+        AutoCachedTileMatrix trackerMatrix;
         sf::Texture beatsTexture;
 
-        sf::Sprite instrumentSprite {instrumentTexture};
 
         #pragma region Update
         bool forceUpdateAll = 0;
@@ -86,11 +87,15 @@ class Instance {
 
         std::vector<uint8_t> instrumentsToUpdate;
         std::array<int, 4> selectionBounds;
+        std::array<uint16_t, 4> selectionInvertRect;
         #pragma endregion
 
         sf::RenderWindow window;
         sf::View InstrumentView;
         sf::View TrackerView;
+
+        sf::RectangleShape beatsSprite;
+        sf::Sprite instrumentSprite {instrumentTexture};
 
         ChrFont font;
 

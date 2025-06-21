@@ -2,6 +2,8 @@
 
 #include "Song.cpp"
 #include "Instrument.cpp"
+#include "Tracker.cpp"
+#include <SFML/Graphics/RectangleShape.hpp>
 
 void Instance::renderTracker () {
 
@@ -66,11 +68,11 @@ void Instance::renderTracker () {
     #pragma endregion
 
     #pragma region putTogether
-    trackerMatrix = TileMatrix(widthInTiles+1, textHeight+HEADER_HEIGHT, 0x20);
+    trackerMatrix = AutoCachedTileMatrix(widthInTiles+1, textHeight+HEADER_HEIGHT, 0x20);
     
+    trackerMatrix.setTexture(font.texture);
     trackerMatrix.copyRect(0, 0, widthInTiles, HEADER_HEIGHT, &header, 0, 0);
     trackerMatrix.copyRect(0, HEADER_HEIGHT, std::min(widthInTiles, widthOfTracker), textHeight, &text, 0, 0);
-    trackerMatrix.setTexture(font.texture);
     #pragma endregion
 
 }
@@ -89,7 +91,7 @@ void Instance::updateTrackerPos () {
 
 void Instance::updateTrackerSelection () {
     int tileX = 3;
-    uint8_t trackerNoteWidth = ((uint8_t)!singleTileTrackerRender)+2;
+    uint8_t trackerNoteWidth = singleTileTrackerRender ? 2 : 3;
     auto & effectColumnAmount = activeProject.songs[currentSong].effectColumnAmount;
 
     int x1 = selectionBounds[0], x2 = selectionBounds[2];
@@ -145,7 +147,10 @@ void Instance::updateTrackerSelection () {
         tileX += TRACKER_ROW_WIDTH(effectColumnAmount[i])+1;
     }
 
-    trackerMatrix.fillInvert(false);
+    trackerMatrix.fillInvertRect(
+        selectionInvertRect[0], selectionInvertRect[1],
+        selectionInvertRect[2], selectionInvertRect[3], 
+    false);
 
     if (x1 == -1) x1 = beginX >= tileX ? tileX-3 : 4;
     if (x2 == -1) x2 = endX >= tileX ? tileX : x1;
@@ -153,6 +158,8 @@ void Instance::updateTrackerSelection () {
     x2 = std::min(x2, (int)trackerMatrix.getWidth());
 
     trackerMatrix.fillInvertRect(x1, y1, x2-x1, y2-y1, true);
+    selectionInvertRect = std::array<uint16_t, 4>(
+        {(uint16_t)x1, (uint16_t)y1, (uint16_t)(x2-x1), (uint16_t)(y2-y1)});
 }
 
 void Instance::renderBeatsTexture() {
@@ -204,4 +211,11 @@ void Instance::renderBeatsTexture() {
 
     delete[] colors;
     delete[] pixels;
+}
+
+void Instance::updateBeatsSprite() {
+    beatsSprite = sf::RectangleShape(sf::Vector2f(beatsTexture.getSize().x, beatsTexture.getSize().y));
+    beatsSprite.setPosition({0, 5*TILE_SIZE});
+    beatsSprite.setTexture(&beatsTexture);
+    beatsSprite.setScale({(int)(TILE_SIZE / 4), TILE_SIZE});
 }

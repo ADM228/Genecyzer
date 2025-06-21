@@ -20,7 +20,7 @@ class TileMatrix : public sf::Drawable {
         TileMatrix(uint16_t __width, uint16_t __height);
         TileMatrix(uint16_t __width, uint16_t __height, uint32_t __fillTile);
 
-        void resize(uint16_t __width, uint16_t __height, uint32_t __fillTile = 0x20);
+        virtual void resize(uint16_t __width, uint16_t __height, uint32_t __fillTile = 0x20);
 
         #pragma region tileSetting
 
@@ -31,13 +31,13 @@ class TileMatrix : public sf::Drawable {
          * @param __y 
          * @param __tile 
          */
-        void setTile(uint16_t __x, uint16_t __y, uint32_t __tile);
+        virtual void setTile(uint16_t __x, uint16_t __y, uint32_t __tile);
 
         /**
          * @brief Fills the entire tile matrix with the tile
          * @param __tile 
          */
-        void fill(uint32_t __tile);
+        virtual void fill(uint32_t __tile);
         
         /**
          * @brief Fills the row (all tiles at Y coordinate) with the tile
@@ -45,7 +45,7 @@ class TileMatrix : public sf::Drawable {
          * @param __row 
          * @param __tile 
          */
-        void fillRow(uint16_t __row, uint32_t __tile);
+        virtual void fillRow(uint16_t __row, uint32_t __tile);
 
         /**
          * @brief Fills the column (all tiles at X coordinate) with the tile
@@ -53,7 +53,7 @@ class TileMatrix : public sf::Drawable {
          * @param __col
          * @param __tile
          */
-        void fillCol(uint16_t __col, uint32_t __tile);
+        virtual void fillCol(uint16_t __col, uint32_t __tile);
 
         /**
          * @brief Fills a rectangle with the tile
@@ -64,7 +64,7 @@ class TileMatrix : public sf::Drawable {
          * @param __height
          * @param __tile
          */
-        void fillRect(uint16_t __x, uint16_t __y, uint16_t __width, uint16_t __height, uint32_t __tile);
+        virtual void fillRect(uint16_t __x, uint16_t __y, uint16_t __width, uint16_t __height, uint32_t __tile);
 
         #pragma endregion
         #pragma region flipSetting
@@ -77,7 +77,7 @@ class TileMatrix : public sf::Drawable {
          * @param __hFlip 
          * @param __vFlip 
          */
-        void setFlip(uint16_t __x, uint16_t __y, bool __hFlip, bool __vFlip);
+        virtual void setFlip(uint16_t __x, uint16_t __y, bool __hFlip, bool __vFlip);
 
         /**
          * @brief Sets the flipping parameters of a rectangle
@@ -89,7 +89,7 @@ class TileMatrix : public sf::Drawable {
          * @param __hFlip 
          * @param __vFlip 
          */
-        void setFlipRect(uint16_t __x, uint16_t __y, uint16_t __width, uint16_t __height, bool __hFlip, bool __vFlip);
+        virtual void setFlipRect(uint16_t __x, uint16_t __y, uint16_t __width, uint16_t __height, bool __hFlip, bool __vFlip);
 
         #pragma endregion
         #pragma region paletteSetting
@@ -101,14 +101,14 @@ class TileMatrix : public sf::Drawable {
          * @param __y 
          * @param __palette 
          */
-        void setPalette(uint16_t __x, uint16_t __y, uint8_t __palette);
+        virtual void setPalette(uint16_t __x, uint16_t __y, uint8_t __palette);
 
         /**
          * @brief Sets the palette of the entire tile matrix
          * 
          * @param __palette 
          */
-        void fillPalette(uint8_t __palette);
+        virtual void fillPalette(uint8_t __palette);
 
         /**
          * @brief Sets the palette of the row (all tiles at Y coordinate)
@@ -116,7 +116,7 @@ class TileMatrix : public sf::Drawable {
          * @param __row 
          * @param __palette 
          */
-        void fillPaletteRow(uint16_t __row, uint8_t __palette);
+        virtual void fillPaletteRow(uint16_t __row, uint8_t __palette);
 
         /**
          * @brief Sets the palette of the row (all tiles at X coordinate)
@@ -124,7 +124,7 @@ class TileMatrix : public sf::Drawable {
          * @param __col 
          * @param __palette 
          */
-        void fillPaletteCol(uint16_t __col, uint8_t __palette);
+        virtual void fillPaletteCol(uint16_t __col, uint8_t __palette);
 
         /**
          * @brief Sets the palette of a rectangle
@@ -135,7 +135,7 @@ class TileMatrix : public sf::Drawable {
          * @param __height 
          * @param __palette 
          */
-        void fillPaletteRect(uint16_t __x, uint16_t __y, uint16_t __width, uint16_t __height, uint8_t __palette);
+        virtual void fillPaletteRect(uint16_t __x, uint16_t __y, uint16_t __width, uint16_t __height, uint8_t __palette);
 
         #pragma endregion
         #pragma region invSetting
@@ -147,14 +147,14 @@ class TileMatrix : public sf::Drawable {
          * @param __y 
          * @param __invert 
          */
-        void setInvert(uint16_t __x, uint16_t __y, bool __invert);
+        virtual void setInvert(uint16_t __x, uint16_t __y, bool __invert);
 
         /**
          * @brief Sets the inversion of the entire tile matrix
          * 
          * @param __invert 
          */
-        void fillInvert(bool __invert);
+        virtual void fillInvert(bool __invert);
 
         /**
          * @brief Sets the inversion of the row (all tiles at Y coordinate)
@@ -162,7 +162,7 @@ class TileMatrix : public sf::Drawable {
          * @param __row 
          * @param __invert 
          */
-        void fillInvertRow(uint16_t __row, bool __invert);
+        virtual void fillInvertRow(uint16_t __row, bool __invert);
 
         /**
          * @brief Sets the inversion of the row (all tiles at X coordinate)
@@ -170,7 +170,7 @@ class TileMatrix : public sf::Drawable {
          * @param __col 
          * @param __invert 
          */
-        void fillInvertCol(uint16_t __col, bool __invert);
+        virtual void fillInvertCol(uint16_t __col, bool __invert);
 
         /**
          * @brief Sets the inversion of a rectangle
@@ -181,7 +181,7 @@ class TileMatrix : public sf::Drawable {
          * @param __height 
          * @param __invert 
          */
-        void fillInvertRect(uint16_t __x, uint16_t __y, uint16_t __width, uint16_t __height, bool __invert);
+        virtual void fillInvertRect(uint16_t __x, uint16_t __y, uint16_t __width, uint16_t __height, bool __invert);
 
         #pragma endregion
         #pragma region copying
@@ -192,7 +192,7 @@ class TileMatrix : public sf::Drawable {
          * @param __row 
          * @param __src 
          */
-        void copyRow(uint16_t __row, const uint32_t * __src);
+        virtual void copyRow(uint16_t __row, const uint32_t * __src);
 
         /**
          * @brief Copies column from input array into the specified row (tiles with the X coordinate)
@@ -200,7 +200,7 @@ class TileMatrix : public sf::Drawable {
          * @param __col 
          * @param __src 
          */
-        void copyCol(uint16_t __col, const uint32_t * __src);
+        virtual void copyCol(uint16_t __col, const uint32_t * __src);
 
         /**
          * @brief Copies a rectangle from input one-dimensional array, from left to right, from top to bottom; 
@@ -211,7 +211,7 @@ class TileMatrix : public sf::Drawable {
          * @param __height 
          * @param __src 
          */
-        void copyRect(uint16_t __x, uint16_t __y, uint16_t __width, uint16_t __height, const uint32_t * __src);
+        virtual void copyRect(uint16_t __x, uint16_t __y, uint16_t __width, uint16_t __height, const uint32_t * __src);
 
         /**
          * @brief Copies a rectangle from another TileMatrix
@@ -224,7 +224,7 @@ class TileMatrix : public sf::Drawable {
          * @param __in_x 
          * @param __in_y 
          */
-        void copyRect(uint16_t __out_x, uint16_t __out_y, uint16_t __width, uint16_t __height, const TileMatrix *__src, uint16_t __in_x, uint16_t __in_y);
+        virtual void copyRect(uint16_t __out_x, uint16_t __out_y, uint16_t __width, uint16_t __height, const TileMatrix *__src, uint16_t __in_x, uint16_t __in_y);
 
         #pragma endregion
         #pragma region rendering
@@ -234,14 +234,15 @@ class TileMatrix : public sf::Drawable {
          * 
          * @param __texture 
          */
-        void setTexture(sf::Texture & __texture) { texture = &__texture; };
+        virtual void setTexture(sf::Texture & __texture) { texture = &__texture; };
+        const inline sf::Texture* const getTexture() const { return texture; };
 
         /**
          * @brief Set the position
          * 
          * @param __position 
          */
-        void setPosition(sf::Vector2f __position) { pos = __position; };
+        virtual void setPosition(sf::Vector2f __position) { pos = __position; };
 
         /**
          * @brief Render the tile matrix to a texture
@@ -249,7 +250,7 @@ class TileMatrix : public sf::Drawable {
          * @param __texture 
          * @return sf::Texture 
          */
-        sf::Texture renderToTexture(sf::Texture __texture);
+        sf::Texture renderToTexture(sf::Texture __texture) const;
 
         #pragma endregion
         #pragma region gettingParams
@@ -272,6 +273,10 @@ class TileMatrix : public sf::Drawable {
         static constexpr uint8_t PALMASK = 0x70;
         static constexpr uint8_t INVMASK = 0x80;
 
+    protected:
+        std::vector<std::vector<Tile>> tiles;
+        sf::Vector2f pos {0, 0};
+
     private:
 
         /**
@@ -281,12 +286,9 @@ class TileMatrix : public sf::Drawable {
          * @param states 
          */
         virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const;
-
         uint16_t width, height;
-        std::vector<std::vector<Tile>> tiles;
-        sf::Texture * texture;
-        sf::Vector2f pos {0, 0};
 
+        sf::Texture * texture;
 };
 
 #pragma endregion
@@ -558,7 +560,7 @@ void TileMatrix::draw(sf::RenderTarget& target, sf::RenderStates states) const {
     }
 }
 
-sf::Texture TileMatrix::renderToTexture(sf::Texture texture){
+sf::Texture TileMatrix::renderToTexture(sf::Texture texture) const {
     sf::Vector2f texturePos {0, 0};
     uint8_t flip_palette;
     sf::Color color;

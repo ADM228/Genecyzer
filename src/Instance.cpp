@@ -30,6 +30,7 @@ constexpr uint16_t MOUSE_DOWN = 1;
 Instance::Instance() {
     // Init all variables
     selectionBounds.fill(-1);
+    selectionInvertRect.fill(0);
     forceUpdateAll = 1;
     lastMousePress.position.x = 0;
     lastMousePress.position.y = 0;
@@ -149,6 +150,7 @@ void Instance::Update(){
                 renderTracker();
                 updateTrackerPos();
                 renderBeatsTexture();
+                updateBeatsSprite();
             }
             if (updateSections.tracker_selection)
                 updateTrackerSelection();
@@ -174,12 +176,7 @@ void Instance::Update(){
     switch (lowerHalfMode) {
         case 0: {
             window.draw(trackerMatrix);
-
-            auto beats = sf::RectangleShape(sf::Vector2f(beatsTexture.getSize().x, beatsTexture.getSize().y));
-            beats.setPosition({0, 5*TILE_SIZE});
-            beats.setTexture(&beatsTexture);
-            beats.setScale({2, TILE_SIZE});
-            window.draw(beats);
+            window.draw(beatsSprite);
             break;
         }
 
