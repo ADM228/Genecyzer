@@ -145,19 +145,25 @@ void Instance::updateTrackerSelection () {
         tileX += TRACKER_ROW_WIDTH(effectColumnAmount[i])+1;
     }
 
-    trackerMatrix.fillInvertRect(
-        selectionInvertRect[0], selectionInvertRect[1],
-        selectionInvertRect[2], selectionInvertRect[3], 
-    false);
 
     if (x1 == -1) x1 = beginX >= tileX ? tileX-3 : 4;
     if (x2 == -1) x2 = endX >= tileX ? tileX : x1;
     if (x1 >= x2 || y1 >= y2) return;
     x2 = std::min(x2, (int)trackerMatrix.getWidth());
 
-    trackerMatrix.fillInvertRect(x1, y1, x2-x1, y2-y1, true);
-    selectionInvertRect = std::array<uint16_t, 4>(
-        {(uint16_t)x1, (uint16_t)y1, (uint16_t)(x2-x1), (uint16_t)(y2-y1)});
+    if (x1 != selectionInvertRect[0] || x2 != selectionInvertRect[2] ||
+        y1 != selectionInvertRect[1] || y2 != selectionInvertRect[3])
+    {
+        trackerMatrix.fillInvertRect(
+            selectionInvertRect[0], selectionInvertRect[1],
+            selectionInvertRect[2] - selectionInvertRect[0],
+            selectionInvertRect[3] - selectionInvertRect[1], 
+        false);
+
+        trackerMatrix.fillInvertRect(x1, y1, x2-x1, y2-y1, true);
+        selectionInvertRect = {(uint16_t)x1, (uint16_t)y1, (uint16_t)x2, (uint16_t)y2};
+    }
+
 }
 
 void Instance::renderBeatsTexture() {
