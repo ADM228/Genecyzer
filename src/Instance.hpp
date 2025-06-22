@@ -35,7 +35,7 @@ class Instance {
     protected:
         void eventHandleInstList (int, int, uint8_t, bool);
         void renderInstList();
-        void renderTracker();
+        void fullRerenderTracker();
         void updateInstPage();
         void updateTrackerPos();
         void updateTrackerSelection();
@@ -70,14 +70,20 @@ class Instance {
         int debug = 0;
 
         sf::Texture instrumentTexture;
-        AutoCachedTileMatrix trackerMatrix;
-        sf::Texture beatsTexture;
+        sf::Sprite instrumentSprite {instrumentTexture};
+        sf::View InstrumentView;
 
+        AutoCachedTileMatrix trackerMatrix;
+        sf::View TrackerView;
+        
+        sf::Texture beatsTexture;
+        sf::RectangleShape beatsSprite;
 
         #pragma region Update
         bool forceUpdateAll = 0;
 
         struct {
+            bool fullTrackerRerender;
             bool scale;
             bool inst_pos;
             bool inst_list;
@@ -91,11 +97,8 @@ class Instance {
         #pragma endregion
 
         sf::RenderWindow window;
-        sf::View InstrumentView;
-        sf::View TrackerView;
 
-        sf::RectangleShape beatsSprite;
-        sf::Sprite instrumentSprite {instrumentTexture};
+        sf::VideoMode maxResolutionVideoMode;
 
         ChrFont font;
 

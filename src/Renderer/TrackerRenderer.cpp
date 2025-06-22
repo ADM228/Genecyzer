@@ -5,14 +5,14 @@
 #include "Tracker.cpp"
 #include <SFML/Graphics/RectangleShape.hpp>
 
-void Instance::renderTracker () {
+void Instance::fullRerenderTracker () {
 
     #define TRACKER_ROW_WIDTH(effectColumns) trackerNoteWidth+1+2+(1+3)*effectColumns
 
     Song & activeSong = activeProject.songs[currentSong];
     uint8_t trackerNoteWidth = ((uint8_t)!singleTileTrackerRender)+2;
-    size_t widthInTiles = std::ceil((window.getSize().x/scale)/TILE_SIZE);
-    size_t heightInTiles = std::ceil((window.getSize().y/scale)/TILE_SIZE);
+    size_t widthInTiles = std::ceil((maxResolutionVideoMode.size.x)/TILE_SIZE);
+    size_t heightInTiles = std::ceil((maxResolutionVideoMode.size.y)/TILE_SIZE);
     size_t rows = activeSong.patterns[0].rows;
     #pragma region header
     TileMatrix header = TileMatrix(widthInTiles, HEADER_HEIGHT, 0x20);

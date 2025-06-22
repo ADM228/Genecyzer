@@ -25,8 +25,6 @@ const char * const filter[] = {"*.gczr"};
 
 constexpr uint16_t MOUSE_DOWN = 1;
 
-#define getGlobalBounds_bottom(sprite) (sprite.getGlobalBounds().top + sprite.getGlobalBounds().height)
-
 Instance::Instance() {
     // Init all variables
     selectionBounds.fill(-1);
@@ -34,6 +32,9 @@ Instance::Instance() {
     forceUpdateAll = 1;
     lastMousePress.position.x = 0;
     lastMousePress.position.y = 0;
+
+    // Init graphics variables
+    maxResolutionVideoMode = sf::VideoMode::getFullscreenModes()[0];
 
     // Init graphics
     window.create(sf::VideoMode({200, 200}), "Genecyzer");
@@ -85,7 +86,7 @@ void Instance::ProcessEvents(){
                 eventHandleInstList (7, -8, 0, true);
             else if (keyPressed->scancode == sf::Keyboard::Scancode::E){
                 singleTileTrackerRender ^= 1;
-                updateSections.tracker = 1;
+                updateSections.fullTrackerRerender = 1;
             } else if (keyPressed->scancode == sf::Keyboard::Scancode::Equal && keyPressed->control) {
                 scale++;
                 updateSections.scale = 1;
@@ -146,8 +147,9 @@ void Instance::Update(){
         
     switch (lowerHalfMode) {
         case 0:
-            if (updateSections.tracker || updateSections.scale){
-                renderTracker();
+            if (updateSections.fullTrackerRerender)
+                fullRerenderTracker();
+            if (updateSections.fullTrackerRerender || updateSections.tracker || updateSections.scale){
                 updateTrackerPos();
                 renderBeatsTexture();
                 updateBeatsSprite();
