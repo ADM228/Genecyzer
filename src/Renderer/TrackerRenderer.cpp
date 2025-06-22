@@ -154,14 +154,44 @@ void Instance::updateTrackerSelection () {
     if (x1 != selectionInvertRect[0] || x2 != selectionInvertRect[2] ||
         y1 != selectionInvertRect[1] || y2 != selectionInvertRect[3])
     {
-        trackerMatrix.fillInvertRect(
-            selectionInvertRect[0], selectionInvertRect[1],
-            selectionInvertRect[2] - selectionInvertRect[0],
-            selectionInvertRect[3] - selectionInvertRect[1], 
-        false);
+        // Get final coordinates
+        uint16_t finx1 = x1, finx2 = x2, finy1 = y1, finy2 = y2;
+        uint16_t oldx1 = selectionInvertRect[0],
+                 oldy1 = selectionInvertRect[1],
+                 oldx2 = selectionInvertRect[2],
+                 oldy2 = selectionInvertRect[3];
 
-        trackerMatrix.fillInvertRect(x1, y1, x2-x1, y2-y1, true);
-        selectionInvertRect = {(uint16_t)x1, (uint16_t)y1, (uint16_t)x2, (uint16_t)y2};
+        if ((finx1 == oldx1 ? 1 : 0) + (finy1 == oldy1 ? 1 : 0) +
+            (finx2 == oldx2 ? 1 : 0) + (finy2 == oldy2 ? 1 : 0) >= 2) {
+            // Same continued selection, just adjusted a bit
+            if (oldx1 < finx1)
+                trackerMatrix.fillInvertRect(oldx1, oldy1, finx1 - oldx1, oldy2 - oldy1, false);
+            else if (finx1 < oldx1)
+                trackerMatrix.fillInvertRect(finx1, finy1, oldx1 - finx1, finy2 - finy1, true);
+
+            if (oldy1 < finy1)
+                trackerMatrix.fillInvertRect(oldx1, oldy1, oldx2 - oldx1, finy1 - oldy1, false);
+            else if (finy1 < oldy1)
+                trackerMatrix.fillInvertRect(finx1, finy1, finx2 - finx1, oldy1 - finy1, true);
+
+            if (finx2 < oldx2)
+                trackerMatrix.fillInvertRect(finx2, oldy1, oldx2 - finx2, oldy2 - oldy1, false);
+            else if (oldx2 < finx2)
+                trackerMatrix.fillInvertRect(oldx2, finy1, finx2 - oldx2, finy2 - finy1, true);
+
+            if (finy2 < oldy2)
+                trackerMatrix.fillInvertRect(oldx1, finy2, oldx2 - oldx1, oldy2 - finy2, false);
+            else if (oldy2 < finy2)
+                trackerMatrix.fillInvertRect(finx1, oldy2, finx2 - finx1, finy2 - oldy2, true);
+
+        } else {
+            // Just refresh the entire selection, shouldn't happen often
+            trackerMatrix.fillInvertRect(oldx1, oldy1, oldx2-oldx1, oldy2-oldy1, false);
+            trackerMatrix.fillInvertRect(finx1, finy1, finx2-finx1, finy2-finy1, true);
+        }
+
+
+        selectionInvertRect = {finx1, finy1, finx2, finy2};
     }
 
 }
