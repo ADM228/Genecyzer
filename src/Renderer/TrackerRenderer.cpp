@@ -39,7 +39,7 @@ void Instance::fullRerenderTracker () {
         std::vector<uint16_t> tracker_separator_columns(0);
         for (int i = 0; i < rows && i < textHeight; i++){
             auto rowNumMatrix = TextRenderer::render(std::string(std::format("{:03X}", i)), font, 3, 1, 0);
-            text.copyRect(0, i, 3, 1, &rowNumMatrix, 0, 0);
+            text.copyRect(0, i, 3, 1, rowNumMatrix, 0, 0);
         }
         
         int tileCounter = 4;
@@ -49,7 +49,7 @@ void Instance::fullRerenderTracker () {
 
             for (int j = 0; j < rows && j < textHeight; j++) {
                 auto row = patternData[j].render(activeSong.effectColumnAmount[i], singleTileTrackerRender);
-                text.copyRect(tileCounter, j, TRACKER_ROW_WIDTH(activeSong.effectColumnAmount[i]), 1, &row, 0, 0);
+                text.copyRect(tileCounter, j, TRACKER_ROW_WIDTH(activeSong.effectColumnAmount[i]), 1, row, 0, 0);
             }
 
             tracker_separator_columns.push_back(tileCounter-1); 
@@ -69,8 +69,8 @@ void Instance::fullRerenderTracker () {
     trackerMatrix = AutoCachedTileMatrix(widthInTiles+1, textHeight+HEADER_HEIGHT, 0x20);
     
     trackerMatrix.setTexture(font.texture);
-    trackerMatrix.copyRect(0, 0, widthInTiles, HEADER_HEIGHT, &header, 0, 0);
-    trackerMatrix.copyRect(0, HEADER_HEIGHT, std::min(widthInTiles, widthOfTracker), textHeight, &text, 0, 0);
+    trackerMatrix.copyRect(0, 0, widthInTiles, HEADER_HEIGHT, header, 0, 0);
+    trackerMatrix.copyRect(0, HEADER_HEIGHT, std::min(widthInTiles, widthOfTracker), textHeight, text, 0, 0);
     #pragma endregion
 
 }
@@ -225,6 +225,6 @@ void Instance::renderTimepoints() {
     trackerMatrix.fillRow(row, ' ');
     if (timePointDisplayData.length() > 0) {
         auto timePointMatrix = TextRenderer::render(timePointDisplayData, font);
-        trackerMatrix.copyRect(0, row, timePointMatrix.getWidth(), 1, &timePointMatrix, 0, 0);
+        trackerMatrix.copyRect(0, row, timePointMatrix.getWidth(), 1, timePointMatrix, 0, 0);
     }
 }

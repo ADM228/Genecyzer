@@ -30,7 +30,7 @@ void Instance::renderInstList () {
                 string.resize(INST_ENTRY_WIDTH, 1);
                 string.fillInvert(instNumber == instSelected);
                 string.fillPaletteRect(0, 0, INST_ENTRY_WIDTH, 1, palette);
-                instrumentMatrix.copyRect(i * INST_ENTRY_WIDTH, j, INST_ENTRY_WIDTH, 1, &string, 0, 0);
+                instrumentMatrix.copyRect(i * INST_ENTRY_WIDTH, j, INST_ENTRY_WIDTH, 1, string, 0, 0);
                 instNumber++;
             }
         }

@@ -224,7 +224,7 @@ class TileMatrix : public sf::Drawable {
          * @param __in_x 
          * @param __in_y 
          */
-        virtual void copyRect(uint16_t __out_x, uint16_t __out_y, uint16_t __width, uint16_t __height, const TileMatrix *__src, uint16_t __in_x, uint16_t __in_y);
+        virtual void copyRect(uint16_t __out_x, uint16_t __out_y, uint16_t __width, uint16_t __height, const TileMatrix& __src, uint16_t __in_x, uint16_t __in_y);
 
         #pragma endregion
         #pragma region rendering
@@ -493,13 +493,13 @@ void TileMatrix::copyRect(uint16_t x, uint16_t y, uint16_t __width, uint16_t __h
     }
 }
 
-void TileMatrix::copyRect(uint16_t out_x, uint16_t out_y, uint16_t __width, uint16_t __height, const TileMatrix *src, uint16_t in_x, uint16_t in_y){
+void TileMatrix::copyRect(uint16_t out_x, uint16_t out_y, uint16_t __width, uint16_t __height, const TileMatrix& src, uint16_t in_x, uint16_t in_y){
 
     #pragma region errorHandling
-    if (in_x >= src->width) {inv_arg("[TileMatrix::copyRect]: x is out of bounds (source)"); return;}
-    if (in_y >= src->tiles.size()) {inv_arg("[TileMatrix::copyRect]: y is out of bounds (source)"); return;}
-    if (__width+in_x > src->width) {inv_arg("[TileMatrix::copyRect]: width+x is out of bounds (source)");}
-    if (__height+in_y > src->tiles.size()) {inv_arg("[TileMatrix::copyRect]: height+y is out of bounds (source)");}
+    if (in_x >= src.width) {inv_arg("[TileMatrix::copyRect]: x is out of bounds (source)"); return;}
+    if (in_y >= src.tiles.size()) {inv_arg("[TileMatrix::copyRect]: y is out of bounds (source)"); return;}
+    if (__width+in_x > src.width) {inv_arg("[TileMatrix::copyRect]: width+x is out of bounds (source)");}
+    if (__height+in_y > src.tiles.size()) {inv_arg("[TileMatrix::copyRect]: height+y is out of bounds (source)");}
 
     if (out_x >= width) {inv_arg("[TileMatrix::copyRect]: x is out of bounds (destination)"); return;}
     if (out_y >= tiles.size()) {inv_arg("[TileMatrix::copyRect]: y is out of bounds (destination)"); return;}
@@ -507,9 +507,9 @@ void TileMatrix::copyRect(uint16_t out_x, uint16_t out_y, uint16_t __width, uint
     if (__height+out_y > tiles.size()) {inv_arg("[TileMatrix::copyRect]: height+y is out of bounds (destination)");}
     #pragma endregion
 
-    for (uint16_t i = 0; i < __height && in_y+i < src->tiles.size() && out_y+i < tiles.size(); i++){
-        for (uint16_t j = 0; j < __width && in_x+j < src->width && out_x+j < width; j++){
-            tiles[out_y+i][out_x+j] = src->tiles[in_y+i][in_x+j];
+    for (uint16_t i = 0; i < __height && in_y+i < src.tiles.size() && out_y+i < tiles.size(); i++){
+        for (uint16_t j = 0; j < __width && in_x+j < src.width && out_x+j < width; j++){
+            tiles[out_y+i][out_x+j] = src.tiles[in_y+i][in_x+j];
         }
     }
 }

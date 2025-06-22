@@ -293,7 +293,7 @@ class AutoCachedTileMatrix : public TileMatrix {
          * @param __in_x 
          * @param __in_y 
          */
-        void copyRect(uint16_t __out_x, uint16_t __out_y, uint16_t __width, uint16_t __height, const TileMatrix *__src, uint16_t __in_x, uint16_t __in_y) override {
+        void copyRect(uint16_t __out_x, uint16_t __out_y, uint16_t __width, uint16_t __height, const TileMatrix& __src, uint16_t __in_x, uint16_t __in_y) override {
             TileMatrix::copyRect(__out_x, __out_y, __width, __height, __src, __in_x, __in_y);
             cacheTexture(__out_x, __out_y, __width, __height);
         };
