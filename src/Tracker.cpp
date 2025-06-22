@@ -95,14 +95,13 @@ TileMatrix TrackerCell::render(uint16_t effectColumns, bool singleTile) {
         const uint32_t * keyOffRowPtr = keyOffRow+firstIndex;
         output.copyRect(0, 0, tileAppend+2+1+2, 1, keyOffRowPtr);
     } else {
-        char row[5];
         std::array<uint32_t, 5> row32;
         if (hideInstrument()) {
-            std::snprintf (row, 3, "%1d ", noteValue/12);
+            std::string row = std::format("{:1d}", noteValue/12);
             for (int i = 0; i < 2; i++) row32[i] = row[i];
             row32[2] = EMPTY; row32[3] = EMPTY;
         } else {
-            std::snprintf(row, 5, "%1d %02X", noteValue/12, instrument);
+            std::string row = std::format("{:1d} {:02X}", noteValue/12, instrument);
             for (int i = 0; i < 4; i++) row32[i] = row[i];
         }
         output.copyRect(tileAppend+1, 0, 2+1+2-1, 1, row32.data());
@@ -126,10 +125,8 @@ TileMatrix TrackerCell::render(uint16_t effectColumns, bool singleTile) {
 template<>
 struct std::hash<TrackerCell> {
     size_t operator()(const TrackerCell & cell) const noexcept {
-        char buffer[9];
-        std::snprintf(buffer, 9, "%2X/%2X/%d%d", cell.noteValue, cell.instrument, cell.hideInstrument(), cell.attack());
         //TODO EFFECTS
-        return std::hash<std::string>{}(std::string(buffer));
+        return std::hash<std::string>{}(std::format("{:2X}/{:2X}/{:d}{:d}",  cell.noteValue, cell.instrument, cell.hideInstrument(), cell.attack()));
     }
     /*
     for (auto & effect : effects)

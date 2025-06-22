@@ -80,7 +80,7 @@ ExternalProject_Get_Property(tinyfiledialogs SOURCE_DIR)
 set (TINYFD_SOURCE_DIR "${SOURCE_DIR}")
 
 add_executable(Genecyzer src/main.cpp)
-target_compile_features(Genecyzer PRIVATE cxx_std_17)
+target_compile_features(Genecyzer PRIVATE cxx_std_20)
 
 target_compile_definitions(Genecyzer PRIVATE BITCONVERTER_ARRAY_CONVS BITCONVERTER_VECTOR_CONVS)
 

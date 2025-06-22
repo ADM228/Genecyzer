@@ -18,18 +18,13 @@ void Instance::renderInstList () {
             for (int j = 0; j < INST_ENTRIES_PER_COLUMN; j++){
                 std::string output;
                 if (instNumber < instruments.size()){
-                    char numchar[5];
-                    std::snprintf(numchar, 5, "%02X:", instNumber);
-                    std::string num(numchar);
-                    output = num + instruments[instNumber].getName() + " ";
+                    output = std::format("{:02X}:", instNumber) + 
+                        instruments[instNumber].getName() + " ";
                     palette = instruments[instNumber].getPalette();
                     if (palette == 0) palette = 7;
                 } else { 
-                    char numchar[17];
-                    std::snprintf(numchar, 17, "%02X:             ", instNumber);
-                    std::string num(numchar);
-                    output = num;
-                    palette = 7;                   
+                    output = std::format("{:02X}:             ", instNumber);
+                    palette = 7;
                 }
                 TileMatrix string = TextRenderer::render(output, font, 15);
                 string.resize(INST_ENTRY_WIDTH, 1);
@@ -55,18 +50,13 @@ void Instance::renderInstList () {
             uint8_t palette;
             std::string output;
             if (instNumber < instruments.size()){
-                char numchar[5];
-                std::snprintf(numchar, 5, "%02X:", instNumber);
-                std::string num(numchar);
-                output = num + instruments[instNumber].getName() + " ";
+                output = std::format("{:02X}:", instNumber) + 
+                    instruments[instNumber].getName() + " ";
                 palette = instruments[instNumber].getPalette();
                 if (palette == 0) palette = 7;
             } else { 
-                char numchar[17];
-                std::snprintf(numchar, 17, "%02X:             ", instNumber);
-                std::string num(numchar);
-                output = num;
-                palette = 7;                   
+                output = std::format("{:02X}:             ", instNumber);
+                palette = 7;                 
             }
             TileMatrix string = TextRenderer::render(output, font, 15);
             string.resize(INST_ENTRY_WIDTH, 1);

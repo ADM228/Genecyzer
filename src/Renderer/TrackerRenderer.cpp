@@ -37,10 +37,8 @@ void Instance::fullRerenderTracker () {
 
     {
         std::vector<uint16_t> tracker_separator_columns(0);
-        char rowNum[4];
         for (int i = 0; i < rows && i < textHeight; i++){
-            std::snprintf(rowNum, 4, "%03X", i);
-            auto rowNumMatrix = TextRenderer::render(std::string(rowNum), font, 3, 1, 0);
+            auto rowNumMatrix = TextRenderer::render(std::string(std::format("{:03X}", i)), font, 3, 1, 0);
             text.copyRect(0, i, 3, 1, &rowNumMatrix, 0, 0);
         }
         
