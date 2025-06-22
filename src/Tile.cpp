@@ -286,9 +286,9 @@ class TileMatrix : public sf::Drawable {
          * @param states 
          */
         virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const;
-        uint16_t width, height;
+        uint16_t width = 0, height = 0;
 
-        sf::Texture * texture;
+        sf::Texture * texture = nullptr;
 };
 
 #pragma endregion
