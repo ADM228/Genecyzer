@@ -35,12 +35,18 @@ class Instance {
     protected:
         void eventHandleInstList (int, int, uint8_t, bool);
         void renderInstList();
+
         void fullRerenderTracker();
         void updateInstPage();
+
         void updateTrackerPos();
         void updateTrackerSelection();
+
         void renderBeatsTexture();
         void updateBeatsSprite();
+
+        inline void appendTimepoint();
+        void renderTimepoints();
 
         bool openFileIntoProject();
         bool saveProjectToFile();
@@ -69,6 +75,8 @@ class Instance {
 
         int debug = 0;
 
+        bool showPerformance = false;
+
         sf::Texture instrumentTexture;
         sf::Sprite instrumentSprite {instrumentTexture};
         sf::View InstrumentView;
@@ -91,6 +99,10 @@ class Instance {
             bool tracker_selection;
         } updateSections;
 
+        struct {
+            bool timepoints;
+        } interFrameUpdateSections;
+
         std::vector<uint8_t> instrumentsToUpdate;
         std::array<int, 4> selectionBounds;
         std::array<uint16_t, 4> selectionInvertRect;
@@ -109,6 +121,10 @@ class Instance {
         sf::Event::MouseButtonPressed lastMousePress;
 
         ModSynthBezier bezierTest;
+
+        sf::Clock clock;
+        std::vector<std::int64_t> timepoints;
+        std::string timePointDisplayData;
 };
 
 #endif  // __INSTANCE_HEADER_INCLUDED__

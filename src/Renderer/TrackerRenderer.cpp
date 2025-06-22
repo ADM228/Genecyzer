@@ -217,3 +217,14 @@ void Instance::updateBeatsSprite() {
     beatsSprite.setTexture(&beatsTexture);
     beatsSprite.setScale({(int)(TILE_SIZE / 4), TILE_SIZE});
 }
+
+void Instance::renderTimepoints() {
+    size_t widthInTiles = std::ceil((maxResolutionVideoMode.size.x)/TILE_SIZE);
+    constexpr uint16_t row = 1;
+
+    trackerMatrix.fillRow(row, ' ');
+    if (timePointDisplayData.length() > 0) {
+        auto timePointMatrix = TextRenderer::render(timePointDisplayData, font);
+        trackerMatrix.copyRect(0, row, timePointMatrix.getWidth(), 1, &timePointMatrix, 0, 0);
+    }
+}

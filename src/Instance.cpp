@@ -84,9 +84,15 @@ void Instance::ProcessEvents(){
                 eventHandleInstList (256-8, +8, 255, false);
             else if (keyPressed->scancode == sf::Keyboard::Scancode::Left)
                 eventHandleInstList (7, -8, 0, true);
-            else if (keyPressed->scancode == sf::Keyboard::Scancode::E){
-                singleTileTrackerRender ^= 1;
+            else if (keyPressed->scancode == sf::Keyboard::Scancode::E) {
+                singleTileTrackerRender = !singleTileTrackerRender;
                 updateSections.fullTrackerRerender = 1;
+            } else if (keyPressed->scancode == sf::Keyboard::Scancode::P) {
+                showPerformance = !showPerformance;
+                if (!showPerformance) {
+                    timePointDisplayData = "";
+                    interFrameUpdateSections.timepoints = true;
+                }
             } else if (keyPressed->scancode == sf::Keyboard::Scancode::Equal && keyPressed->control) {
                 scale++;
                 updateSections.scale = 1;
@@ -130,6 +136,9 @@ void Instance::ProcessEvents(){
 }
 
 void Instance::Update(){
+
+    auto updStart = clock.getElapsedTime();
+    appendTimepoint();
         
     #pragma region ConditionalUpdates
 
@@ -144,6 +153,11 @@ void Instance::Update(){
 
     if (updateSections.inst_pos || updateSections.scale)   
         updateInstPage();
+
+    if (interFrameUpdateSections.timepoints) {
+        renderTimepoints();
+        interFrameUpdateSections.timepoints = false;
+    }
         
     switch (lowerHalfMode) {
         case 0:
@@ -168,11 +182,14 @@ void Instance::Update(){
     #pragma endregion
     #pragma region AlwaysUpdates
 
+    appendTimepoint();
     window.clear(sf::Color(255,255,0,0));
 
+    appendTimepoint();
     window.setView(InstrumentView);
     window.draw(instrumentSprite);
 
+    appendTimepoint();
     window.setView(TrackerView);
 
     switch (lowerHalfMode) {
@@ -212,7 +229,24 @@ void Instance::Update(){
     // window.draw(tile3.renderVertex, sf::RenderStates(&font[0]));
     // window.setView(TrackerView);
     
+    appendTimepoint();
+
     window.display();
+
+    appendTimepoint();
+    clock.restart();
+
+    if (showPerformance) {
+        timePointDisplayData = std::format("FPS: {:2.2f} | Total: {:6d} | Update time: {:6d} | Time points: ",
+            (double)1000000 / timepoints.back(),
+            timepoints.back(),
+            timepoints.back() - updStart.asMicroseconds());
+        for (int i = 1; i < timepoints.size(); i++) {
+            timePointDisplayData += std::format("{:6d} ", timepoints[i] - timepoints[i-1]);
+        }
+        interFrameUpdateSections.timepoints = true;
+        timepoints.clear();
+    }
     #pragma endregion
 
 }
@@ -265,6 +299,12 @@ bool Instance::saveProjectToFile () {
     outData.close();
 
     return true;
+}
+
+inline void Instance::appendTimepoint() {
+    if (showPerformance) {
+        timepoints.push_back(clock.getElapsedTime().asMicroseconds());
+    }
 }
 
 #pragma endregion
