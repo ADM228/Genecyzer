@@ -161,9 +161,8 @@ void Instance::updateTrackerSelection () {
                  oldx2 = selectionInvertRect[2],
                  oldy2 = selectionInvertRect[3];
 
-        if ((finx1 == oldx1 ? 1 : 0) + (finy1 == oldy1 ? 1 : 0) +
-            (finx2 == oldx2 ? 1 : 0) + (finy2 == oldy2 ? 1 : 0) >= 2) {
-            // Same continued selection, just adjusted a bit
+        if (finx1 < oldx2 && oldx1 < finx2 && finy1 < oldy2 && oldy1 < finy2) {
+            // i.e. if there is an intersection
             if (oldx1 < finx1)
                 trackerMatrix.fillInvertRect(oldx1, oldy1, finx1 - oldx1, oldy2 - oldy1, false);
             else if (finx1 < oldx1)
@@ -183,7 +182,6 @@ void Instance::updateTrackerSelection () {
                 trackerMatrix.fillInvertRect(oldx1, finy2, oldx2 - oldx1, oldy2 - finy2, false);
             else if (oldy2 < finy2)
                 trackerMatrix.fillInvertRect(finx1, oldy2, finx2 - finx1, finy2 - oldy2, true);
-
         } else {
             // Just refresh the entire selection, shouldn't happen often
             trackerMatrix.fillInvertRect(oldx1, oldy1, oldx2-oldx1, oldy2-oldy1, false);
